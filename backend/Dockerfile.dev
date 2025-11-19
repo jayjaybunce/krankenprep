@@ -1,0 +1,13 @@
+# backend/Dockerfile.dev
+FROM golang:1.25 AS dev
+
+WORKDIR /app
+
+# Cache deps
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy source once (will be overridden by volume in dev)
+COPY . .
+
+# No CMD here; docker-compose will supply it

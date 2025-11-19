@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  krankenprep-postgres:
+    image: postgres:16
+    container_name: krankenprep-postgres-dev
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: krankenprep
+      POSTGRES_USER: krankenprep
+      POSTGRES_PASSWORD: krankenprep
+    ports:
+      - "5432:5432"
+    volumes:
+      - krankenprep-pgdata-dev:/var/lib/postgresql/data
+
+  krankenprep-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    container_name: krankenprep-backend-dev
+    depends_on:
+      - krankenprep-postgres
+    environment:
+      DB_HOST: krankenprep-postgres
+      DB_PORT: "5432"
+      DB_USER: krankenprep
+      DB_PASSWORD: krankenprep
+      DB_NAME: krankenprep
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./backend:/app
+      - /app/tmp
+    command: ["go", "run", "github.com/air-verse/air@latest", "-c", ".air.toml"]
+
+
+  krankenprep-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: krankenprep-frontend-dev
+    depends_on:
+      - krankenprep-backend
+    environment:
+      VITE_API_URL: "http://localhost:8080"
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules      # anonymous volume, lives only in Docker
+
+
+volumes:
+  krankenprep-pgdata-dev:

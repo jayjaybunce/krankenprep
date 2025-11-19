@@ -1,0 +1,18 @@
+# Where your project lives inside the container
+root = "."
+tmp_dir = "tmp"
+
+[build]
+# Build your app into a tmp dir
+cmd = "go build -o ./tmp/krankenprep-backend ."
+bin = "tmp/krankenprep-backend"
+
+# How to run it
+full_bin = "PORT=8080 ./tmp/krankenprep-backend"
+
+# Watch .go + templates
+include_ext = ["go", "tpl", "tmpl", "html"]
+exclude_dir = ["tmp", "vendor", "node_modules"]
+
+[log]
+time = true

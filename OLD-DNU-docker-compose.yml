@@ -1,0 +1,51 @@
+services:
+  krankenprep-postgres:
+    image: postgres:16
+    container_name: krankenprep-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: krankenprep
+      POSTGRES_USER: krankenprep
+      POSTGRES_PASSWORD: krankenprep
+    ports:
+      - "5432:5432"
+    volumes:
+      - krankenprep-pgdata:/var/lib/postgresql/data
+
+  krankenprep-backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: krankenprep-backend
+    depends_on:
+      - krankenprep-postgres
+    environment:
+      DB_HOST: krankenprep-postgres
+      DB_PORT: "5432"
+      DB_USER: krankenprep
+      DB_PASSWORD: krankenprep
+      DB_NAME: krankenprep
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    # ⚠️ no volume mount here in the "small image" setup
+
+  krankenprep-frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: krankenprep-frontend
+    depends_on:
+      - krankenprep-postgres
+    environment:
+      VITE_API_URL: "http://localhost:8080"
+      CHOKIDAR_USEPOLLING: "true"   # helps file watching in Docker on Windows
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app           # your source code
+      - /app/node_modules         # keep container's node_modules separate
+
+
+volumes:
+  krankenprep-pgdata:
