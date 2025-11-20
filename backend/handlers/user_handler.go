@@ -1,11 +1,12 @@
 package handlers
 
 import (
+	"fmt"
+	"krankenprep/database"
+	"krankenprep/models"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"krankenprep/database"
-	"krankenprep/models"
 )
 
 func GetUsers(c *gin.Context) {
@@ -28,4 +29,13 @@ func CreateUser(c *gin.Context) {
 
 	database.DB.Create(&user)
 	c.JSON(http.StatusCreated, user)
+}
+
+func GetMe(c *gin.Context) {
+	// descopeClient, err := client.NewWithConfig(&client.Config{
+	// 	ProjectID:         "P35frQ7r7as6OKIhaOvbggFpjyJh",
+	// 	AuthManagementKey: "K35ilChMPNhjz4aO7ZJbZmfFwgmhYcT4WhwE1USXpYcQZRWpIWEVKxgQuG5m98L3FQsZmDW",
+	// })
+	fmt.Println("bang")
+
 }

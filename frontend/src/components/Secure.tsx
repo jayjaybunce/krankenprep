@@ -1,31 +1,30 @@
-import { Route, useNavigate } from 'react-router-dom'
-import type { FC, PropsWithChildren, } from 'react'
-import { useUser, useSession } from '@descope/react-sdk'
+import { useNavigate } from "react-router-dom";
+import type { FC, PropsWithChildren } from "react";
+import { useUser, useSession } from "@descope/react-sdk";
+import Layout from "./Layout";
 
-type Role = 'standard' | 'admin'
-type AllowedRoles = [Role]
-
+type Role = "standard" | "admin";
+type AllowedRoles = [Role];
 
 type SecureProps = {
-    allowedRoles?: AllowedRoles
-}
+  allowedRoles?: AllowedRoles;
+};
 
-const Secure:FC<PropsWithChildren<SecureProps>> = ({ children, allowedRoles = [] }) => {
-    const navigate = useNavigate()
-    const user = useUser()
-    const { isAuthenticated, isSessionLoading } = useSession()
+const Secure: FC<PropsWithChildren<SecureProps>> = ({
+  children,
+  allowedRoles = [],
+}) => {
+  const navigate = useNavigate();
+  const user = useUser();
+  const { isAuthenticated, isSessionLoading } = useSession();
+  console.log(user);
+  if (!isAuthenticated && !isSessionLoading) {
+    console.warn("Detected unauthed user, sending them home");
+    navigate("/");
+  }
 
-    if (!isAuthenticated && !isSessionLoading) {
-        console.warn("Detected unauthed user, sending them home")
-        navigate('/')
-    }
+  console.log("TO-DO: Implement Roles", allowedRoles);
+  return <Layout>{children}</Layout>;
+};
 
-    console.log("TO-DO: Implement Roles", allowedRoles)
-    return (
-        <>
-        {children}
-        </>
-    )
-}
-
-export default Secure
+export default Secure;

@@ -7,6 +7,9 @@ tmp_dir = "tmp"
 cmd = "go build -o ./tmp/krankenprep-backend ."
 bin = "tmp/krankenprep-backend"
 
+# Important for Docker Desktop on Windows
+poll = true
+
 # How to run it
 full_bin = "PORT=8080 ./tmp/krankenprep-backend"
 
