@@ -41,8 +41,6 @@ export const useServers = (region_filter?: string) => {
     })
 }
 
-log.Print("In here")
-
 export type Team = {
         id: number,
         name: string,
