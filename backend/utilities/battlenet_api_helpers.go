@@ -2,7 +2,7 @@ package utilities
 
 import (
 	"encoding/json"
-	"io"
+	"fmt"
 	"krankenprep/types"
 	"log"
 	"net/http"
@@ -10,46 +10,65 @@ import (
 
 const (
 	bnetOauthApiEndpoint = "https://oauth.battle.net"
-	bnetApiEndpoint      = "https://us.api.blizzard.com/profile/user/wow"
-	userinfo             = "/userinfo"
+	bnetApiEndpoint      = "https://us.api.blizzard.com"
+	userinfoUrl          = "/userinfo"
+	profileUrl           = "/profile/user/wow"
 )
 
-type UserInfo struct {
-	Sub       string
-	Id        int64
-	Battletag string
-}
+func GetUserInfo(token string) (types.UserInfo, error) {
+	// Reviewed this function and the below is quite good, use these patterns and conventions
+	log.Print(token)
+	var userInfo types.UserInfo
 
-func GetUserInfo(token string) (UserInfo, bool) {
-	var userInfo UserInfo
+	fullURL := bnetOauthApiEndpoint + userinfoUrl
 
-	fullUrl := bnetOauthApiEndpoint + userinfo
-	req, err := http.NewRequest("GET", fullUrl, nil)
+	req, err := http.NewRequest(http.MethodGet, fullURL, nil)
 	if err != nil {
-		log.Printf("New request failed with error: %v", err)
-		return userInfo, false
+		return userInfo, fmt.Errorf("creating battle.net user info request: %w", err)
 	}
+	req.Header.Set("Authorization", "Bearer "+token)
+
 	res, err := http.DefaultClient.Do(req)
 	if err != nil {
-		log.Printf("Request failed: %v", err)
-		return userInfo, false
+		return userInfo, fmt.Errorf("requesting battle.net user info: %w", err)
 	}
 	defer res.Body.Close()
 
-	body, _ := io.ReadAll(res.Body)
-
-	decode_error := json.Unmarshal(body, &userInfo)
-	if decode_error != nil {
-		log.Printf("Error decoding user info from /userinfo")
+	if res.StatusCode != http.StatusOK {
+		return userInfo, fmt.Errorf("battle.net user info: unexpected status %s", res.Status)
 	}
-	log.Println("Decoded user info")
-	return userInfo, true
 
+	if err := json.NewDecoder(res.Body).Decode(&userInfo); err != nil {
+		return userInfo, fmt.Errorf("decoding battle.net user info: %w", err)
+	}
+
+	return userInfo, nil
 }
 
-func GetWowProfile(token string) nil {
+func GetWowProfile(token string) (types.UserProfile, error) {
 	// In progress
-	var wowProfile types.UserProfile
-	return nil
+	paramString := "?region=us&namespace=profile-us&locale=en_US"
+	var userProfile types.UserProfile
+	fullURL := bnetApiEndpoint + profileUrl + paramString
+	req, err := http.NewRequest("GET", fullURL, nil)
+	if err != nil {
+		return userProfile, fmt.Errorf("error creating new request")
+	}
+	req.Header.Add("Authorization", "Bearer "+token)
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		log.Printf("Request failed %v", err)
+		return userProfile, fmt.Errorf("error requesting wow profile")
+	}
+	defer res.Body.Close()
+	if res.StatusCode != http.StatusOK {
+		return userProfile, fmt.Errorf("error requesting wow profile. Status code %v", res.Status)
+	}
+
+	if err := json.NewDecoder(res.Body).Decode(&userProfile); err != nil {
+		return userProfile, fmt.Errorf("decoding wow profile: %w", err)
+	}
+
+	return userProfile, nil
 
 }

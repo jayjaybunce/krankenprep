@@ -22,7 +22,7 @@ func Connect() {
 	}
 
 	// Auto-migrate all models
-	if err := db.AutoMigrate(&models.User{}); err != nil {
+	if err := db.AutoMigrate(&models.User{}, &models.Boss{}, &models.Server{}, &models.Team{}, &models.Phase{}, &models.PhaseSection{}, &models.SectionContent{}, &models.Role{}); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
 

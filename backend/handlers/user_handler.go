@@ -1,9 +1,9 @@
 package handlers
 
 import (
-	"fmt"
 	"krankenprep/database"
 	"krankenprep/models"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -32,10 +32,21 @@ func CreateUser(c *gin.Context) {
 }
 
 func GetMe(c *gin.Context) {
-	// descopeClient, err := client.NewWithConfig(&client.Config{
-	// 	ProjectID:         "P35frQ7r7as6OKIhaOvbggFpjyJh",
-	// 	AuthManagementKey: "K35ilChMPNhjz4aO7ZJbZmfFwgmhYcT4WhwE1USXpYcQZRWpIWEVKxgQuG5m98L3FQsZmDW",
-	// })
-	fmt.Println("bang")
+	user, _ := c.Get("user")
+	// We can trust this to be UTD - We set the user in context in middleware on every request
+	c.JSON(http.StatusOK, user)
+
+}
+
+func GetMyTeams(c *gin.Context) {
+	val, _ := c.Get("user")
+	user, _ := val.(*models.User)
+	log.Printf("Found user with id: %v", user.ID)
+
+	roles := []models.Role{}
+	database.DB.Model(&models.Role{}).Where("user_id = ?", user.ID).Joins("Team").Find(&roles)
+	c.JSON(http.StatusOK, roles)
+
+	// c.JSON(http.StatusOK, "in /me/teams")
 
 }

@@ -30,11 +30,11 @@ func AuthMiddleware() gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
+		log.Print(userToken)
 		// Store user info in context for use in handlers
-		if userToken != nil {
-			c.Set("user_token", userToken)
-		}
+		// if userToken != nil {
+		// 	c.Set("user_token", userToken)
+		// }
 
 		c.Next()
 	}

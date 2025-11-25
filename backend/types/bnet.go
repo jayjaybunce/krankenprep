@@ -1,5 +1,11 @@
 package types
 
+type UserInfo struct {
+	Sub       string
+	Id        int64
+	Battletag string
+}
+
 type UserProfile struct {
 	Links       Links        `json:"_links"`
 	ID          int          `json:"id"`

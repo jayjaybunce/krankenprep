@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import type { FC, PropsWithChildren } from "react";
-import { useUser, useSession } from "@descope/react-sdk";
+import { useUser, useSession, useDescope } from "@descope/react-sdk";
 import Layout from "./Layout";
 
 type Role = "standard" | "admin";
@@ -16,10 +16,12 @@ const Secure: FC<PropsWithChildren<SecureProps>> = ({
 }) => {
   const navigate = useNavigate();
   const user = useUser();
-  const { isAuthenticated, isSessionLoading } = useSession();
+  const { isAuthenticated, isSessionLoading, sessionToken } = useSession();
+  const { logout } = useDescope();
   console.log(user);
   if (!isAuthenticated && !isSessionLoading) {
-    console.warn("Detected unauthed user, sending them home");
+    console.warn("Detected unauthed user.");
+    logout(sessionToken);
     navigate("/");
   }
 

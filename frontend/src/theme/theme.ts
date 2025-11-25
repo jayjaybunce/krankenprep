@@ -1,47 +1,42 @@
-// Theme Configuration
 const theme = {
   light: {
     bg: {
-      primary: "bg-white",
-      secondary: "bg-gray-50",
-      tertiary: "bg-gray-100",
-      sidebar: "bg-gray-900",
+      primary: "bg-slate-50",
       card: "bg-white",
-      hover: "hover:bg-gray-100",
-      canvas: "#f3f4f6",
+      elevated: "bg-gradient-to-br from-white to-slate-50",
     },
     text: {
-      primary: "text-gray-900",
-      secondary: "text-gray-600",
-      tertiary: "text-gray-500",
-      inverse: "text-white",
+      primary: "text-slate-900",
+      secondary: "text-slate-600",
+      tertiary: "text-slate-500",
     },
     border: {
-      primary: "border-gray-200",
-      secondary: "border-gray-300",
-      sidebar: "border-gray-800",
+      primary: "border-slate-200",
+      accent: "border-slate-300",
+    },
+    accent: {
+      primary: "bg-gradient-to-r from-cyan-500 to-blue-600",
+      secondary: "bg-gradient-to-r from-violet-500 to-purple-600",
     },
   },
   dark: {
     bg: {
-      primary: "bg-neutral-950",
-      secondary: "bg-black",
-      tertiary: "bg-neutral-900/50",
-      sidebar: "bg-black",
-      card: "bg-neutral-900",
-      hover: "hover:bg-neutral-900",
-      canvas: "#18181b",
+      primary: "bg-slate-950",
+      card: "bg-slate-900/50",
+      elevated: "bg-gradient-to-br from-slate-900 to-slate-950",
     },
     text: {
-      primary: "text-white",
-      secondary: "text-neutral-300",
-      tertiary: "text-neutral-500",
-      inverse: "text-white",
+      primary: "text-slate-50",
+      secondary: "text-slate-300",
+      tertiary: "text-slate-500",
     },
     border: {
-      primary: "border-neutral-900",
-      secondary: "border-neutral-800",
-      sidebar: "border-neutral-900",
+      primary: "border-slate-800",
+      accent: "border-slate-700",
+    },
+    accent: {
+      primary: "bg-gradient-to-r from-cyan-500 to-blue-600",
+      secondary: "bg-gradient-to-r from-violet-500 to-purple-600",
     },
   },
 };

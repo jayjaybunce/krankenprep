@@ -13,11 +13,11 @@ export default function Login() {
             <Descope
               flowId="sign-up-or-in"
               theme="dark"
-              onSuccess={(e: any) => {
-                console.log(e.detail.user.name);
-                console.log(e.detail.user.email);
-                navigate("/home");
-              }}
+              // onSuccess={(e: any) => {
+              //   console.log(e.detail.user.name);
+              //   console.log(e.detail.user.email);
+              //   navigate("/home");
+              // }}
               onError={(err: any) => {
                 console.log("Error!", err);
                 alert("Error: " + err.detail.message);

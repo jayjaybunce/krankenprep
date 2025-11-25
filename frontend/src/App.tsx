@@ -1,30 +1,35 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
-import Login from "./components/Login";
+
 import { AuthProvider } from "@descope/react-sdk";
-import Secure from "./components/Secure";
+
 import { ThemeProvider } from "./context/ThemeProvider";
+import { UserProvider } from "./context/UserProvider";
+import { Home } from "./components/Home";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { TeamProvider } from "./context/TeamProvider";
+import { DndProvider } from "react-dnd";
+import { HTML5Backend } from "react-dnd-html5-backend";
 
 function App() {
+  const queryClient = new QueryClient();
   return (
     <>
       <AuthProvider projectId="P35frQ7r7as6OKIhaOvbggFpjyJh">
-        <ThemeProvider>
-          <Router>
-            <Routes>
-              <Route path="/" element={<Login />} />
-              <Route
-                path="/home"
-                element={
-                  <Secure>
-                    <div className="flex h-full w-full items-center justify-center">
-                      <h1 className="text-white text-2xl">In construction</h1>
-                    </div>
-                  </Secure>
-                }
-              />
-            </Routes>
-          </Router>
-        </ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <UserProvider>
+            <ThemeProvider>
+              <TeamProvider>
+                <DndProvider backend={HTML5Backend}>
+                  <Router>
+                    <Routes>
+                      <Route path="/" element={<Home />} />
+                    </Routes>
+                  </Router>
+                </DndProvider>
+              </TeamProvider>
+            </ThemeProvider>
+          </UserProvider>
+        </QueryClientProvider>
       </AuthProvider>
     </>
   );
