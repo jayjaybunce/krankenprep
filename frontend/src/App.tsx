@@ -9,6 +9,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TeamProvider } from "./context/TeamProvider";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
+import Plan from "./components/Plan";
+import Layout from "./components/Layout";
+
+const bossSplashes = [];
 
 function App() {
   const queryClient = new QueryClient();
@@ -20,11 +24,14 @@ function App() {
             <ThemeProvider>
               <TeamProvider>
                 <DndProvider backend={HTML5Backend}>
-                  <Router>
-                    <Routes>
-                      <Route path="/" element={<Home />} />
-                    </Routes>
-                  </Router>
+                  <Layout>
+                    <Router>
+                      <Routes>
+                        <Route path="/" element={<Home />} />
+                        <Route path="/plan" element={<Plan />} />
+                      </Routes>
+                    </Router>
+                  </Layout>
                 </DndProvider>
               </TeamProvider>
             </ThemeProvider>

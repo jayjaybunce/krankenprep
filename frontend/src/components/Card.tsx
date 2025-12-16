@@ -1,5 +1,7 @@
-import type { Dispatch, FC, PropsWithChildren, SetStateAction } from "react";
+import type { Dispatch, FC, PropsWithChildren, SetStateAction, ReactNode } from "react";
 import { useTheme } from "../hooks";
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 type CardVariant =
   | "default"
@@ -19,7 +21,10 @@ export type CardProps = {
   hover?: boolean;
   glow?: boolean;
   isActive?: boolean;
-  onClick: Dispatch<SetStateAction<boolean>>;
+  onClick?: Dispatch<SetStateAction<boolean>>;
+  expandable?: boolean;
+  expandedContent?: ReactNode;
+  defaultExpanded?: boolean;
 };
 
 export const Card: FC<PropsWithChildren<CardProps>> = ({
