@@ -69,3 +69,32 @@ func CreateTeam(c *gin.Context) {
 		"team":    team,
 	})
 }
+
+func GetTeamBosses(c *gin.Context) {
+	val, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context is broken"})
+		return
+	}
+	user, _ := val.(*models.User)
+	log.Printf("Got user with id: %v", user.ID)
+	teamId := c.Query("id")
+	if teamId == "" {
+		log.Printf("finding boss data for team failed")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "missing team id in request"})
+	}
+	bosses := []models.Boss{}
+	database.DB.Preload("Phases", "team_id = ?", teamId).
+		Preload("Phases.Sections").
+		Preload("Phases.Sections.Contents").
+		Where("bosses.current = ?", true).
+		Order("bosses.order ASC").
+		Find(&bosses)
+
+	c.JSON(http.StatusOK, bosses)
+	// Get bosses first
+	// Preload phases
+	// Preload section
+	// Preload section content
+
+}

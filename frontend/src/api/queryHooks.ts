@@ -3,6 +3,8 @@ import type { User } from "../types/api/user"
 import { useKpApi } from "../hooks"
 import type { Region } from "../types/api/region"
 import type { Server } from "../types/api/server"
+import type { QueryBosses } from "../types/api/boss"
+import type { ExpansionResponse } from "../types/api/expansion"
 
 
 export const useMe = () => {
@@ -66,6 +68,7 @@ export type User = {
 export type MyRole = {
     id: number,
     team_id: number,
+    name: string,
     team: Team,
     user_id: number,
     user: User
@@ -82,6 +85,31 @@ export const useMyTeams = () => {
             method: "GET",
             headers
         }).then((res) => res.json() as Promise<MyRole[]>)
+    })
+}
+
+
+export const useCurrentBosses = () => {
+    const { url, headers, enabled} = useKpApi('/bosses')
+    return useQuery({
+        queryKey: ["current_bosses"],
+        enabled,
+        queryFn: () => fetch(url, {
+            method: "GET",
+            headers
+        }).then((res) => res.json())
+    })
+}
+
+export const useCurrentExpansion = () => {
+    const {url, headers, enabled} = useKpApi('/expansions')
+    return useQuery({
+        queryKey: ["current_expansion"],
+        enabled,
+        queryFn: () => fetch(url, {
+            method: "GET",
+            headers
+        }).then((res) => res.json() as Promise<ExpansionResponse>)
     })
 }
 

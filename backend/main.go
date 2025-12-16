@@ -54,6 +54,8 @@ func main() {
 	r.POST("/team", handlers.CreateTeam)
 	r.GET("/me", handlers.GetMe)
 	r.GET("/me/teams", handlers.GetMyTeams)
+	r.GET("/expansions", handlers.GetExpansions)
+	r.GET("/teams/bosses", handlers.GetTeamBosses)
 
 	log.Println("Server started on :8080")
 	if err := r.Run(":8080"); err != nil {
