@@ -18,6 +18,7 @@ import Team from "./components/Pages/Team";
 
 function App() {
   const queryClient = new QueryClient();
+  console.log("Using backend url", import.meta.env.VITE_BACKEND_URL);
   return (
     <>
       <AuthProvider projectId="P35frQ7r7as6OKIhaOvbggFpjyJh">
