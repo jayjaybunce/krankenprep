@@ -1,6 +1,6 @@
 import { useEffect, useRef, type FC } from "react";
 import { Line as KonvaLine, Transformer } from "react-konva";
-import type { Shape } from "../Plan";
+import type { Shape } from "./Planner";
 import { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import Konva from "konva";
 

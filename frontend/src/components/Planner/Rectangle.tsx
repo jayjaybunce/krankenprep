@@ -1,6 +1,6 @@
 import { useEffect, useRef, type FC } from "react";
 import { Rect, Transformer } from "react-konva";
-import type { Shape } from "../Plan";
+import type { Shape } from "./Planner";
 import { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import Konva from "konva";
 
@@ -36,17 +36,18 @@ export const Reactangle: FC<RectangleProps> = ({
         name="shape"
         onTransformEnd={() => {
           const node = shapeRef.current;
-          const scaleX = node?.scaleX();
-          const scaleY = node?.scaleY();
-          node?.scaleX(1);
-          node?.scaleY(1);
+          if (!node) return;
+          const scaleX = node.scaleX();
+          const scaleY = node.scaleY();
+          node.scaleX(1);
+          node.scaleY(1);
           onChange({
             ...shapeProps,
-            x: node?.x(),
-            y: node?.y(),
-            rotation: node?.rotation(),
-            width: Math.max(5, node?.width() * scaleX),
-            height: Math.max(node?.height() * scaleY),
+            x: node.x(),
+            y: node.y(),
+            rotation: node.rotation(),
+            width: Math.max(5, node.width() * scaleX),
+            height: Math.max(node.height() * scaleY),
           });
         }}
         onDragEnd={(e) => {

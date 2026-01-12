@@ -10,14 +10,14 @@ import {
 } from "../../hooks";
 import { Stage as StageType } from "konva/lib/Stage";
 import { getIdFromPathname } from "../../utils/idUtils";
-import { useGetRaidplanById, type User } from "../../api/queryHooks";
+import { useGetRaidplanById } from "../../api/queryHooks";
 
 const Plan: FC = () => {
   const location = useLocation();
   const raidData = useRaidData(location.pathname);
   const { isLoading: isUserLoading, user } = useUser();
   const { id, status } = getIdFromPathname(location.pathname);
-  const { data, isLoading, error, refetch } = useGetRaidplanById(id, id == "");
+  const { data, isLoading, refetch } = useGetRaidplanById(id, id == "");
   const getMode = () => {
     if (!id) {
       return "create";

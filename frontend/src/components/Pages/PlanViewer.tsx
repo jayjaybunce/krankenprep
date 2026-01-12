@@ -3,7 +3,6 @@ import { Card } from "../Card";
 import { useTheme } from "../../hooks";
 import { PlanTab } from "../Planner/PlanTab";
 import type { Tab } from "../Planner/Planner";
-import { Pin } from "lucide-react";
 
 type PlanViewerProps = {
   tabs: Tab[];

@@ -13,7 +13,6 @@ import {
 import Button from "../Button";
 import { CreateInviteLinkModal } from "../modals/CreateInviteLinkModal";
 import {
-  useDeleteMemberFromTeam,
   useRevokeInviteLink,
 } from "../../api/mutationHooks";
 import { useNavigate } from "react-router-dom";
@@ -25,7 +24,6 @@ const Team: FC = () => {
   const [isInviteLinkModalOpen, setIsInviteLinkModalOpen] = useState(false);
 
   const { data, isLoading, error } = useGetTeamById(team?.team_id ?? -1);
-  const x = useDeleteMemberFromTeam(1, 1);
   const { mutate: revokeInviteLink, isPending: isRevoking } =
     useRevokeInviteLink(team?.team_id ?? -1);
 
@@ -155,7 +153,7 @@ const Team: FC = () => {
               </thead>
               <tbody>
                 {data.roles && data.roles.length > 0 ? (
-                  data.roles.map((role, index) => (
+                  data.roles.map((role) => (
                     <tr
                       key={role.id}
                       className={`border-b ${
@@ -294,7 +292,6 @@ const Team: FC = () => {
                     const isRevoked = !!link.revoked_at;
                     const isMaxedOut =
                       link.max_uses > 0 && link.uses >= link.max_uses;
-                    const isActive = !isExpired && !isRevoked && !isMaxedOut;
 
                     return (
                       <tr
@@ -314,7 +311,7 @@ const Team: FC = () => {
                         >
                           <div className="flex items-center gap-2">
                             <Calendar className="w-4 h-4 text-slate-500" />
-                            {formatDate(link.created_at)}
+                            {formatDate(link.expires_at)}
                           </div>
                         </td>
                         <td

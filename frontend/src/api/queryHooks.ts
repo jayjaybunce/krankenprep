@@ -1,12 +1,11 @@
 import { useQuery } from "@tanstack/react-query"
-import type { User } from "../types/api/user"
 import { useKpApi } from "../hooks"
 import type { Region } from "../types/api/region"
 import type { Server } from "../types/api/server"
-import type { QueryBosses } from "../types/api/boss"
 import type { ExpansionResponse } from "../types/api/expansion"
 import type { CardVariant } from "../components/Card"
 import type { Tab } from "../components/Planner/Planner"
+import type { User as UserType } from "../types/api/user"
 
 
 export const useMe = () => {
@@ -17,7 +16,7 @@ export const useMe = () => {
         queryFn: () => fetch(url, {
             method: "GET",
             headers
-        }).then((res) => res.json() as Promise<User>)
+        }).then((res) => res.json() as Promise<UserType>)
     })
 }
 

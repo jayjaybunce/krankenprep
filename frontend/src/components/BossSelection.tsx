@@ -7,12 +7,10 @@ import {
 } from "react";
 import { useCurrentExpansion } from "../api/queryHooks";
 import { preload } from "react-dom";
-import { type Expansion, type Boss, type Raid } from "../types/api/expansion";
+import { type Boss, type Raid } from "../types/api/expansion";
 import { Dropdown } from "./form";
 import type { DropdownOption } from "./form/Dropdown";
 import { useTeam } from "../hooks";
-
-type BossSelectionProps = {};
 
 type BossButtonProps = {
   selected: boolean;
@@ -44,7 +42,7 @@ const BossButton: FC<BossButtonProps> = ({ boss: b, selected, setBoss }) => {
   );
 };
 
-export const BossSelection: FC<BossSelectionProps> = () => {
+export const BossSelection: FC = () => {
   const { boss, setBoss } = useTeam();
   const [raid, setRaid] = useState<Raid | null>(() => {
     const stored = localStorage.getItem("kp_selected_expansion");
@@ -55,6 +53,8 @@ export const BossSelection: FC<BossSelectionProps> = () => {
     data: expData,
     error: expError,
   } = useCurrentExpansion();
+
+  console.log(isExpLoading, expError);
 
   useEffect(() => {
     // Preload all boss splash images ezpz lol

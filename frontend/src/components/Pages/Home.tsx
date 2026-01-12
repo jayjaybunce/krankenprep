@@ -33,7 +33,6 @@ const Home: FC = () => {
 };
 
 const UnauthenticatedHome: FC = () => {
-  const { colorMode } = useTheme();
 
   return (
     <div className="w-full min-h-screen flex flex-col items-center justify-center p-8">

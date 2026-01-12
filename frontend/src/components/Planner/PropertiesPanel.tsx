@@ -1,5 +1,5 @@
-import type { Dispatch, FC, SetStateAction } from "react";
-import type { Shape } from "../Plan";
+import type { FC } from "react";
+import type { Shape } from "./Planner";
 
 type PropertiesPanelProps = {
   selectedShape: Shape | null;
@@ -172,7 +172,7 @@ export const PropertiesPanel: FC<PropertiesPanelProps> = ({
             Specialization
           </label>
           <select
-            value={selectedShape.src}
+            value={selectedShape.src || ""}
             onChange={(e) => onUpdate({ src: e.target.value })}
             className="w-full px-2 py-1.5 text-xs bg-slate-800 border border-slate-700 rounded text-slate-300 hover:border-slate-600 focus:border-cyan-500 focus:outline-none"
           >

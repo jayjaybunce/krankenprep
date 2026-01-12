@@ -28,7 +28,7 @@ export const BubbleRevealImage: FC<BubbleRevealImageProps> = ({
 }) => {
   const [bubbles, setBubbles] = useState<Bubble[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number>(null);
 
   // Initialize bubbles
   useEffect(() => {
@@ -37,14 +37,17 @@ export const BubbleRevealImage: FC<BubbleRevealImageProps> = ({
     const containerHeight = containerRef.current.offsetHeight;
     const containerWidth = containerRef.current.offsetWidth;
 
-    const initialBubbles: Bubble[] = Array.from({ length: bubbleCount }, (_, i) => ({
-      id: i,
-      x: Math.random() * containerWidth,
-      y: containerHeight + Math.random() * 200, // Start below container
-      size: minBubbleSize + Math.random() * (maxBubbleSize - minBubbleSize),
-      speed: bubbleSpeed * (0.5 + Math.random() * 0.5), // Vary speed
-      opacity: 0.7 + Math.random() * 0.3,
-    }));
+    const initialBubbles: Bubble[] = Array.from(
+      { length: bubbleCount },
+      (_, i) => ({
+        id: i,
+        x: Math.random() * containerWidth,
+        y: containerHeight + Math.random() * 200, // Start below container
+        size: minBubbleSize + Math.random() * (maxBubbleSize - minBubbleSize),
+        speed: bubbleSpeed * (0.5 + Math.random() * 0.5), // Vary speed
+        opacity: 0.7 + Math.random() * 0.3,
+      }),
+    );
 
     setBubbles(initialBubbles);
   }, [bubbleCount, minBubbleSize, maxBubbleSize, bubbleSpeed]);
@@ -59,7 +62,7 @@ export const BubbleRevealImage: FC<BubbleRevealImageProps> = ({
     const animate = () => {
       setBubbles((prevBubbles) =>
         prevBubbles.map((bubble) => {
-          let newY = bubble.y - bubble.speed;
+          const newY = bubble.y - bubble.speed;
 
           // Reset bubble to bottom when it goes off screen
           if (newY + bubble.size < 0) {
@@ -67,7 +70,8 @@ export const BubbleRevealImage: FC<BubbleRevealImageProps> = ({
               ...bubble,
               y: containerHeight + bubble.size,
               x: Math.random() * containerWidth,
-              size: minBubbleSize + Math.random() * (maxBubbleSize - minBubbleSize),
+              size:
+                minBubbleSize + Math.random() * (maxBubbleSize - minBubbleSize),
               speed: bubbleSpeed * (0.5 + Math.random() * 0.5),
             };
           }
@@ -76,7 +80,7 @@ export const BubbleRevealImage: FC<BubbleRevealImageProps> = ({
             ...bubble,
             y: newY,
           };
-        })
+        }),
       );
 
       animationRef.current = requestAnimationFrame(animate);
