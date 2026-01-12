@@ -92,8 +92,8 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
     );
   };
   const regionOptions: DropdownOption[] =
-    !isRegionDataLoading && regionData
-      ? regionData.map((region) => {
+    !isRegionDataLoading && Array.isArray(regionData)
+      ? regionData?.map((region) => {
           return {
             label:
               REGION_MAP[region] !== null
@@ -106,7 +106,9 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
       : [];
 
   const serverOptions: DropdownOption[] =
-    !isServerDataLoading && serverData && regionData
+    !isServerDataLoading &&
+    Array.isArray(serverData) &&
+    Array.isArray(regionData)
       ? serverData
           .filter((server) => server.region == formState.region)
           .map((server) => {

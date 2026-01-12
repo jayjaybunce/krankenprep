@@ -2,11 +2,14 @@ package utilities
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"krankenprep/database"
 	"krankenprep/models"
 	"krankenprep/types"
+	"log"
 	"os"
 	"strings"
 
@@ -83,13 +86,13 @@ func FetchBattlenetUserInfo(ctx *gin.Context, userToken *descope.Token) (types.B
 		return bnetUserData, fmt.Errorf("error fetching battle.net access token")
 	}
 	userInfo, info_err := GetUserInfo(battleNetAccessToken)
-	userProfile, profile_err := GetWowProfile(battleNetAccessToken)
+	userProfile, _ := GetWowProfile(battleNetAccessToken)
 	if info_err != nil {
 		return bnetUserData, fmt.Errorf("error getting user info %w", info_err)
 	}
-	if profile_err != nil {
-		return bnetUserData, fmt.Errorf("error getting wow profile %w", profile_err)
-	}
+	// if profile_err != nil {
+	// 	return bnetUserData, fmt.Errorf("error getting wow profile %w", profile_err)
+	// }
 	bnetUserData = types.BattleNetUserData{
 		Battletag:      userInfo.Battletag,
 		BlizzardUserID: userInfo.Id,
@@ -115,6 +118,7 @@ func CreateUser(c *gin.Context, userToken *descope.Token) (models.User, error) {
 
 	var user models.User
 	bnetUserData, err := FetchBattlenetUserInfo(c, userToken)
+	// We don't really need all the Bnet info, create the user even if it fails
 	if err != nil {
 		return user, fmt.Errorf("creating user: %w", err)
 	}
@@ -147,6 +151,7 @@ func ValidateToken(c *gin.Context, token string) (bool, *descope.Token, error) {
 	if tokenErr != nil {
 		return false, nil, tokenErr
 	}
+	log.Printf("Authorized: %v UserToken: %v TokenErr: %v", authorized, userToken, tokenErr)
 
 	createdUser, fetchUserErr := FetchUser(c, userToken)
 	if fetchUserErr == nil {
@@ -160,4 +165,28 @@ func ValidateToken(c *gin.Context, token string) (bool, *descope.Token, error) {
 		c.Set("user", &createdUser)
 	}
 	return authorized, userToken, nil
+}
+
+// GenerateRaidPlanIDs generates a share ID and edit ID for a raid plan
+// The share ID is a short random string (e.g., "jth3j4w7zfx6svhu")
+// The edit ID is the share ID plus a longer random string (e.g., "jth3j4w7zfx6svhu/DVVEFH15GfNCnyFmm6kz6a_6BcMi59l4")
+func GenerateRaidPlanIDs() (shareID string, editID string, err error) {
+	// Generate share ID (12 bytes = 16 characters base64url)
+	shareBytes := make([]byte, 12)
+	if _, err := rand.Read(shareBytes); err != nil {
+		return "", "", fmt.Errorf("generating share ID: %w", err)
+	}
+	shareID = base64.RawURLEncoding.EncodeToString(shareBytes)
+
+	// Generate edit token (24 bytes = 32 characters base64url)
+	editBytes := make([]byte, 24)
+	if _, err := rand.Read(editBytes); err != nil {
+		return "", "", fmt.Errorf("generating edit token: %w", err)
+	}
+	editToken := base64.RawURLEncoding.EncodeToString(editBytes)
+
+	// Combine share ID and edit token
+	editID = shareID + editToken
+
+	return shareID, editID, nil
 }

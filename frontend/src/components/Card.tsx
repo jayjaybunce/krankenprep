@@ -1,7 +1,15 @@
-import type { Dispatch, FC, PropsWithChildren, SetStateAction } from "react";
+import type {
+  Dispatch,
+  FC,
+  PropsWithChildren,
+  SetStateAction,
+  ReactNode,
+} from "react";
 import { useTheme } from "../hooks";
+import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 
-type CardVariant =
+export type CardVariant =
   | "default"
   | "elevated"
   | "gradient"
@@ -19,7 +27,10 @@ export type CardProps = {
   hover?: boolean;
   glow?: boolean;
   isActive?: boolean;
-  onClick: Dispatch<SetStateAction<boolean>>;
+  onClick?: Dispatch<SetStateAction<boolean>>;
+  expandable?: boolean;
+  expandedContent?: ReactNode;
+  defaultExpanded?: boolean;
 };
 
 export const Card: FC<PropsWithChildren<CardProps>> = ({
@@ -37,13 +48,13 @@ export const Card: FC<PropsWithChildren<CardProps>> = ({
     default:
       colorMode === "dark"
         ? `bg-slate-800/80 backdrop-blur-xl border-slate-600 shadow-xl shadow-black/50`
-        : `bg-white/80 backdrop-blur-sm border-slate-200 shadow-lg shadow-slate-200/50`,
+        : `bg-white backdrop-blur-sm border-slate-300 shadow-lg shadow-slate-400/40`,
 
     // Elevated with stronger shadow
     elevated:
       colorMode === "dark"
         ? `bg-gradient-to-br from-slate-800 to-slate-900 border-slate-600 shadow-2xl shadow-cyan-500/20`
-        : `bg-gradient-to-br from-white to-slate-50 border-slate-200 shadow-xl shadow-slate-300/50`,
+        : `bg-white border-slate-300 shadow-xl shadow-slate-400/50`,
 
     // Primary gradient
     gradient:
@@ -55,19 +66,19 @@ export const Card: FC<PropsWithChildren<CardProps>> = ({
     bordered:
       colorMode === "dark"
         ? `bg-slate-800/90 backdrop-blur-sm border-2 border-cyan-400/60 shadow-xl shadow-cyan-500/25`
-        : `bg-white border-2 border-cyan-400 shadow-lg shadow-cyan-400/20`,
+        : `bg-white border-2 border-cyan-500 shadow-lg shadow-cyan-400/30`,
 
     // Solid with no transparency
     solid:
       colorMode === "dark"
         ? `bg-slate-800 border-slate-600 shadow-2xl shadow-black/50`
-        : `bg-white border-slate-300 shadow-xl shadow-slate-400/30`,
+        : `bg-white border-slate-400 shadow-xl shadow-slate-400/40`,
 
     // Neon glow effect
     neon:
       colorMode === "dark"
         ? `bg-slate-800 border-2 border-cyan-400 shadow-[0_0_30px_rgba(6,182,212,0.4)] hover:shadow-[0_0_50px_rgba(6,182,212,0.6)]`
-        : `bg-white border-2 border-cyan-500 shadow-[0_0_20px_rgba(6,182,212,0.2)] hover:shadow-[0_0_30px_rgba(6,182,212,0.4)]`,
+        : `bg-white border-2 border-cyan-600 shadow-[0_0_20px_rgba(6,182,212,0.3)] hover:shadow-[0_0_30px_rgba(6,182,212,0.5)]`,
 
     // Neon gradient effect - gradient border with opaque background
     "neon-gradient":
@@ -79,25 +90,25 @@ export const Card: FC<PropsWithChildren<CardProps>> = ({
     outlined:
       colorMode === "dark"
         ? `bg-transparent border-2 border-slate-600 hover:border-slate-500 hover:bg-slate-800/40`
-        : `bg-transparent border-2 border-slate-300 hover:border-slate-400 hover:bg-slate-50`,
+        : `bg-transparent border-2 border-slate-400 hover:border-slate-500 hover:bg-slate-100`,
 
     // Success themed
     success:
       colorMode === "dark"
         ? `bg-gradient-to-br from-emerald-900/60 to-slate-800 border-2 border-emerald-400/40 shadow-xl shadow-emerald-500/15`
-        : `bg-gradient-to-br from-emerald-50 to-white border border-emerald-300 shadow-lg shadow-emerald-200/50`,
+        : `bg-white border-2 border-emerald-400 shadow-lg shadow-emerald-300/50`,
 
     // Warning themed
     warning:
       colorMode === "dark"
         ? `bg-gradient-to-br from-amber-900/60 to-slate-800 border-2 border-amber-400/40 shadow-xl shadow-amber-500/15`
-        : `bg-gradient-to-br from-amber-50 to-white border border-amber-300 shadow-lg shadow-amber-200/50`,
+        : `bg-white border-2 border-amber-400 shadow-lg shadow-amber-300/50`,
 
     // Danger themed
     danger:
       colorMode === "dark"
         ? `bg-gradient-to-br from-rose-900/60 to-slate-800 border-2 border-rose-400/40 shadow-xl shadow-rose-500/15`
-        : `bg-gradient-to-br from-rose-50 to-white border border-rose-300 shadow-lg shadow-rose-200/50`,
+        : `bg-white border-2 border-rose-400 shadow-lg shadow-rose-300/50`,
   };
 
   const hoverEffect = hover
