@@ -1,7 +1,10 @@
 {
-	    "name": "krankenprep-fe",
+	    "name": "krankenprep",
 	    "compatibility_date": "2026-01-12",
 	    "assets": {
 	      "directory": "./dist"
-	    }
+	    },
+		"observability": {
+			"enabled": true
+		}
 }
