@@ -29,7 +29,7 @@
   ],
   "routes": [
     {
-      "pattern": "api.krankenprep.io/*",
+      "pattern": "api.krankenprep.io",
       "custom_domain": true
     }
   ]
