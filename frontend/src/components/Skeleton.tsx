@@ -13,7 +13,6 @@
  * ```
  */
 
-import React from "react";
 
 /**
  * Base Skeleton Component

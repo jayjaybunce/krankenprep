@@ -1,34 +1,20 @@
 import type { Dispatch, FC, SetStateAction } from "react";
-import { useReducer, useState } from "react";
+import { useState } from "react";
 import { Modal } from "../Modal";
 import {
-  User,
-  Shield,
-  Sword,
-  Heart,
-  Zap,
   Save,
   X as XIcon,
-  LucideChartNoAxesCombined,
-  Signature,
-  LoaderCircle,
 } from "lucide-react";
-import { useApi, useTheme } from "../../hooks";
+import { useTheme } from "../../hooks";
 import { Dropdown, Textarea, TextInput } from "../form";
-import { useQuery } from "@tanstack/react-query";
-import { type Server } from "../../types/api/server";
-import { type Region } from "../../types/api/region";
-import type { DropdownOption } from "../form/Dropdown";
-import { useRegions, useServers } from "../../api/queryHooks";
-import { useCreateTeam } from "../../api/mutationHooks";
-import { Card } from "../Card";
+import { Card, type CardVariant } from "../Card";
 import Markdown from "react-markdown";
 import Badge from "../Badge";
 import { Plus, X } from "lucide-react";
 
 export type AddSectionForm = {
   sectionName: string;
-  variant: string | string[];
+  variant: CardVariant;
   description: string;
   tags: string[];
   tagInput: string;

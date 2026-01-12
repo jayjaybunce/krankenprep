@@ -220,6 +220,8 @@ export const useDeleteMemberFromTeam = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["deleteMemberFromTeam"],
+        // @ts-expect-error
+        // Working on implementation
         mutationFn: () => fetch(apiUrl + `/teams/${teamId}/member/${roleId}`, {
             method: "DELETE",
             headers

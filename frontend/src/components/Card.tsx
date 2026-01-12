@@ -6,8 +6,6 @@ import type {
   ReactNode,
 } from "react";
 import { useTheme } from "../hooks";
-import { useState } from "react";
-import { ChevronDown } from "lucide-react";
 
 export type CardVariant =
   | "default"

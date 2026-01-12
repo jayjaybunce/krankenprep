@@ -1,23 +1,13 @@
 import type { Dispatch, FC, SetStateAction } from "react";
-import { useReducer, useState } from "react";
+import { useState } from "react";
 import { Modal } from "../Modal";
 import {
-  User,
-  Shield,
-  Sword,
-  Heart,
-  Zap,
   Save,
   X as XIcon,
-  LucideChartNoAxesCombined,
-  Signature,
   LoaderCircle,
 } from "lucide-react";
-import { useApi, useTheme } from "../../hooks";
+import { useTheme } from "../../hooks";
 import { Dropdown, TextInput } from "../form";
-import { useQuery } from "@tanstack/react-query";
-import { type Server } from "../../types/api/server";
-import { type Region } from "../../types/api/region";
 import type { DropdownOption } from "../form/Dropdown";
 import { useRegions, useServers } from "../../api/queryHooks";
 import { useCreateTeam } from "../../api/mutationHooks";
@@ -64,16 +54,14 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
   // Api Hooks
   const {
     isLoading: isServerDataLoading,
-    error: serverError,
     data: serverData,
   } = useServers();
   const {
     isLoading: isRegionDataLoading,
-    error: regionError,
     data: regionData,
   } = useRegions();
 
-  const { mutate, isPending, isSuccess } = useCreateTeam();
+  const { mutate, isPending } = useCreateTeam();
 
   const handleSave = () => {
     console.log("bang");

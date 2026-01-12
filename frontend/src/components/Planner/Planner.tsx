@@ -1,5 +1,4 @@
 import {
-  useRef,
   useState,
   type FC,
   type DragEvent,
@@ -18,12 +17,10 @@ import { Toolbar, type AllowedShapes } from "./Toolbar";
 import { PropertiesPanel } from "./PropertiesPanel";
 import Dropdown from "../Dropdown";
 import { Card } from "../Card";
-import { useRaidData, useTheme, useUser } from "../../hooks";
+import { useTheme, useUser } from "../../hooks";
 import { PlanTab } from "./PlanTab";
 import { useCreateRaidplan, useUpdateRaidplan } from "../../api/mutationHooks";
 import { useLocation, useNavigate } from "react-router-dom";
-import { getIdFromPathname } from "../../utils/idUtils";
-import { useGetRaidplanById } from "../../api/queryHooks";
 import type { RaidData } from "../../data/raids";
 // import { raidData } from "../../data/raids";
 
@@ -84,7 +81,7 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
 
   const [activeTab, setActiveTab] = useState(0);
   const [shapes, setShapes] = useState<Shape[]>([]);
-  const [groupKey, setGroupKey] = useState(0);
+  const [groupKey] = useState(0);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -95,7 +92,6 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
   const [drawingMode, setDrawingMode] = useState(false);
   const [drawingColor, setDrawingColor] = useState("white");
   const [drawingThickness, setDrawingThickness] = useState(2);
-  const stageRef = useRef<StageType>(null);
   const user = useUser();
 
   const { mutate: createRaidplan } = useCreateRaidplan();
@@ -445,12 +441,6 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
     setActiveTab(newTabs.length - 1);
   };
 
-  const handleRemoveTab = (index: number) => {
-    if (!tabs || tabs.length <= 1) return;
-    const newTabs = tabs.filter((_, i) => i !== index);
-    setTabs(newTabs);
-    setActiveTab(Math.max(0, Math.min(activeTab, newTabs.length - 1)));
-  };
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);
@@ -503,10 +493,10 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
       // Delete key handler
       if (e.key === "Delete") {
         if (selectedId || selectedIds.length > 0) {
-          setTabs((prevTabs) => {
+          setTabs((prevTabs: Tab[]) => {
             const copyTabs = [...prevTabs];
             const nonSelectedShapes = copyTabs[activeTab].shapes.filter(
-              (s) => s.id !== selectedId && !selectedIds.includes(s.id),
+              (s: Shape) => s.id !== selectedId && !selectedIds.includes(s.id),
             );
             copyTabs[activeTab].shapes = nonSelectedShapes;
             return copyTabs;
@@ -537,7 +527,7 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
             y: shape.y + 20,
           }));
 
-          setTabs((prevTabs) => {
+          setTabs((prevTabs: Tab[]) => {
             const copyTabs = [...prevTabs];
             copyTabs[activeTab].shapes = [
               ...copyTabs[activeTab].shapes,
@@ -614,7 +604,7 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
   );
 
   const handleAddLine = (line: Shape) => {
-    setTabs((prevTabs) => {
+    setTabs((prevTabs: Tab[]) => {
       const copyTabs = [...prevTabs];
       copyTabs[activeTab].shapes = [...copyTabs[activeTab].shapes, line];
       return copyTabs;
@@ -711,7 +701,7 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
                 label="Select Map:"
                 options={backgroundOptions}
                 value={tabs[activeTab]?.backgroundIndex.toString() ?? "0"}
-                onChange={(value) => handleBackgroundChange(value)}
+                onChange={(value) => handleBackgroundChange(Array.isArray(value) ? Number(value[0]) : Number(value))}
                 placeholder="Choose a map..."
                 variant="default"
                 size="md"
@@ -808,7 +798,7 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
                   selectedId={selectedId}
                   selectedIds={selectedIds}
                   groupKey={groupKey}
-                  setSelectedId={handleShapeClick}
+                  setSelectedId={(id) => handleShapeClick(id ?? "")}
                   setSelectedIds={setSelectedIds}
                   shapes={tab?.shapes}
                   handleChange={handleChange}
