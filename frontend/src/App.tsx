@@ -4,15 +4,17 @@ import { AuthProvider } from "@descope/react-sdk";
 
 import { ThemeProvider } from "./context/ThemeProvider";
 import { UserProvider } from "./context/UserProvider";
-import { Home } from "./components/Home";
+import Home from "./components/Pages/Home";
+import { Prep } from "./components/Pages/Prep";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { TeamProvider } from "./context/TeamProvider";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
-import Plan from "./components/Plan";
 import Layout from "./components/Layout";
-
-const bossSplashes = [];
+import Plans from "./components/Pages/Plans";
+import Plan from "./components/Pages/Plan";
+import RedeemInvite from "./components/Pages/RedeemInvite";
+import Team from "./components/Pages/Team";
 
 function App() {
   const queryClient = new QueryClient();
@@ -24,14 +26,18 @@ function App() {
             <ThemeProvider>
               <TeamProvider>
                 <DndProvider backend={HTML5Backend}>
-                  <Layout>
-                    <Router>
+                  <Router>
+                    <Layout>
                       <Routes>
                         <Route path="/" element={<Home />} />
-                        <Route path="/plan" element={<Plan />} />
+                        <Route path="/plan/*" element={<Plan />} />
+                        <Route path="/plans" element={<Plans />} />
+                        <Route path="/prep" element={<Prep />} />
+                        <Route path="/invite" element={<RedeemInvite />} />
+                        <Route path="/team" element={<Team />} />
                       </Routes>
-                    </Router>
-                  </Layout>
+                    </Layout>
+                  </Router>
                 </DndProvider>
               </TeamProvider>
             </ThemeProvider>

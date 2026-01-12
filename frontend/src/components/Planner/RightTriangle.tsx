@@ -32,7 +32,7 @@ export const RightTriangle: FC<RightTriangle> = ({
   return (
     <>
       <Line
-        draggable={isSelected}
+        draggable={isSelected && !shapeProps.locked}
         points={shapeProps.points || defaultPoints}
         fill={shapeProps.fill || "#000"}
         closed
@@ -75,7 +75,7 @@ export const RightTriangle: FC<RightTriangle> = ({
           });
         }}
       />
-      {isSelected && <Transformer ref={trRef} />}
+      {isSelected && !shapeProps.locked && <Transformer ref={trRef} />}
     </>
   );
 };

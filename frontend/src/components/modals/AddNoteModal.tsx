@@ -1,35 +1,13 @@
 import type { Dispatch, FC, SetStateAction } from "react";
-import { useReducer, useState } from "react";
+import { useState } from "react";
 import { Modal } from "../Modal";
-import {
-  User,
-  Shield,
-  Sword,
-  Heart,
-  Zap,
-  Save,
-  X as XIcon,
-  LucideChartNoAxesCombined,
-  Signature,
-  LoaderCircle,
-} from "lucide-react";
-import { useApi, useTheme } from "../../hooks";
-import { Dropdown, Textarea, TextInput } from "../form";
-import { useQuery } from "@tanstack/react-query";
-import { type Server } from "../../types/api/server";
-import { type Region } from "../../types/api/region";
-import type { DropdownOption } from "../form/Dropdown";
-import { useRegions, useServers } from "../../api/queryHooks";
-import { useCreateTeam } from "../../api/mutationHooks";
-import { Card } from "../Card";
+import { Save, X as XIcon } from "lucide-react";
+import { useTheme } from "../../hooks";
+import { Textarea } from "../form";
 import { MarkdownRenderer } from "../MarkdownRenderer";
 
 export type AddNoteForm = {
-  sectionName: string;
-  variant: string | string[];
-  description: string;
-  tags: string[];
-  tagInput: string;
+  content: string;
 };
 
 type AddSectionModalProps = {
@@ -40,11 +18,7 @@ type AddSectionModalProps = {
 };
 
 const defaultFormState: AddNoteForm = {
-  sectionName: "",
-  variant: "neon-gradient",
-  description: "",
-  tags: [],
-  tagInput: "",
+  content: "",
 };
 
 export const AddNoteModal: FC<AddSectionModalProps> = ({
@@ -65,50 +39,9 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
     });
   };
 
-  const handleAddTag = () => {
-    if (
-      formState.tagInput.trim() &&
-      !formState.tags.includes(formState.tagInput.trim())
-    ) {
-      setFormState((prevState) => ({
-        ...prevState,
-        tags: [...prevState.tags, formState.tagInput.trim()],
-        tagInput: "",
-      }));
-    }
-  };
-
-  const handleRemoveTag = (tagToRemove: string) => {
-    setFormState((prevState) => ({
-      ...prevState,
-      tags: prevState.tags.filter((tag) => tag !== tagToRemove),
-    }));
-  };
-
-  const handleTagInputKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter") {
-      e.preventDefault();
-      handleAddTag();
-    }
-  };
-
   const handleSave = () => {
     onSave(formState);
   };
-
-  const cardVariants = [
-    "default",
-    "elevated",
-    "gradient",
-    "bordered",
-    "solid",
-    "neon",
-    "neon-gradient",
-    "outlined",
-    "success",
-    "warning",
-    "danger",
-  ];
 
   return (
     <Modal
@@ -167,10 +100,10 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
       >
         <div className="flex flex-col gap-2 w-full">
           <Textarea
-            label="Add a brief description"
-            value={formState.description}
+            label="Add a brief content"
+            value={formState.content}
             placeholder="Add markdown or text"
-            onChange={(e) => handleFormChange("description", e.target.value)}
+            onChange={(e) => handleFormChange("content", e.target.value)}
           />
         </div>
         <div className="flex flex-col w-full h-full">
@@ -193,7 +126,7 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
                 }
               `}
             >
-              <MarkdownRenderer>{formState.description}</MarkdownRenderer>
+              <MarkdownRenderer>{formState.content}</MarkdownRenderer>
             </div>
           </div>
         </div>

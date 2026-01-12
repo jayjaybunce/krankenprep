@@ -8,7 +8,6 @@ import {
   useEffect,
 } from "react";
 import { Stage as StageType } from "konva/lib/Stage";
-import type { Shape } from "../Plan";
 import { Layer, Stage, Rect, Group, Transformer } from "react-konva";
 import type { KonvaEventObject, NodeConfig, Node } from "konva/lib/Node";
 import { Reactangle } from "./Rectangle";
@@ -16,7 +15,11 @@ import { Circle } from "./Circle";
 import { Triangle } from "./Triangle";
 import { RightTriangle } from "./RightTriangle";
 import { Image } from "./Image";
+import { Line } from "./Line";
+import { Text } from "./Text";
 import Konva from "konva";
+import type { Shape } from "./Planner";
+import type { Vector2d } from "konva/lib/types";
 
 type PlanTabProps = {
   setSelectedId: (id: string | null) => void;
@@ -33,6 +36,12 @@ type PlanTabProps = {
   isActive: boolean;
   ref: RefObject<StageType | null>;
   groupKey: number;
+  drawingMode: boolean;
+  onAddLine: (line: Shape) => void;
+  drawingColor: string;
+  drawingThickness: number;
+  height?: number;
+  width?: number;
 };
 
 export const PlanTab: FC<PlanTabProps> = ({
@@ -48,6 +57,12 @@ export const PlanTab: FC<PlanTabProps> = ({
   backgroundSrc,
   ref,
   groupKey,
+  drawingMode,
+  onAddLine,
+  drawingColor,
+  drawingThickness,
+  height,
+  width,
 }) => {
   const [selectionRect, setSelectionRect] = useState({
     visible: false,
@@ -57,9 +72,13 @@ export const PlanTab: FC<PlanTabProps> = ({
     y2: 0,
   });
   const justCompletedDragSelection = useRef(false);
+  const isDrawing = useRef(false);
+  const [currentLine, setCurrentLine] = useState<Shape | null>(null);
 
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
+  const canvasHeight = height ? height : 800;
+  const canvasWidth = width ? width : 1400;
 
   // Attach transformer to group when selection changes
   useEffect(() => {
@@ -80,6 +99,11 @@ export const PlanTab: FC<PlanTabProps> = ({
       return true;
     }
     return false;
+  };
+
+  const isShapeLocked = (id: string) => {
+    const shape = shapes.find((s) => s.id === id);
+    return shape?.locked || false;
   };
 
   const renderShape = (
@@ -106,8 +130,8 @@ export const PlanTab: FC<PlanTabProps> = ({
 
     const commonProps = {
       key: shape.id,
-      // Don't allow individual selection when shape is in group
-      onSelect: inGroup ? () => {} : () => setSelectedId(shape.id),
+      // Don't allow individual selection when shape is in group or locked
+      onSelect: inGroup || shape.locked ? () => {} : () => setSelectedId(shape.id),
       onChange: handleChange,
       isSelected,
       shapeProps: modifiedShapeProps,
@@ -124,6 +148,10 @@ export const PlanTab: FC<PlanTabProps> = ({
         return <RightTriangle {...commonProps} />;
       case "img":
         return shape.src ? <Image {...commonProps} src={shape.src} /> : null;
+      case "line":
+        return <Line {...commonProps} />;
+      case "text":
+        return <Text {...commonProps} />;
       default:
         return null;
     }
@@ -135,6 +163,32 @@ export const PlanTab: FC<PlanTabProps> = ({
   };
 
   const handleMouseDown = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
+    // Drawing mode
+    if (drawingMode) {
+      isDrawing.current = true;
+      const pos = pointerPos(e);
+      if (!pos) return;
+
+      const newLine: Shape = {
+        type: "line",
+        points: [0, 0],
+        x: pos.x,
+        y: pos.y,
+        stroke: drawingColor,
+        strokeWidth: drawingThickness,
+        id: Date.now().toString(),
+        scaleX: 1,
+        scaleY: 1,
+        height: 0,
+        width: 0,
+        rotation: 0,
+        fill: "",
+        opacity: 1,
+      };
+      setCurrentLine(newLine);
+      return;
+    }
+
     // Ignore clicks on transformer or group
     if (
       e.target.getParent() === trRef.current ||
@@ -163,7 +217,24 @@ export const PlanTab: FC<PlanTabProps> = ({
   };
 
   const handleMouseMove = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
-    console.log(e);
+    // Drawing mode
+    if (drawingMode && isDrawing.current && currentLine) {
+      const pos = pointerPos(e);
+      if (!pos) return;
+
+      const newPoints = [
+        ...(currentLine.points || []),
+        pos.x - currentLine.x,
+        pos.y - currentLine.y,
+      ];
+
+      setCurrentLine({
+        ...currentLine,
+        points: newPoints,
+      });
+      return;
+    }
+
     if (!selectionRect.visible) return;
 
     const pos = pointerPos(e);
@@ -177,6 +248,14 @@ export const PlanTab: FC<PlanTabProps> = ({
   };
 
   const handleMouseUp = (e: KonvaEventObject<MouseEvent | TouchEvent>) => {
+    // Drawing mode
+    if (drawingMode && isDrawing.current && currentLine) {
+      isDrawing.current = false;
+      onAddLine(currentLine);
+      setCurrentLine(null);
+      return;
+    }
+
     if (!selectionRect.visible) return;
 
     const stage = e.target.getStage();
@@ -198,7 +277,7 @@ export const PlanTab: FC<PlanTabProps> = ({
       setSelectedId(null);
       if (intersected) {
         const shapeId = shapeNode.id();
-        if (shapeId && shapeId !== "background") {
+        if (shapeId && shapeId !== "background" && !isShapeLocked(shapeId)) {
           selected.push(shapeId);
         }
       }
@@ -218,24 +297,21 @@ export const PlanTab: FC<PlanTabProps> = ({
       justCompletedDragSelection.current = true;
     }
   };
-  console.log("SelectedIds", selectedIds);
 
   return (
     <Stage
       ref={ref}
-      width={1400}
-      height={800}
+      width={canvasWidth}
+      height={canvasHeight}
       className={`${isActive ? "block" : "hidden"}`}
       onClick={(e) => {
         // Don't process click if we just completed a drag selection
-        console.log(justCompletedDragSelection.current);
         if (justCompletedDragSelection.current) {
           justCompletedDragSelection.current = false;
           return;
         }
 
         // Only clear selection on click if we're not dragging
-        console.log("here", selectionRect.visible);
         if (!selectionRect.visible) {
           const clickedOnEmpty =
             e.target === ref.current || e.target.attrs.id === "background";
@@ -261,8 +337,8 @@ export const PlanTab: FC<PlanTabProps> = ({
               id: "background",
               x: 0,
               y: 0,
-              width: 1400,
-              height: 800,
+              width: canvasWidth,
+              height: canvasHeight,
               type: "img",
               src: backgroundSrc,
               scaleX: 1,
@@ -286,6 +362,15 @@ export const PlanTab: FC<PlanTabProps> = ({
           shapes
             .filter((shape) => shape.id === selectedId)
             .map((shape) => renderShape(shape, true))}
+        {/* Render current line being drawn */}
+        {currentLine && (
+          <Line
+            shapeProps={currentLine}
+            isSelected={false}
+            onSelect={() => {}}
+            onChange={() => {}}
+          />
+        )}
       </Layer>
       <Layer>
         {/* Group for multi-selected shapes only */}
