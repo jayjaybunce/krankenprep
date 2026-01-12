@@ -17,7 +17,7 @@ services:
   krankenprep-backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile.dev
+      dockerfile: Dockerfile
     container_name: krankenprep-backend-dev
     depends_on:
       - krankenprep-postgres
@@ -35,7 +35,6 @@ services:
       - /app/tmp
     command: ["go", "run", "github.com/air-verse/air@latest", "-c", ".air.toml"]
 
-
   krankenprep-frontend:
     build:
       context: ./frontend
@@ -50,8 +49,7 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend:/app
-      - /app/node_modules      # anonymous volume, lives only in Docker
-
+      - /app/node_modules # anonymous volume, lives only in Docker
 
 volumes:
   krankenprep-pgdata-dev:

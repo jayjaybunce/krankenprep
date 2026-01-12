@@ -59,6 +59,7 @@ func buildDSN() string {
 
 func getEnv(key, fallback string) string {
 	if value, ok := os.LookupEnv(key); ok && value != "" {
+		log.Printf("got value %v for %v", value, key)
 		return value
 	}
 	return fallback
