@@ -56,7 +56,7 @@ export const CreateInviteLinkModal: FC<CreateInviteLinkModalProps> = ({
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const { mutate, isPending, isSuccess } = useCreateInviteLink(teamId);
+  const { mutate, isPending } = useCreateInviteLink(teamId);
 
   const handleCreate = () => {
     const daysValue = Array.isArray(usableForDays)

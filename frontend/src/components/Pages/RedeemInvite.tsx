@@ -16,9 +16,7 @@ const RedeemInvite: FC = () => {
   const { data, isLoading, error } = useGetInviteLinkWithToken(token ?? "");
   const {
     mutate: redeemInvite,
-    isPending,
     isSuccess,
-    error: redeemError,
   } = useRedeemInviteLink();
   const { setTeam } = useContext(TeamContext);
   const { data: myTeams, refetch: refetchMyTeams } = useMyTeams();

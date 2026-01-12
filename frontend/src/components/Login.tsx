@@ -1,8 +1,6 @@
-import { useNavigate } from "react-router-dom";
-import { Descope, useUser, useSession } from "@descope/react-sdk";
+import { Descope, useSession } from "@descope/react-sdk";
 
 export default function Login() {
-  const navigate = useNavigate();
   const { isAuthenticated, isSessionLoading } = useSession();
   console.log("IS USER AUTHENTICATED:", isAuthenticated);
   return (

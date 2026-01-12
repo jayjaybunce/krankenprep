@@ -1,7 +1,7 @@
 import { useContext } from "react";
 import { ThemeContext } from "./context/ThemeContext";
 import { useSession } from "@descope/react-sdk";
-import { useQuery, type UseQueryOptions } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { UserContext } from "./context/UserContext";
 import { TeamContext } from "./context/TeamContext";
 import { manaforge, midnight, nerubarpalace, undermine } from "./data/raids";

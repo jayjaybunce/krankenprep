@@ -1,9 +1,7 @@
 import {
   useRef,
-  type Dispatch,
   type FC,
   type RefObject,
-  type SetStateAction,
   useState,
   useEffect,
 } from "react";
@@ -19,7 +17,6 @@ import { Line } from "./Line";
 import { Text } from "./Text";
 import Konva from "konva";
 import type { Shape } from "./Planner";
-import type { Vector2d } from "konva/lib/types";
 
 type PlanTabProps = {
   setSelectedId: (id: string | null) => void;
@@ -56,7 +53,6 @@ export const PlanTab: FC<PlanTabProps> = ({
   isActive,
   backgroundSrc,
   ref,
-  groupKey,
   drawingMode,
   onAddLine,
   drawingColor,
@@ -347,6 +343,7 @@ export const PlanTab: FC<PlanTabProps> = ({
               strokeWidth: 0,
               rotation: 0,
               fill: "",
+              opacity: 1,
             }}
             onSelect={() => {}}
             onChange={() => {}}
