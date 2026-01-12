@@ -29,7 +29,7 @@ export const PixelGlitchImage: FC<PixelGlitchImageProps> = ({
   const [glitchBlocks, setGlitchBlocks] = useState<GlitchBlock[]>([]);
   const [scanlinePos, setScanlinePos] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
-  const animationRef = useRef<number>();
+  const animationRef = useRef<number>(0);
 
   const GLITCH_RADIUS = 100; // Pixels around cursor that glitch
 

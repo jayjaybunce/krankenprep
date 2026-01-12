@@ -5,7 +5,6 @@
  * for loading states throughout your application.
  */
 
-import React from "react";
 import {
   Skeleton,
   SkeletonText,
@@ -122,8 +121,8 @@ export const SkeletonExamples = () => {
           {/* Section cards skeleton */}
           <div className="space-y-4">
             <SkeletonCard variant="default" showBadges />
-            <SkeletonCard variant="warning" showBadges />
-            <SkeletonCard variant="success" showBadges />
+            <SkeletonCard variant="elevated" showBadges />
+            <SkeletonCard variant="bordered" showBadges />
           </div>
         </div>
       </section>

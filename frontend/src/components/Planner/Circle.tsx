@@ -36,11 +36,11 @@ export const Circle: FC<CircleProps> = ({
         draggable={isSelected && !shapeProps.locked}
         radiusX={shapeProps.radiusX || 20}
         radiusY={shapeProps.radiusY || 20}
-        fill={shapeProps.fill || "#000"}
         onClick={onSelect}
         onTap={onSelect}
         ref={shapeRef}
         {...shapeProps}
+        fill={shapeProps.fill || "#000"}
         id={shapeProps.id}
         name="shape"
         onTransformEnd={() => {

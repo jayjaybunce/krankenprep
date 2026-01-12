@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import { useTheme } from "../hooks";
 
@@ -123,7 +123,7 @@ export const Section: React.FC<SectionProps> = ({
 
   const toggleExpanded = () => {
     if (collapsible) {
-      setIsExpanded(!isExpanded);
+      setIsExpanded();
     }
   };
 

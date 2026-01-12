@@ -1,5 +1,4 @@
 import type { FC, PropsWithChildren } from "react";
-import SidebarItem from "./SidebarItem";
 import {
   Sun,
   Moon,
@@ -19,64 +18,60 @@ import { useEffect, useState } from "react";
 import { Dropdown } from "./form/Dropdown";
 import { CreateTeamModal } from "./modals/CreateTeamModal";
 import {
-  useCurrentBosses,
   useCurrentExpansion,
   useMyTeams,
   type MyRole,
 } from "../api/queryHooks";
 import type { DropdownOption } from "./form/Dropdown";
-import Button from "./Button";
-import Section from "./Section";
-import Badge from "./Badge";
 import { preload } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 
-interface ContentBlock {
-  type: "text" | "image" | "video";
-  value: string;
-  caption?: string;
-  url?: string;
-  bold?: boolean;
-  italic?: boolean;
-  highlight?: boolean;
-  color?: string;
-}
+// interface ContentBlock {
+//   type: "text" | "image" | "video";
+//   value: string;
+//   caption?: string;
+//   url?: string;
+//   bold?: boolean;
+//   italic?: boolean;
+//   highlight?: boolean;
+//   color?: string;
+// }
 
-interface Post {
-  id: number;
-  title: string;
-  cardType:
-    | "assignment"
-    | "warning"
-    | "cooldown"
-    | "positioning"
-    | "mechanic"
-    | "media"
-    | "general";
-  content: ContentBlock[];
-  linkedGameId?: number;
-}
+// interface Post {
+//   id: number;
+//   title: string;
+//   cardType:
+//     | "assignment"
+//     | "warning"
+//     | "cooldown"
+//     | "positioning"
+//     | "mechanic"
+//     | "media"
+//     | "general";
+//   content: ContentBlock[];
+//   linkedGameId?: number;
+// }
 
-interface Phase {
-  id: number;
-  phaseNumber: number;
-  name: string;
-  isExpanded: boolean;
-  isCurrent: boolean;
-  hasNewNotes: boolean;
-  posts: Post[];
-}
+// interface Phase {
+//   id: number;
+//   phaseNumber: number;
+//   name: string;
+//   isExpanded: boolean;
+//   isCurrent: boolean;
+//   hasNewNotes: boolean;
+//   posts: Post[];
+// }
 
-interface Boss {
-  id: number;
-  name: string;
-  status: "killed" | "progressing";
-  phases: Phase[];
-}
+// interface Boss {
+//   id: number;
+//   name: string;
+//   status: "killed" | "progressing";
+//   phases: Phase[];
+// }
 
 const Layout: FC<PropsWithChildren> = ({ children }) => {
   // Layout component thats rendered with every Secure Route
-  const [activeExpansion, setActiveExpansion] = useState("Manaforge Omega");
+  // const [activeExpansion, setActiveExpansion] = useState("Manaforge Omega");
   const { colorMode, toggleColorMode } = useTheme();
   const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(() => {
@@ -87,20 +82,12 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
 
   const { user, isLoading } = useUser();
 
-  const { team, setTeam, setBoss, boss } = useTeam();
+  const { team, setTeam } = useTeam();
   const isUserAdmin = team?.name == "owner";
   const location = useLocation();
-  const {
-    isLoading: isMyTeamsLoading,
-    data: myTeamsData,
-    error: myTeamsError,
-  } = useMyTeams();
+  const { data: myTeamsData, error: myTeamsError } = useMyTeams();
 
-  const {
-    isLoading: isExpLoading,
-    data: expData,
-    error: expError,
-  } = useCurrentExpansion();
+  const { data: expData } = useCurrentExpansion();
 
   useEffect(() => {
     // Preload all boss splash images ezpz lol
@@ -222,9 +209,9 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                 <Descope
                   flowId="sign-up-or-in"
                   theme={colorMode}
-                  onError={(err: any) => {
+                  onError={(err) => {
                     console.log("Error!", err);
-                    alert("Error: " + err.detail.message);
+                    // alert("Error: " + err.detail.message);
                   }}
                 />
               </div>
@@ -238,13 +225,13 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                   // Handle the generic dropdown type (supports arrays) but we only use single selection
                   if (typeof value === "function") {
                     // If it's a function, we need to call it with the current state
-                    setTeam((prev) => {
-                      const newValue = value(prev);
-                      if (Array.isArray(newValue)) {
-                        return newValue[0] ?? null;
-                      }
-                      return newValue;
-                    });
+                    // setTeam((prev) => {
+                    //   const newValue = value(prev);
+                    //   if (Array.isArray(newValue)) {
+                    //     return newValue[0] ?? null;
+                    //   }
+                    //   return newValue;
+                    // });
                   } else if (Array.isArray(value)) {
                     setTeam(value[0] ?? null);
                   } else {

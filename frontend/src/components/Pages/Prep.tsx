@@ -1,14 +1,8 @@
-import { useTeam, useUser, useTheme } from "../../hooks";
+import { useTeam, useTheme } from "../../hooks";
 import { useEffect, useState, type FC } from "react";
 import { useSession, Descope } from "@descope/react-sdk";
-import Login from "../Login";
-import Layout from "../Layout";
-import { OrderableContainer } from "../DnD/OrderableContainer";
 import type { Boss } from "../../types/api/expansion";
-import { BubbleRevealImage } from "../BubbleRevealImage";
 import { ParallaxDepthImage } from "../ParallaxDepthImage";
-import { MeshGradientImage } from "../MeshGradientImage";
-import { PixelGlitchImage } from "../PixelGlitchImage";
 import Button from "../Button";
 import {
   Edit,
@@ -18,7 +12,6 @@ import {
   XIcon,
   FileText,
   BookOpen,
-  CheckCircle,
   Lightbulb,
   Users,
   Target,
@@ -27,32 +20,24 @@ import {
 } from "lucide-react";
 import { Card } from "../Card";
 import {
-  type AddSectionForm,
   AddSectionModal,
 } from "../modals/AddSectionModal";
-import Markdown from "react-markdown";
 import Badge from "../Badge";
-import SkeletonExamples from "../SkeletonExamples";
 import { AddNoteModal } from "../modals/AddNoteModal";
 import { MarkdownGuideModal } from "../modals/MarkdownGuideModal";
 import { Link } from "react-router-dom";
-import Home from "./Home";
 import { useCreateNote, useCreateSection } from "../../api/mutationHooks";
 import {
-  useCurrentExpansion,
   useGetRaidplanById,
   useTeamAndBossSections,
-  type Section,
 } from "../../api/queryHooks";
 import { MarkdownRenderer } from "../MarkdownRenderer";
 import { BossSelection } from "../BossSelection";
 import PlanViewer from "./PlanViewer";
 
 export const Prep: FC = () => {
-  const user = useUser();
   const { boss } = useTeam();
   const { isAuthenticated, isSessionLoading } = useSession();
-  const { colorMode } = useTheme();
 
   if (isSessionLoading) {
     return (
@@ -79,7 +64,7 @@ export const Prep: FC = () => {
 type BossProps = {} & Boss;
 
 const BossDisplay: FC<BossProps> = ({ name, splash_img_url }) => {
-  const { team, boss, isEditing, setIsEditing } = useTeam();
+  const { team, boss } = useTeam();
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showMarkdownGuide, setShowMarkdownGuide] = useState(false);
@@ -88,13 +73,9 @@ const BossDisplay: FC<BossProps> = ({ name, splash_img_url }) => {
     null,
   );
   const [selectedPlanId] = useState("vL9NVigEk4-sTgHV");
-  const ting = "IKl5M0S8-LEZjPRT";
 
   const {
     data: planData,
-    isLoading: planLoading,
-    error: planError,
-    refetch,
   } = useGetRaidplanById(selectedPlanId, !!selectedPlanId);
 
   const isUserAdmin = team?.name == "owner";
@@ -109,7 +90,7 @@ const BossDisplay: FC<BossProps> = ({ name, splash_img_url }) => {
     team?.id?.toString(),
   );
 
-  const { data, isLoading, error } = useTeamAndBossSections(
+  const { data } = useTeamAndBossSections(
     boss?.id?.toString(),
     team?.team_id?.toString(),
   );
@@ -607,7 +588,6 @@ const UnauthenticatedPrepView: FC = () => {
 };
 
 const NoSelectedBossDisplay: FC = () => {
-  const { colorMode } = useTheme();
 
   return (
     <div className="w-full flex flex-col items-center justify-center py-20">
