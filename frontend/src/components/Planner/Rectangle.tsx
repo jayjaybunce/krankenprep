@@ -27,7 +27,7 @@ export const Reactangle: FC<RectangleProps> = ({
   return (
     <>
       <Rect
-        draggable={isSelected}
+        draggable={isSelected && !shapeProps.locked}
         onClick={onSelect}
         onTap={onSelect}
         ref={shapeRef}
@@ -57,7 +57,7 @@ export const Reactangle: FC<RectangleProps> = ({
           });
         }}
       />
-      {isSelected && <Transformer ref={trRef} flipEnabled={false} />}
+      {isSelected && !shapeProps.locked && <Transformer ref={trRef} flipEnabled={false} />}
     </>
   );
 };

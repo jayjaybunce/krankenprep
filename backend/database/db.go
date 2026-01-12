@@ -27,13 +27,14 @@ func Connect() {
 		&models.Boss{},
 		&models.Server{},
 		&models.Team{},
-		&models.Phase{},
-		&models.PhaseSection{},
-		&models.SectionContent{},
+		&models.Section{},
+		&models.Note{},
 		&models.Role{},
 		&models.Expansion{},
 		&models.Season{},
 		&models.Raid{},
+		&models.RaidPlan{},
+		&models.InviteLink{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}

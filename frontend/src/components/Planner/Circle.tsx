@@ -1,6 +1,6 @@
 import { useEffect, useRef, type FC } from "react";
 import { Transformer, Ellipse } from "react-konva";
-import type { Shape } from "../Plan";
+import type { Shape } from "./Planner";
 import { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import Konva from "konva";
 
@@ -26,10 +26,14 @@ export const Circle: FC<CircleProps> = ({
     }
   }, [isSelected]);
 
+  const refinedProps = { ...shapeProps };
+  delete refinedProps["height"];
+  delete refinedProps["width"];
+
   return (
     <>
       <Ellipse
-        draggable={isSelected}
+        draggable={isSelected && !shapeProps.locked}
         radiusX={shapeProps.radiusX || 20}
         radiusY={shapeProps.radiusY || 20}
         fill={shapeProps.fill || "#000"}
@@ -71,7 +75,7 @@ export const Circle: FC<CircleProps> = ({
           });
         }}
       />
-      {isSelected && <Transformer ref={trRef} flipEnabled={false} />}
+      {isSelected && !shapeProps.locked && <Transformer ref={trRef} flipEnabled={false} />}
     </>
   );
 };

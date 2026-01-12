@@ -75,7 +75,7 @@ export const Triangle: FC<Triangle> = ({
           });
         }}
       />
-      {isSelected && <Transformer ref={trRef} />}
+      {isSelected && !shapeProps.locked && <Transformer ref={trRef} />}
     </>
   );
 };

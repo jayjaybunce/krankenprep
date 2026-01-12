@@ -38,7 +38,7 @@ export const Image: FC<ImageProps> = ({
     <>
       <KonvaImage
         image={image}
-        draggable={isSelected}
+        draggable={isSelected && !shapeProps.locked}
         onClick={onSelect}
         onTap={onSelect}
         ref={shapeRef}
@@ -70,7 +70,7 @@ export const Image: FC<ImageProps> = ({
           });
         }}
       />
-      {isSelected && <Transformer ref={trRef} flipEnabled={false} />}
+      {isSelected && !shapeProps.locked && <Transformer ref={trRef} flipEnabled={false} />}
     </>
   );
 };

@@ -6,6 +6,7 @@ import (
 	"krankenprep/models"
 	"log"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
@@ -96,5 +97,96 @@ func GetTeamBosses(c *gin.Context) {
 	// Preload phases
 	// Preload section
 	// Preload section content
+
+}
+
+func GetTeamById(c *gin.Context) {
+	val, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context is broken"})
+		return
+	}
+	teamIdParam := c.Param("teamId")
+	if teamIdParam == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "missing team id parameter"})
+		return
+	}
+
+	teamId, err := strconv.ParseUint(teamIdParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid team id"})
+		return
+	}
+	user, _ := val.(*models.User)
+	role := models.Role{}
+	if err := database.DB.Where("team_id = ? AND user_id = ? AND name IN ?", teamId, user.ID, []string{"owner", "admin"}).First(&role).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "user unauthorized for team"})
+		return
+	}
+	team := models.Team{}
+	if err := database.DB.Preload("InviteLinks").Preload("Roles").Preload("Roles.User").Where("id = ?", teamId).Find(&team).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "team not found"})
+		return
+	}
+	c.JSON(http.StatusOK, team)
+
+}
+
+func DeleteMemberFromTeam(c *gin.Context) {
+	val, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context is broken"})
+		return
+	}
+	user, ok := val.(*models.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "requesting user not found"})
+		return
+	}
+	teamIdParam := c.Param("teamId")
+	if teamIdParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing team Id param"})
+		return
+	}
+	roleIdParam := c.Param("roleId")
+	if roleIdParam == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing member id"})
+		return
+	}
+	teamId, err := strconv.ParseUint(teamIdParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid team id"})
+		return
+	}
+	roleId, err := strconv.ParseUint(roleIdParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid member id"})
+		return
+	}
+	userAdminRole := models.Role{}
+	if err := database.DB.Where("team_id = ? AND user_id = ? AND name IN ?", teamId, user.ID, []string{"owner", "admin"}).First(&userAdminRole).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	// Fetch the role to be deleted to check if it's an owner
+	memberRole := models.Role{}
+	if err := database.DB.Where("team_id = ? AND id = ?", teamId, roleId).First(&memberRole).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "member not found"})
+		return
+	}
+
+	// Prevent admins from removing owners
+	if userAdminRole.Name == "admin" && memberRole.Name == "owner" {
+		c.JSON(http.StatusForbidden, gin.H{"error": "admins cannot remove owners from the team"})
+		return
+	}
+
+	if err := database.DB.Delete(&memberRole).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to remove member"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "member removed from team"})
 
 }
