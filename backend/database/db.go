@@ -49,11 +49,12 @@ func buildDSN() string {
 	user := getEnv("DB_USER", "krankenprep")
 	password := getEnv("DB_PASSWORD", "krankenprep")
 	dbname := getEnv("DB_NAME", "krankenprep")
+	sslmode := getEnv("DB_SSL_MODE", "disable")
 
 	// sslmode=disable is fine for local/dev + Docker
 	return fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=require TimeZone=UTC",
-		host, user, password, dbname, port,
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=UTC",
+		host, user, password, dbname, port, sslmode,
 	)
 }
 

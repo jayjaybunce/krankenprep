@@ -17,7 +17,7 @@ services:
   krankenprep-backend:
     build:
       context: ./backend
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile.dev
     container_name: krankenprep-backend-dev
     depends_on:
       - krankenprep-postgres

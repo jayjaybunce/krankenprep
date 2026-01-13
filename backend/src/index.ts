@@ -24,6 +24,7 @@ export default {
           DB_USER: env.DB_USER,
           DB_PASSWORD: env.DB_PASSWORD,
           DB_NAME: env.DB_NAME,
+          DB_SSL_MODE: env.DB_SSL_MODE || "disable",
         },
       });
       return containerInstance.fetch(request);
