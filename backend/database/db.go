@@ -52,7 +52,7 @@ func buildDSN() string {
 
 	// sslmode=disable is fine for local/dev + Docker
 	return fmt.Sprintf(
-		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable TimeZone=UTC",
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=require TimeZone=UTC",
 		host, user, password, dbname, port,
 	)
 }
