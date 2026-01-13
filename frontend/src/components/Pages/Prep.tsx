@@ -19,9 +19,7 @@ import {
   HelpCircle,
 } from "lucide-react";
 import { Card } from "../Card";
-import {
-  AddSectionModal,
-} from "../modals/AddSectionModal";
+import { AddSectionModal } from "../modals/AddSectionModal";
 import Badge from "../Badge";
 import { AddNoteModal } from "../modals/AddNoteModal";
 import { MarkdownGuideModal } from "../modals/MarkdownGuideModal";
@@ -72,11 +70,12 @@ const BossDisplay: FC<BossProps> = ({ name, splash_img_url }) => {
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(
     null,
   );
-  const [selectedPlanId] = useState("vL9NVigEk4-sTgHV");
+  const [selectedPlanId] = useState("");
 
-  const {
-    data: planData,
-  } = useGetRaidplanById(selectedPlanId, !!selectedPlanId);
+  const { data: planData } = useGetRaidplanById(
+    selectedPlanId,
+    !!selectedPlanId,
+  );
 
   const isUserAdmin = team?.name == "owner";
   const handleSave = () => {};
@@ -588,7 +587,6 @@ const UnauthenticatedPrepView: FC = () => {
 };
 
 const NoSelectedBossDisplay: FC = () => {
-
   return (
     <div className="w-full flex flex-col items-center justify-center py-20">
       <div className="max-w-3xl w-full space-y-8">
