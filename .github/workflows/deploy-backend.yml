@@ -29,15 +29,21 @@ jobs:
         working-directory: ./backend
         run: npm ci
 
-      - name: Deploy to Cloudflare Containers
-        uses: cloudflare/wrangler-action@v3
-        with:
-          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          workingDirectory: backend
-          command: deploy --config wrangler.jsonc
+      - name: Set Cloudflare secrets
+        working-directory: ./backend
+        run: |
+          echo "$DESCOPE_PROJECT_ID" | npx wrangler secret put DESCOPE_PROJECT_ID --config wrangler.jsonc
+          echo "$DESCOPE_MANAGEMENT_KEY" | npx wrangler secret put DESCOPE_MANAGEMENT_KEY --config wrangler.jsonc
+          echo "$WCL_CLIENT_ID" | npx wrangler secret put WCL_CLIENT_ID --config wrangler.jsonc
+          echo "$WCL_SECRET" | npx wrangler secret put WCL_SECRET --config wrangler.jsonc
+          echo "$DB_HOST" | npx wrangler secret put DB_HOST --config wrangler.jsonc
+          echo "$DB_PORT" | npx wrangler secret put DB_PORT --config wrangler.jsonc
+          echo "$DB_USER" | npx wrangler secret put DB_USER --config wrangler.jsonc
+          echo "$DB_PASSWORD" | npx wrangler secret put DB_PASSWORD --config wrangler.jsonc
+          echo "$DB_NAME" | npx wrangler secret put DB_NAME --config wrangler.jsonc
         env:
-          # Runtime environment variables for the container
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           DESCOPE_PROJECT_ID: ${{ secrets.DESCOPE_PROJECT_ID }}
           DESCOPE_MANAGEMENT_KEY: ${{ secrets.DESCOPE_MANAGEMENT_KEY }}
           WCL_CLIENT_ID: ${{ secrets.WCL_CLIENT_ID }}
@@ -47,3 +53,11 @@ jobs:
           DB_USER: ${{ secrets.DB_USER }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           DB_NAME: ${{ secrets.DB_NAME }}
+
+      - name: Deploy to Cloudflare Containers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          workingDirectory: backend
+          command: deploy --config wrangler.jsonc
