@@ -1,24 +1,22 @@
-export interface Env {
-  KRANKENPREP_BACKEND: DurableObjectNamespace;
-}
+import { Container, getRandom } from "@cloudflare/containers";
 
-export class KrankenPrepBackend {
-  constructor(private state: DurableObjectState, private env: Env) {}
+const INSTANCE_COUNT = 3;
 
-  async fetch(request: Request): Promise<Response> {
-    // This class represents the container-backed Durable Object
-    // The actual logic runs in your Go container
-    return new Response("Container backend", { status: 200 });
-  }
+export class KrankenPrepBackend extends Container {
+  defaultPort = 8080; // pass requests to port 8080 in the container
+  sleepAfter = "2h"; // only sleep a container if it hasn't gotten requests in 2 hours
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
-    // Get the container instance
-    const id = env.KRANKENPREP_BACKEND.idFromName("backend-instance");
-    const stub = env.KRANKENPREP_BACKEND.get(id);
+  async fetch(request: any, env: any) {
+    const url = new URL(request.url);
+    if (url.pathname.startsWith("/")) {
+      // note: "getRandom" to be replaced with latency-aware routing in the near future
+      const containerInstance = await getRandom(env.KRANKENPREP_BACKEND, INSTANCE_COUNT);
+      await containerInstance.start();
+      return containerInstance.fetch(request);
+    }
 
-    // Forward the request to the container
-    return stub.fetch(request);
+    return env.ASSETS.fetch(request);
   },
 };
