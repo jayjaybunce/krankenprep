@@ -13,7 +13,21 @@ export default {
     if (url.pathname.startsWith("/")) {
       // note: "getRandom" to be replaced with latency-aware routing in the near future
       const containerInstance = await getRandom(env.KRANKENPREP_BACKEND, INSTANCE_COUNT);
-      await containerInstance.start();
+      await containerInstance.startAndWaitForPorts({
+        startOptions: {
+          envVars: {
+            DESCOPE_PROJECT_ID: env.DESCOPE_PROJECT_ID,
+            DESCOPE_MANAGEMENT_KEY: env.DESCOPE_MANAGEMENT_KEY,
+            WCL_CLIENT_ID: env.WCL_CLIENT_ID,
+            WCL_SECRET: env.WCL_SECRET,
+            DB_HOST: env.DB_HOST,
+            DB_PORT: env.DB_PORT,
+            DB_USER: env.DB_USER,
+            DB_PASSWORD: env.DB_PASSWORD,
+            DB_NAME: env.DB_NAME,
+          },
+        },
+      });
       return containerInstance.fetch(request);
     }
 
