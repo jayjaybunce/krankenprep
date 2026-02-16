@@ -1,11 +1,7 @@
 import type { Dispatch, FC, SetStateAction } from "react";
 import { useState } from "react";
 import { Modal } from "../Modal";
-import {
-  Save,
-  X as XIcon,
-  LoaderCircle,
-} from "lucide-react";
+import { Save, X as XIcon, LoaderCircle } from "lucide-react";
 import { useTheme } from "../../hooks";
 import { Dropdown, TextInput } from "../form";
 import type { DropdownOption } from "../form/Dropdown";
@@ -52,14 +48,8 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
   };
 
   // Api Hooks
-  const {
-    isLoading: isServerDataLoading,
-    data: serverData,
-  } = useServers();
-  const {
-    isLoading: isRegionDataLoading,
-    data: regionData,
-  } = useRegions();
+  const { isLoading: isServerDataLoading, data: serverData } = useServers();
+  const { isLoading: isRegionDataLoading, data: regionData } = useRegions();
 
   const { mutate, isPending } = useCreateTeam();
 
