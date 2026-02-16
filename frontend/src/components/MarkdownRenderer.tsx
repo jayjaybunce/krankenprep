@@ -1,6 +1,6 @@
 import type { FC } from "react";
-import { useState } from "react";
-import Markdown from "react-markdown";
+import { useEffect, useState } from "react";
+import Markdown, { defaultUrlTransform } from "react-markdown";
 import type { Components } from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { useTheme } from "../hooks";
@@ -10,14 +10,174 @@ import {
 } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Modal } from "./Modal";
 
+type MarkdownSize = "small" | "medium" | "large";
+type MarkdownColor = "cyan" | "emerald" | "amber" | "rose";
+
 interface MarkdownRendererProps {
   children: string;
   className?: string;
+  size?: MarkdownSize;
+  color?: MarkdownColor;
 }
+
+const sizeConfig = {
+  small: {
+    h1: "text-lg font-bold mb-1 mt-2",
+    h2: "text-base font-bold mb-1 mt-2",
+    h3: "text-sm font-semibold mb-1 mt-1.5",
+    h4: "text-sm font-semibold mb-0.5 mt-1",
+    h5: "text-xs font-semibold mb-0.5 mt-1",
+    h6: "text-xs font-semibold mb-0.5 mt-1",
+    p: "mb-1.5 leading-snug text-xs",
+    ul: "list-disc list-inside mb-1.5 space-y-0.5 text-xs",
+    ol: "list-decimal list-inside mb-1.5 space-y-0.5 text-xs",
+    li: "ml-2",
+    blockquote: "border-l-2 pl-2 py-0.5 mb-1.5 italic text-xs",
+    codeBlock: "mb-2",
+    codePadding: "0.5rem",
+    inlineCode: "px-1 py-0.5 rounded text-xs",
+    hr: "my-2",
+    table: "mb-2",
+    thTd: "px-2 py-1 text-xs",
+    strong: "text-xs",
+    em: "text-xs",
+    del: "text-xs",
+    img: "mb-2",
+    prose: "prose-xs",
+  },
+  medium: {
+    h1: "text-2xl font-bold mb-2 mt-4",
+    h2: "text-xl font-bold mb-2 mt-3",
+    h3: "text-lg font-semibold mb-1.5 mt-2.5",
+    h4: "text-base font-semibold mb-1 mt-2",
+    h5: "text-sm font-semibold mb-1 mt-2",
+    h6: "text-sm font-semibold mb-1 mt-1.5",
+    p: "mb-2 leading-normal text-sm",
+    ul: "list-disc list-inside mb-2 space-y-1 text-sm",
+    ol: "list-decimal list-inside mb-2 space-y-1 text-sm",
+    li: "ml-3",
+    blockquote: "border-l-3 pl-3 py-1 mb-2 italic text-sm",
+    codeBlock: "mb-3",
+    codePadding: "0.75rem",
+    inlineCode: "px-1.5 py-0.5 rounded-md text-xs",
+    hr: "my-4",
+    table: "mb-3",
+    thTd: "px-3 py-1.5 text-sm",
+    strong: "text-sm",
+    em: "text-sm",
+    del: "text-sm",
+    img: "mb-3",
+    prose: "prose-sm",
+  },
+  large: {
+    h1: "text-4xl font-bold mb-4 mt-6",
+    h2: "text-3xl font-bold mb-3 mt-5",
+    h3: "text-2xl font-semibold mb-3 mt-4",
+    h4: "text-xl font-semibold mb-2 mt-3",
+    h5: "text-lg font-semibold mb-2 mt-3",
+    h6: "text-base font-semibold mb-2 mt-2",
+    p: "mb-4 leading-relaxed",
+    ul: "list-disc list-inside mb-4 space-y-2",
+    ol: "list-decimal list-inside mb-4 space-y-2",
+    li: "ml-4",
+    blockquote: "border-l-4 pl-4 py-2 mb-4 italic",
+    codeBlock: "mb-4",
+    codePadding: "1rem",
+    inlineCode: "px-2 py-1 rounded-md font-mono text-sm",
+    hr: "my-6",
+    table: "mb-4",
+    thTd: "px-4 py-2",
+    strong: "",
+    em: "",
+    del: "",
+    img: "mb-4",
+    prose: "prose-sm",
+  },
+} as const;
+
+const colorConfig = {
+  cyan: {
+    h1Gradient: "from-cyan-400 to-blue-500",
+    h2: { dark: "text-cyan-300", light: "text-cyan-600" },
+    h3: { dark: "text-blue-300", light: "text-blue-600" },
+    strong: { dark: "text-cyan-300", light: "text-cyan-700" },
+    em: { dark: "text-blue-300", light: "text-blue-600" },
+    link: {
+      dark: "text-cyan-400 hover:text-cyan-300 decoration-cyan-500/50 hover:decoration-cyan-400",
+      light:
+        "text-cyan-600 hover:text-cyan-700 decoration-cyan-300 hover:decoration-cyan-500",
+    },
+    blockquoteBorder: { dark: "border-cyan-500", light: "border-cyan-400" },
+    inlineCode: { dark: "text-cyan-300", light: "text-cyan-700" },
+    imgHoverBorder: {
+      dark: "hover:border-cyan-500",
+      light: "hover:border-cyan-400",
+    },
+  },
+  emerald: {
+    h1Gradient: "from-emerald-400 to-teal-500",
+    h2: { dark: "text-emerald-300", light: "text-emerald-600" },
+    h3: { dark: "text-teal-300", light: "text-teal-600" },
+    strong: { dark: "text-emerald-300", light: "text-emerald-700" },
+    em: { dark: "text-teal-300", light: "text-teal-600" },
+    link: {
+      dark: "text-emerald-400 hover:text-emerald-300 decoration-emerald-500/50 hover:decoration-emerald-400",
+      light:
+        "text-emerald-600 hover:text-emerald-700 decoration-emerald-300 hover:decoration-emerald-500",
+    },
+    blockquoteBorder: {
+      dark: "border-emerald-500",
+      light: "border-emerald-400",
+    },
+    inlineCode: { dark: "text-emerald-300", light: "text-emerald-700" },
+    imgHoverBorder: {
+      dark: "hover:border-emerald-500",
+      light: "hover:border-emerald-400",
+    },
+  },
+  amber: {
+    h1Gradient: "from-amber-400 to-orange-500",
+    h2: { dark: "text-amber-300", light: "text-amber-600" },
+    h3: { dark: "text-orange-300", light: "text-orange-600" },
+    strong: { dark: "text-amber-300", light: "text-amber-700" },
+    em: { dark: "text-orange-300", light: "text-orange-600" },
+    link: {
+      dark: "text-amber-400 hover:text-amber-300 decoration-amber-500/50 hover:decoration-amber-400",
+      light:
+        "text-amber-600 hover:text-amber-700 decoration-amber-300 hover:decoration-amber-500",
+    },
+    blockquoteBorder: { dark: "border-amber-500", light: "border-amber-400" },
+    inlineCode: { dark: "text-amber-300", light: "text-amber-700" },
+    imgHoverBorder: {
+      dark: "hover:border-amber-500",
+      light: "hover:border-amber-400",
+    },
+  },
+  rose: {
+    h1Gradient: "from-rose-400 to-pink-500",
+    h2: { dark: "text-rose-300", light: "text-rose-600" },
+    h3: { dark: "text-pink-300", light: "text-pink-600" },
+    strong: { dark: "text-rose-300", light: "text-rose-700" },
+    em: { dark: "text-pink-300", light: "text-pink-600" },
+    link: {
+      dark: "text-rose-400 hover:text-rose-300 decoration-rose-500/50 hover:decoration-rose-400",
+      light:
+        "text-rose-600 hover:text-rose-700 decoration-rose-300 hover:decoration-rose-500",
+    },
+    blockquoteBorder: { dark: "border-rose-500", light: "border-rose-400" },
+    inlineCode: { dark: "text-rose-300", light: "text-rose-700" },
+    imgHoverBorder: {
+      dark: "hover:border-rose-500",
+      light: "hover:border-rose-400",
+    },
+  },
+} as const;
 
 export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
   children,
   className = "",
+  size = "medium",
+  color = "cyan",
 }) => {
   const { colorMode } = useTheme();
   const [selectedImage, setSelectedImage] = useState<{
@@ -25,13 +185,27 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     alt: string;
   } | null>(null);
 
+  const s = sizeConfig[size];
+  const c = colorConfig[color];
+  const isDark = colorMode === "dark";
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs after every render;
+  // the cleanup auto-debounces rapid re-renders (e.g. typing in preview)
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      const wh = (window as unknown as Record<string, { refreshLinks: () => void }>).$WowheadPower;
+      if (wh) wh.refreshLinks();
+    }, 100);
+    return () => clearTimeout(timeout);
+  });
+
   const components: Components = {
     // Headings
     h1: ({ children }) => (
       <h1
         className={`
-          text-4xl font-bold mb-4 mt-6 font-montserrat
-          bg-gradient-to-r from-cyan-400 to-blue-500 bg-clip-text text-transparent
+          ${s.h1} font-montserrat
+          bg-gradient-to-r ${c.h1Gradient} bg-clip-text text-transparent
         `}
       >
         {children}
@@ -40,8 +214,8 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     h2: ({ children }) => (
       <h2
         className={`
-          text-3xl font-bold mb-3 mt-5 font-montserrat
-          ${colorMode === "dark" ? "text-cyan-300" : "text-cyan-600"}
+          ${s.h2} font-montserrat
+          ${isDark ? c.h2.dark : c.h2.light}
         `}
       >
         {children}
@@ -50,8 +224,8 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     h3: ({ children }) => (
       <h3
         className={`
-          text-2xl font-semibold mb-3 mt-4 font-montserrat
-          ${colorMode === "dark" ? "text-blue-300" : "text-blue-600"}
+          ${s.h3} font-montserrat
+          ${isDark ? c.h3.dark : c.h3.light}
         `}
       >
         {children}
@@ -60,8 +234,8 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     h4: ({ children }) => (
       <h4
         className={`
-          text-xl font-semibold mb-2 mt-3 font-montserrat
-          ${colorMode === "dark" ? "text-slate-300" : "text-slate-700"}
+          ${s.h4} font-montserrat
+          ${isDark ? "text-slate-300" : "text-slate-700"}
         `}
       >
         {children}
@@ -70,8 +244,8 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     h5: ({ children }) => (
       <h5
         className={`
-          text-lg font-semibold mb-2 mt-3 font-montserrat
-          ${colorMode === "dark" ? "text-slate-400" : "text-slate-600"}
+          ${s.h5} font-montserrat
+          ${isDark ? "text-slate-400" : "text-slate-600"}
         `}
       >
         {children}
@@ -80,8 +254,8 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     h6: ({ children }) => (
       <h6
         className={`
-          text-base font-semibold mb-2 mt-2 font-montserrat
-          ${colorMode === "dark" ? "text-slate-500" : "text-slate-500"}
+          ${s.h6} font-montserrat
+          ${isDark ? "text-slate-500" : "text-slate-500"}
         `}
       >
         {children}
@@ -92,8 +266,8 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     p: ({ children }) => (
       <p
         className={`
-          mb-4 leading-relaxed
-          ${colorMode === "dark" ? "text-slate-300" : "text-slate-700"}
+          ${s.p}
+          ${isDark ? "text-slate-300" : "text-slate-700"}
         `}
       >
         {children}
@@ -104,8 +278,8 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     ul: ({ children }) => (
       <ul
         className={`
-          list-disc list-inside mb-4 space-y-2
-          ${colorMode === "dark" ? "text-slate-300" : "text-slate-700"}
+          ${s.ul}
+          ${isDark ? "text-slate-300" : "text-slate-700"}
         `}
       >
         {children}
@@ -114,44 +288,60 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     ol: ({ children }) => (
       <ol
         className={`
-          list-decimal list-inside mb-4 space-y-2
-          ${colorMode === "dark" ? "text-slate-300" : "text-slate-700"}
+          ${s.ol}
+          ${isDark ? "text-slate-300" : "text-slate-700"}
         `}
       >
         {children}
       </ol>
     ),
-    li: ({ children }) => <li className="ml-4">{children}</li>,
+    li: ({ children }) => <li className={s.li}>{children}</li>,
 
     // Links
-    a: ({ href, children }) => (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`
-          font-medium underline decoration-2 underline-offset-2
-          transition-all duration-200
-          ${
-            colorMode === "dark"
-              ? "text-cyan-400 hover:text-cyan-300 decoration-cyan-500/50 hover:decoration-cyan-400"
-              : "text-cyan-600 hover:text-cyan-700 decoration-cyan-300 hover:decoration-cyan-500"
-          }
-        `}
-      >
-        {children}
-      </a>
-    ),
+    a: ({ href, children }) => {
+      const spellMatch = href?.match(/^spell:(\d+)$/);
+      if (spellMatch) {
+        return (
+          <a
+            href={`https://www.wowhead.com/spell=${spellMatch[1]}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-wh-icon-size="small"
+            className={`
+              font-medium underline decoration-2 underline-offset-2
+              transition-all duration-200
+              ${isDark ? c.link.dark : c.link.light}
+            `}
+          >
+            {children}
+          </a>
+        );
+      }
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`
+            font-medium underline decoration-2 underline-offset-2
+            transition-all duration-200
+            ${isDark ? c.link.dark : c.link.light}
+          `}
+        >
+          {children}
+        </a>
+      );
+    },
 
     // Blockquote
     blockquote: ({ children }) => (
       <blockquote
         className={`
-          border-l-4 pl-4 py-2 mb-4 italic
+          ${s.blockquote}
           ${
-            colorMode === "dark"
-              ? "border-cyan-500 bg-slate-800/50 text-slate-300"
-              : "border-cyan-400 bg-slate-100 text-slate-600"
+            isDark
+              ? `${c.blockquoteBorder.dark} bg-slate-800/50 text-slate-300`
+              : `${c.blockquoteBorder.light} bg-slate-100 text-slate-600`
           }
         `}
       >
@@ -165,15 +355,15 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
       const language = match ? match[1] : "";
 
       return !inline && language ? (
-        <div className="mb-4 rounded-xl overflow-hidden">
+        <div className={`${s.codeBlock} rounded-xl overflow-hidden`}>
           <SyntaxHighlighter
-            style={colorMode === "dark" ? vscDarkPlus : vs}
+            style={isDark ? vscDarkPlus : vs}
             language={language}
             PreTag="div"
             customStyle={{
               margin: 0,
               borderRadius: "0.75rem",
-              padding: "1rem",
+              padding: s.codePadding,
             }}
             {...props}
           >
@@ -183,11 +373,11 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
       ) : (
         <code
           className={`
-            px-2 py-1 rounded-md font-mono text-sm
+            ${s.inlineCode} font-mono
             ${
-              colorMode === "dark"
-                ? "bg-slate-800 text-cyan-300 border border-slate-700"
-                : "bg-slate-200 text-cyan-700 border border-slate-300"
+              isDark
+                ? `bg-slate-800 ${c.inlineCode.dark} border border-slate-700`
+                : `bg-slate-200 ${c.inlineCode.light} border border-slate-300`
             }
           `}
           {...props}
@@ -201,19 +391,19 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     hr: () => (
       <hr
         className={`
-          my-6 border-0 h-px
-          ${colorMode === "dark" ? "bg-slate-700" : "bg-slate-300"}
+          ${s.hr} border-0 h-px
+          ${isDark ? "bg-slate-700" : "bg-slate-300"}
         `}
       />
     ),
 
     // Table
     table: ({ children }) => (
-      <div className="overflow-x-auto mb-4">
+      <div className={`overflow-x-auto ${s.table}`}>
         <table
           className={`
             min-w-full border-collapse
-            ${colorMode === "dark" ? "border-slate-700" : "border-slate-300"}
+            ${isDark ? "border-slate-700" : "border-slate-300"}
           `}
         >
           {children}
@@ -224,7 +414,7 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
       <thead
         className={`
           ${
-            colorMode === "dark"
+            isDark
               ? "bg-slate-800 text-slate-200"
               : "bg-slate-200 text-slate-800"
           }
@@ -238,20 +428,20 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
       <tr
         className={`
           border-b
-          ${colorMode === "dark" ? "border-slate-700" : "border-slate-300"}
+          ${isDark ? "border-slate-700" : "border-slate-300"}
         `}
       >
         {children}
       </tr>
     ),
     th: ({ children }) => (
-      <th className="px-4 py-2 text-left font-semibold">{children}</th>
+      <th className={`${s.thTd} text-left font-semibold`}>{children}</th>
     ),
     td: ({ children }) => (
       <td
         className={`
-          px-4 py-2
-          ${colorMode === "dark" ? "text-slate-300" : "text-slate-700"}
+          ${s.thTd}
+          ${isDark ? "text-slate-300" : "text-slate-700"}
         `}
       >
         {children}
@@ -262,8 +452,8 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     strong: ({ children }) => (
       <strong
         className={`
-          font-bold
-          ${colorMode === "dark" ? "text-cyan-300" : "text-cyan-700"}
+          font-bold ${s.strong}
+          ${isDark ? c.strong.dark : c.strong.light}
         `}
       >
         {children}
@@ -272,8 +462,8 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     em: ({ children }) => (
       <em
         className={`
-          italic
-          ${colorMode === "dark" ? "text-blue-300" : "text-blue-600"}
+          italic ${s.em}
+          ${isDark ? c.em.dark : c.em.light}
         `}
       >
         {children}
@@ -284,8 +474,8 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     del: ({ children }) => (
       <del
         className={`
-          line-through
-          ${colorMode === "dark" ? "text-slate-500" : "text-slate-400"}
+          line-through ${s.del}
+          ${isDark ? "text-slate-500" : "text-slate-400"}
         `}
       >
         {children}
@@ -299,12 +489,12 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
         alt={alt || ""}
         onClick={() => setSelectedImage({ src: src || "", alt: alt || "" })}
         className={`
-          max-w-full h-auto rounded-lg mb-4 cursor-pointer
+          max-w-full h-auto rounded-lg ${s.img} cursor-pointer
           transition-all duration-200 hover:scale-[1.02]
           ${
-            colorMode === "dark"
-              ? "border border-slate-700 hover:border-cyan-500"
-              : "border border-slate-300 hover:border-cyan-400"
+            isDark
+              ? `border border-slate-700 ${c.imgHoverBorder.dark}`
+              : `border border-slate-300 ${c.imgHoverBorder.light}`
           }
         `}
         role="button"
@@ -321,8 +511,15 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
 
   return (
     <>
-      <div className={`prose prose-sm max-w-none ${className}`}>
-        <Markdown components={components}>{children}</Markdown>
+      <div className={`prose ${s.prose} max-w-none ${className}`}>
+        <Markdown
+          components={components}
+          urlTransform={(url) =>
+            url.startsWith("spell:") ? url : defaultUrlTransform(url)
+          }
+        >
+          {children}
+        </Markdown>
       </div>
 
       {/* Image Modal */}
