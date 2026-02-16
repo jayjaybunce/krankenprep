@@ -229,7 +229,7 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
 
   return (
     <div
-      className="fixed inset-0 z-10 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
       onClick={handleOverlayClick}
     >
       {/* Backdrop */}
@@ -244,7 +244,7 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
 
       {/* Modal */}
       <div
-        className={`relative w-full ${sizeStyles[size]} max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 z-10 duration-300`}
+        className={`relative w-full ${sizeStyles[size]} max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 duration-300`}
       >
         {renderContent()}
       </div>

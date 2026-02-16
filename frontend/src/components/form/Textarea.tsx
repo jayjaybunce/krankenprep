@@ -1,4 +1,4 @@
-import type { FC, RefObject, TextareaHTMLAttributes } from "react";
+import type { FC, TextareaHTMLAttributes } from "react";
 import { useTheme } from "../../hooks";
 
 type TextareaVariant =
@@ -24,7 +24,6 @@ export type TextareaProps = Omit<
   helperText?: string;
   showCharCount?: boolean;
   maxLength?: number;
-  ref?: RefObject<HTMLTextAreaElement | null>;
 };
 
 export const Textarea: FC<TextareaProps> = ({
@@ -37,7 +36,6 @@ export const Textarea: FC<TextareaProps> = ({
   maxLength,
   className = "",
   disabled,
-  ref,
   value,
   ...props
 }) => {
@@ -110,7 +108,6 @@ export const Textarea: FC<TextareaProps> = ({
       <div className="flex-1 flex flex-col">
         <textarea
           {...props}
-          ref={ref}
           value={value}
           maxLength={maxLength}
           disabled={disabled}

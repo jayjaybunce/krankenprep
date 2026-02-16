@@ -6,9 +6,6 @@
 
   /* Shimmer animation for skeleton components */
   --animate-shimmer: shimmer 2s ease-in-out infinite;
-
-  /* Note highlight animation for deep-linked notes */
-  --animate-note-highlight: note-highlight 2s ease-out forwards;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
@@ -22,18 +19,6 @@
   }
 }
 
-@keyframes note-highlight {
-  0% {
-    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.6);
-  }
-  30% {
-    box-shadow: 0 0 20px 4px rgba(6, 182, 212, 0.4);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(6, 182, 212, 0);
-  }
-}
-
 body {
   background-color: oklch(14.5% 0 0);
   height: 100vh;
@@ -44,49 +29,3 @@ body {
   height: 100%;
   width: 100%;
 }
-
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
-}
-
-.unfuck-scrollbar-1::-webkit-scrollbar {
-  width: 7px;
-}
-
-.unfuck-scrollbar-1::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    to bottom,
-    #6366f1, /* indigo-500 */
-    #9333ea  /* purple-600 */
-  );
-  border-radius: 10rem;
-  border: 1px solid #fff;
-}
-
-.unfuck-scrollbar-1::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.unfuck-scrollbar-2::-webkit-scrollbar {
-  width: 7px;
-}
-
-.unfuck-scrollbar-2::-webkit-scrollbar-thumb {
-  background: linear-gradient(
-    to bottom,
-    #f97316, /* orange-500 */
-    #dc2626  /* red-600 */
-  );
-  border-radius: 10rem;
-  border: 1px solid #fff;
-}
-
-.unfuck-scrollbar-2::-webkit-scrollbar-track {
-  background: transparent;
-}
-

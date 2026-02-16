@@ -1,10 +1,9 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext } from "react";
 import { ThemeContext } from "./context/ThemeContext";
 import { useSession } from "@descope/react-sdk";
 import { useQuery } from "@tanstack/react-query";
 import { UserContext } from "./context/UserContext";
 import { TeamContext } from "./context/TeamContext";
-import { PrepPreferencesContext } from "./context/PrepPreferencesContext";
 import { manaforge, midnight, nerubarpalace, undermine } from "./data/raids";
 import type { User } from "./types/api/user";
   
@@ -13,8 +12,6 @@ export const useTheme = () => useContext(ThemeContext);
 export const useUser = () => useContext(UserContext)
 
 export const useTeam = () => useContext(TeamContext)
-
-export const usePrepPreferences = () => useContext(PrepPreferencesContext)
 
 export const useKpApi = (
   endpoint: string,
@@ -117,18 +114,3 @@ export const useRecentlyViewedPlans = (user: User | null | undefined): RecentPla
   return recentlyViewedPlans;
 };
 
-export const useDebounce = (value: string, delay: number) => {
-  const [debouncedValue, setDebouncedValue] = useState<string>(value)
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value)
-    },delay)
-    return () => {
-      clearTimeout(handler)
-    }
-    
-  },[value, delay])
-  return debouncedValue
-
-}
