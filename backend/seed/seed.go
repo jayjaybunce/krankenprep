@@ -32,7 +32,7 @@ func SeedServers(db *gorm.DB) error {
 
 func SeedExpansions(db *gorm.DB) error {
 	// Seed The War Within expansion data
-	expansion := MidnightData
+	expansion := TheWarWithinData
 
 	// Check if expansion exists, create if not
 	var dbExpansion models.Expansion
