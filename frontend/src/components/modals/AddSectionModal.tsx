@@ -1,10 +1,7 @@
 import type { Dispatch, FC, SetStateAction } from "react";
 import { useState } from "react";
 import { Modal } from "../Modal";
-import {
-  Save,
-  X as XIcon,
-} from "lucide-react";
+import { Save, X as XIcon } from "lucide-react";
 import { useTheme } from "../../hooks";
 import { Dropdown, Textarea, TextInput } from "../form";
 import { Card, type CardVariant } from "../Card";
@@ -157,12 +154,6 @@ export const AddSectionModal: FC<AddSectionModalProps> = ({
             label="Name Your Section"
             placeholder="...."
             onChange={(e) => handleFormChange("sectionName", e.target.value)}
-          />
-          <Textarea
-            label="Add a brief description"
-            value={formState.description}
-            placeholder="Add a desciption"
-            onChange={(e) => handleFormChange("description", e.target.value)}
           />
         </div>
 
