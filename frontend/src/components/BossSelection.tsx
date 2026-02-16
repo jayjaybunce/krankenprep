@@ -8,7 +8,6 @@ import {
 import { useCurrentExpansion } from "../api/queryHooks";
 import { preload } from "react-dom";
 import { type Boss, type Raid } from "../types/api/expansion";
-import { Dropdown } from "./form";
 import type { DropdownOption } from "./form/Dropdown";
 import { useTeam } from "../hooks";
 import { useNavigate } from "react-router-dom";
@@ -53,8 +52,7 @@ const BossButton: FC<BossButtonProps> = ({ boss: b, selected, setBoss }) => {
 };
 
 export const BossSelection: FC = () => {
-  const { boss, setBoss } = useTeam();
-  const [raid, setRaid] = useState<Raid | null>(() => {
+  const [raid] = useState<Raid | null>(() => {
     const stored = localStorage.getItem("kp_selected_expansion");
     return stored ? JSON.parse(stored) : null;
   });
@@ -87,18 +85,6 @@ export const BossSelection: FC = () => {
       s.raids?.forEach((r) => raidOptions.push({ value: r, label: r?.name }));
     });
   });
-
-  const temp = expData?.reduce((acc, cur) => {
-    if (!cur.is_current) return [];
-    // const x = [];
-    cur?.seasons?.forEach((s) => {
-      s.raids?.forEach((r) => {
-        acc.push(r.bosses);
-      });
-    });
-
-    return acc.flat();
-  }, []);
 
   useEffect(() => {
     localStorage.setItem("kp_selected_expansion", JSON.stringify(raid));

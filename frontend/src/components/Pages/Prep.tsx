@@ -7,7 +7,6 @@ import type { Boss } from "../../types/api/expansion";
 import { StaticHeroImage } from "../StaticHeroImage";
 import Button from "../Button";
 import {
-  Edit,
   Library,
   PlusIcon,
   FileText,
@@ -115,7 +114,6 @@ const BossDisplay: FC<BossProps> = ({
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showMarkdownGuide, setShowMarkdownGuide] = useState(false);
-  const [editMode, setEditMode] = useState(false);
   const [selectedSectionId, setSelectedSectionId] = useState<number | null>(
     null,
   );
@@ -134,7 +132,6 @@ const BossDisplay: FC<BossProps> = ({
   );
 
   const isUserAdmin = team?.name == "owner";
-  const handleSave = () => {};
 
   const { mutate: createSection } = useCreateSection(
     boss?.id?.toString(),
@@ -265,10 +262,9 @@ const BossDisplay: FC<BossProps> = ({
                     isActive={isSelected}
                     onClick={() => {
                       setSelectedSectionId(section.id);
-                      navigate(
-                        `/prep/${boss?.id}/section/${section.id}`,
-                        { replace: true },
-                      );
+                      navigate(`/prep/${boss?.id}/section/${section.id}`, {
+                        replace: true,
+                      });
                     }}
                   >
                     <div className="flex flex-col gap-2">
