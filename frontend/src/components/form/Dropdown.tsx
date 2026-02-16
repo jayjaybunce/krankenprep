@@ -2,11 +2,9 @@ import React, {
   useState,
   useRef,
   useEffect,
-  useCallback,
   type Dispatch,
   type SetStateAction,
 } from "react";
-import { createPortal } from "react-dom";
 import { ChevronDown, Check, X, Search } from "lucide-react";
 import { useTheme } from "../../hooks";
 
@@ -81,27 +79,14 @@ export const Dropdown = <T = string,>({
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 });
-
-  const updateMenuPosition = useCallback(() => {
-    if (dropdownRef.current) {
-      const rect = dropdownRef.current.getBoundingClientRect();
-      setMenuPosition({
-        top: rect.bottom + 8,
-        left: rect.left,
-        width: rect.width,
-      });
-    }
-  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-      const clickedInsideDropdown = dropdownRef.current?.contains(target);
-      const clickedInsideMenu = menuRef.current?.contains(target);
-      if (!clickedInsideDropdown && !clickedInsideMenu) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setIsOpen(false);
         setSearchQuery("");
       }
@@ -110,17 +95,6 @@ export const Dropdown = <T = string,>({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  useEffect(() => {
-    updateMenuPosition();
-    if (!isOpen) return;
-    window.addEventListener("resize", updateMenuPosition);
-    window.addEventListener("scroll", updateMenuPosition, true);
-    return () => {
-      window.removeEventListener("resize", updateMenuPosition);
-      window.removeEventListener("scroll", updateMenuPosition, true);
-    };
-  }, [isOpen, updateMenuPosition]);
 
   useEffect(() => {
     if (isOpen && searchable && searchInputRef.current) {
@@ -317,11 +291,7 @@ export const Dropdown = <T = string,>({
 
       <button
         type="button"
-        onClick={() => {
-          if (disabled) return;
-          if (!isOpen) updateMenuPosition();
-          setIsOpen(!isOpen);
-        }}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
         className={`
           w-full flex items-center justify-between gap-2
@@ -336,7 +306,7 @@ export const Dropdown = <T = string,>({
         <div className="flex-1 flex items-center gap-2 min-w-0">
           {selectedOptions.length > 0 ? (
             multiple ? (
-              <div className="flex flex-wrap gap-1 ">
+              <div className="flex flex-wrap gap-1.5">
                 {selectedOptions.map((opt, idx) => (
                   <span
                     key={getOptionKey ? getOptionKey(opt, idx) : idx}
@@ -398,22 +368,21 @@ export const Dropdown = <T = string,>({
         </div>
       </button>
 
-      {isOpen && createPortal(
+      {isOpen && (
         <div
-          ref={menuRef}
           className={`
-            fixed z-50
+            absolute z-50 w-full mt-2
             border rounded-xl
             overflow-hidden
             ${menuVariants[variant]}
             animate-in fade-in slide-in-from-top-2 duration-200
           `}
-          style={{ top: menuPosition.top, left: menuPosition.left, width: menuPosition.width, maxHeight }}
+          style={{ maxHeight }}
         >
           {searchable && (
             <div
               className={`
-              sticky top-0 z-20
+              sticky top-0 z-10
               border-b
               ${colorMode === "dark" ? "border-slate-800 bg-slate-900/95" : "border-slate-200 bg-white/95"}
             `}
@@ -447,7 +416,7 @@ export const Dropdown = <T = string,>({
           )}
 
           <div
-            className="overflow-y-auto z-20"
+            className="overflow-y-auto"
             style={{
               maxHeight: `calc(${maxHeight} - ${searchable ? "48px" : "0px"})`,
             }}
@@ -581,8 +550,7 @@ export const Dropdown = <T = string,>({
               );
             })}
           </div>
-        </div>,
-        document.body
+        </div>
       )}
 
       {(helperText || error) && (

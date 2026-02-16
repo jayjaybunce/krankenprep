@@ -86,9 +86,6 @@ func main() {
 		protected.GET("/teams/invite", handlers.GetInviteLink)
 		protected.DELETE("/teams/invite", handlers.RevokeInviteLink)
 
-		// Spell endpoints
-		protected.GET("/spells/search", handlers.SearchSpells)
-
 		// Raidplan protected endpoints
 		protected.GET("/me/raidplans", handlers.GetUserRaidplans)
 	}
