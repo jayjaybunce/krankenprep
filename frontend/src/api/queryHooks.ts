@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { useDebounce, useKpApi } from "../hooks"
+import { useKpApi } from "../hooks"
 import type { Region } from "../types/api/region"
 import type { Server } from "../types/api/server"
 import type { ExpansionResponse } from "../types/api/expansion"
@@ -263,27 +263,5 @@ export const useGetTeamById = (teamId: number) => {
         }).then((res) => res.json() as Promise<Team>)
     })
 }
-
-type IconSearchResult = {
-    spell_id: number,
-    spell_name: string,
-    filename: string
-}
-
-export const useSearchIcons = (query: string) => {
-    const {url, headers, enabled} = useKpApi(`/spells/search?q=${query}`)
-    const debouncedSearchTerm = useDebounce(query, 200)
-    return useQuery({
-        queryKey: ['spell_query', query],
-        enabled: enabled && !!debouncedSearchTerm,
-        // retry: 0,
-        queryFn: () => fetch(url, {
-                method: "GET",
-                headers,
-                }).then((res) => res.json() as Promise<IconSearchResult[]>)
-    })
-}
-
-
 
 

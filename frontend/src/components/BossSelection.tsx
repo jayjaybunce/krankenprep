@@ -11,7 +11,6 @@ import { type Boss, type Raid } from "../types/api/expansion";
 import { Dropdown } from "./form";
 import type { DropdownOption } from "./form/Dropdown";
 import { useTeam } from "../hooks";
-import { useNavigate } from "react-router-dom";
 
 type BossButtonProps = {
   selected: boolean;
@@ -20,18 +19,9 @@ type BossButtonProps = {
 };
 
 const BossButton: FC<BossButtonProps> = ({ boss: b, selected, setBoss }) => {
-  const navigate = useNavigate();
   return (
     <button
-      onClick={() => {
-        if (selected) {
-          setBoss(null);
-          navigate("/prep", { replace: true });
-        } else {
-          setBoss(b);
-          navigate(`/prep/${b.id}`, { replace: true });
-        }
-      }}
+      onClick={() => (selected ? setBoss(null) : setBoss(b))}
       className={`flex h-8 overflow-hidden rounded-lg bg-gradient-to-r
                                       ${selected ? "from-cyan-900/60 to-blue-900/60" : "from-slate-800/80 to-slate-700/80"}
                                       hover:from-cyan-900/60 hover:to-blue-900/60 border
@@ -88,26 +78,14 @@ export const BossSelection: FC = () => {
     });
   });
 
-  const temp = expData?.reduce((acc, cur) => {
-    if (!cur.is_current) return [];
-    // const x = [];
-    cur?.seasons?.forEach((s) => {
-      s.raids?.forEach((r) => {
-        acc.push(r.bosses);
-      });
-    });
-
-    return acc.flat();
-  }, []);
-
   useEffect(() => {
     localStorage.setItem("kp_selected_expansion", JSON.stringify(raid));
   }, [raid]);
 
   return (
     <div className="flex flex-row w-full gap-2 items-center sticky top-5 z-10">
-      {/* <div className="w-60"> */}
-      {/* <Dropdown<Raid>
+      <div className="w-60">
+        <Dropdown<Raid>
           size="sm"
           value={raid}
           onChange={(value) => {
@@ -130,64 +108,13 @@ export const BossSelection: FC = () => {
           valueComparator={(a, b) => a.id === b.id}
           getOptionKey={(option) => option.value.id}
           options={raidOptions}
-        /> */}
-      {/* </div> */}
-      <div className="flex flex-row gap-1.5">
-        {expData?.map((exp) => {
-          return exp?.seasons?.map((seasons) => {
-            return seasons?.raids?.map((raid, i) => {
-              return <RaidDisplay raid={raid} index={i} />;
-            });
-          });
-        })}
+        />
       </div>
-      {/* {temp?.map((b) => {
+      {raid?.bosses?.map((b) => {
         return (
           <BossButton boss={b} selected={b.id === boss?.id} setBoss={setBoss} />
         );
-      })} */}
-    </div>
-  );
-};
-
-const dividerStyles = [
-  "from-cyan-400/80 to-blue-500/60 shadow-[0_0_8px_rgba(34,211,238,0.4)]",
-  "from-purple-400/80 to-fuchsia-500/60 shadow-[0_0_8px_rgba(192,132,252,0.4)]",
-  "from-emerald-400/80 to-teal-500/60 shadow-[0_0_8px_rgba(52,211,153,0.4)]",
-  "from-rose-400/80 to-pink-500/60 shadow-[0_0_8px_rgba(251,113,133,0.4)]",
-];
-
-type RaidDisplayProps = {
-  raid: Raid;
-  index: number;
-};
-
-const RaidDisplay: FC<RaidDisplayProps> = ({ raid, index }) => {
-  const { setBoss, boss } = useTeam();
-  const dividerStyle = dividerStyles[index % dividerStyles.length];
-  const sortedBosses = raid?.bosses?.sort((a, b) =>
-    a?.order < b?.order ? -1 : 1,
-  );
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-row items-center gap-2">
-        <div className="font-montserrat font-bold text-2xl text-white flex-1">
-          <h3 className="w-max">{raid.name}</h3>
-        </div>
-        <div
-          className={`w-full h-px bg-gradient-to-r ${dividerStyle} backdrop-blur-sm rounded-full`}
-        />
-      </div>
-
-      <div className="flex flex-row gap-1.5">
-        {sortedBosses?.map((b) => (
-          <BossButton
-            boss={b}
-            setBoss={setBoss}
-            selected={b?.id === boss?.id}
-          />
-        ))}
-      </div>
+      })}
     </div>
   );
 };

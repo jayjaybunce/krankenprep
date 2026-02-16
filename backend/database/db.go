@@ -35,15 +35,9 @@ func Connect() {
 		&models.Raid{},
 		&models.RaidPlan{},
 		&models.InviteLink{},
-		&models.Spell{},
-		&models.FileData{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
-
-	// Enable pg_trgm and create trigram index for fuzzy spell search
-	db.Exec("CREATE EXTENSION IF NOT EXISTS pg_trgm")
-	db.Exec("CREATE INDEX IF NOT EXISTS idx_spell_name_trgm ON spells USING gin (spell_name gin_trgm_ops)")
 
 	DB = db
 	log.Println("Connected to Postgres and ran migrations")
