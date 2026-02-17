@@ -18,7 +18,7 @@ export const usePrepPreferences = () => useContext(PrepPreferencesContext)
 
 export const useKpApi = (
   endpoint: string,
-  params?: Record<string, any>,
+  params?: [string, string],
   domainOverride = ''
 ): { url: string; headers: Headers; enabled: boolean, apiUrl: string } => {
   const { sessionToken, isSessionLoading } = useSession();

@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Modal } from "../Modal";
 import { Save, X as XIcon } from "lucide-react";
 import { useTheme } from "../../hooks";
-import { Dropdown, Textarea, TextInput } from "../form";
+import { Dropdown, TextInput } from "../form";
 import { Card, type CardVariant } from "../Card";
 import Markdown from "react-markdown";
 import Badge from "../Badge";
@@ -42,7 +42,7 @@ export const AddSectionModal: FC<AddSectionModalProps> = ({
   const { colorMode } = useTheme();
   const [formState, setFormState] = useState<AddSectionForm>(defaultFormState);
 
-  const handleFormChange = (key: string, value: any) => {
+  const handleFormChange = (key: string, value: string) => {
     setFormState((prevState) => {
       return {
         ...prevState,
@@ -212,7 +212,10 @@ export const AddSectionModal: FC<AddSectionModalProps> = ({
             label="Variant"
             value={formState.variant}
             // disabled={formState.region == ""}
-            onChange={(e) => handleFormChange("variant", e)}
+            onChange={(e) => {
+              if (typeof e != "string") return;
+              handleFormChange("variant", e);
+            }}
             searchable
             options={cardVariants.map((v) => {
               return {

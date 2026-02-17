@@ -114,17 +114,14 @@ const BossDisplay: FC<BossProps> = ({
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showMarkdownGuide, setShowMarkdownGuide] = useState(false);
-  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(
-    null,
-  );
   const [highlightedNoteId, setHighlightedNoteId] = useState<number | null>(
     null,
   );
   const [selectedPlanId] = useState("");
 
-  const hasHydratedSection = useRef(false);
   const hasScrolledToNote = useRef(false);
-  const isHydrating = useRef(!!urlSectionId);
+
+  const selectedSectionId = urlSectionId ?? null;
 
   const { data: planData } = useGetRaidplanById(
     selectedPlanId,
@@ -150,27 +147,6 @@ const BossDisplay: FC<BossProps> = ({
 
   const sections = useMemo(() => data?.sections ?? [], [data?.sections]);
   const selectedSection = sections.find((s) => s.id === selectedSectionId);
-
-  // Reset section when boss changes (but skip during URL hydration)
-  useEffect(() => {
-    if (isHydrating.current) {
-      isHydrating.current = false;
-      return;
-    }
-    setSelectedSectionId(null);
-  }, [boss]);
-
-  // Hydrate section from URL once sections load
-  useEffect(() => {
-    if (hasHydratedSection.current) return;
-    if (urlSectionId == null || sections.length === 0) return;
-
-    const match = sections.find((s) => s.id === urlSectionId);
-    if (match) {
-      setSelectedSectionId(match.id);
-      hasHydratedSection.current = true;
-    }
-  }, [urlSectionId, sections]);
 
   // Scroll to and highlight a linked note
   useEffect(() => {
@@ -260,12 +236,11 @@ const BossDisplay: FC<BossProps> = ({
                     variant={section.variant}
                     hover={false}
                     isActive={isSelected}
-                    onClick={() => {
-                      setSelectedSectionId(section.id);
+                    onClick={() =>
                       navigate(`/prep/${boss?.id}/section/${section.id}`, {
                         replace: true,
-                      });
-                    }}
+                      })
+                    }
                   >
                     <div className="flex flex-col gap-2">
                       <div className="flex flex-row justify-between items-center">
@@ -621,9 +596,8 @@ const UnauthenticatedPrepView: FC = () => {
               <Descope
                 flowId="sign-up-or-in"
                 theme={colorMode}
-                onError={(err: any) => {
+                onError={(err) => {
                   console.log("Error!", err);
-                  alert("Error: " + err.detail.message);
                 }}
               />
             </div>
