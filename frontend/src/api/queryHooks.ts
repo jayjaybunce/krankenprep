@@ -33,7 +33,8 @@ export const useRegions = () => {
 }
 
 export const useServers = (region_filter?: string) => {
-    const { url, headers, enabled } = useKpApi('/servers', ["region", region_filter])
+    const filter = region_filter ?? ''
+    const { url, headers, enabled } = useKpApi('/servers', ["region", filter])
     return useQuery({
         queryKey: ["servers"],
         enabled,

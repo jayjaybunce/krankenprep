@@ -7,7 +7,6 @@ import { Textarea } from "../form";
 import { MarkdownRenderer } from "../MarkdownRenderer";
 import { getCaretCoordinates } from "../../utils/caretPosition";
 import SpellSearchAndSelection from "../SpellSearchAndSelection";
-import { useSearchIcons } from "../../api/queryHooks";
 
 export type AddNoteForm = {
   content: string;
@@ -43,7 +42,7 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
     y: 0,
   });
 
-  const handleFormChange = (key: string, value: any) => {
+  const handleFormChange = (key: string, value: string) => {
     setFormState((prevState) => {
       return {
         ...prevState,
