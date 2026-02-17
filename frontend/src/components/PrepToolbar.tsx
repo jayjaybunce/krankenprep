@@ -1,5 +1,4 @@
 import type { FC } from "react";
-import { LayoutGrid, Columns } from "lucide-react";
 import { usePrepPreferences } from "../hooks";
 import type {
   MarkdownSize,
@@ -29,10 +28,10 @@ export const PrepToolbar: FC = () => {
     setMarkdownSize,
     markdownColor,
     setMarkdownColor,
-    layoutOption1,
-    setLayoutOption1,
-    layoutOption2,
-    setLayoutOption2,
+    // layoutOption1,
+    // setLayoutOption1,
+    // layoutOption2,
+    // setLayoutOption2,
   } = usePrepPreferences();
 
   return (
