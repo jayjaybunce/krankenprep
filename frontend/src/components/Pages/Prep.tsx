@@ -3,7 +3,6 @@ import { PrepPreferencesProvider } from "../../context/PrepPreferencesProvider";
 import { PrepToolbar } from "../PrepToolbar";
 import { useEffect, useMemo, useRef, useState, type FC } from "react";
 import { useSession, Descope } from "@descope/react-sdk";
-import type { Boss } from "../../types/api/expansion";
 import { StaticHeroImage } from "../StaticHeroImage";
 import Button from "../Button";
 import {
@@ -36,17 +35,15 @@ import PlanViewer from "./PlanViewer";
 export const Prep: FC = () => {
   const { boss, setBoss } = useTeam();
   const { isAuthenticated, isSessionLoading } = useSession();
-  const { bossId, sectionId, noteId } = useParams<{
-    bossId?: string;
-    sectionId?: string;
-    noteId?: string;
-  }>();
+  const { "*": splat = "" } = useParams();
+  const [bossId, , sectionId, , noteId] = splat.split("/");
+  // "1/section/2/note/3" → ["1", "section", "2", "note", "3"]
   const navigate = useNavigate();
   const { data: expData } = useCurrentExpansion();
 
   // Hydrate boss from URL param
   useEffect(() => {
-    if (!bossId || !expData || boss?.id === Number(bossId)) return;
+    if (!bossId || !expData || boss) return;
 
     for (const exp of expData) {
       for (const season of exp.seasons ?? []) {
@@ -60,7 +57,7 @@ export const Prep: FC = () => {
         }
       }
     }
-  }, [bossId, expData, boss?.id, setBoss]);
+  }, [bossId, expData, boss, setBoss]);
 
   if (isSessionLoading) {
     return (
@@ -73,6 +70,7 @@ export const Prep: FC = () => {
   if (!isAuthenticated) {
     return <UnauthenticatedPrepView />;
   }
+  console.log("bossId", bossId);
 
   return (
     <PrepPreferencesProvider>
@@ -81,7 +79,6 @@ export const Prep: FC = () => {
           <BossSelection />
           {boss ? (
             <BossDisplay
-              {...boss}
               urlSectionId={sectionId ? Number(sectionId) : null}
               urlNoteId={noteId ? Number(noteId) : null}
               navigate={navigate}
@@ -96,20 +93,19 @@ export const Prep: FC = () => {
   );
 };
 
-type BossProps = Boss & {
+type BossProps = {
   urlSectionId: number | null;
   urlNoteId: number | null;
   navigate: ReturnType<typeof useNavigate>;
 };
 
 const BossDisplay: FC<BossProps> = ({
-  name,
-  splash_img_url,
   urlSectionId,
   urlNoteId,
   navigate,
 }) => {
   const { team, boss } = useTeam();
+  const { name, splash_img_url } = boss ?? {};
   const { markdownSize, markdownColor } = usePrepPreferences();
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
@@ -122,6 +118,7 @@ const BossDisplay: FC<BossProps> = ({
   const hasScrolledToNote = useRef(false);
 
   const selectedSectionId = urlSectionId ?? null;
+  console.log("selectedSectionId", selectedSectionId);
 
   const { data: planData } = useGetRaidplanById(
     selectedPlanId,
@@ -179,7 +176,7 @@ const BossDisplay: FC<BossProps> = ({
               </div>
             ) : (
               <StaticHeroImage
-                imageUrl={splash_img_url}
+                imageUrl={splash_img_url ?? ""}
                 className="w-full aspect-video rounded-lg"
                 title={
                   <h1 className="font-montserrat text-2xl font-bold dark:text-white text-black bg-blend-color-burn">
