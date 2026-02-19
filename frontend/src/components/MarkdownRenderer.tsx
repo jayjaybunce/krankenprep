@@ -1,14 +1,10 @@
 import type { FC } from "react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import Markdown, { defaultUrlTransform } from "react-markdown";
 import type { Components } from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { useTheme } from "../hooks";
-import {
-  vs,
-  vscDarkPlus,
-} from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Modal } from "./Modal";
+import { Link } from "react-router-dom";
 
 type MarkdownSize = "small" | "medium" | "large";
 type MarkdownColor = "cyan" | "emerald" | "amber" | "rose";
@@ -189,15 +185,17 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
   const c = colorConfig[color];
   const isDark = colorMode === "dark";
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally runs after every render;
-  // the cleanup auto-debounces rapid re-renders (e.g. typing in preview)
-  useEffect(() => {
-    const timeout = setTimeout(() => {
-      const wh = (window as unknown as Record<string, { refreshLinks: () => void }>).$WowheadPower;
-      if (wh) wh.refreshLinks();
-    }, 100);
-    return () => clearTimeout(timeout);
-  });
+  // Intentionally runs after every render; the cleanup auto-debounces rapid
+  // re-renders (e.g. typing in preview)
+  // useEffect(() => {
+  //   const timeout = setTimeout(() => {
+  //     const wh = (
+  //       window as unknown as Record<string, { refreshLinks: () => void }>
+  //     ).$WowheadPower;
+  //     if (wh) wh.refreshLinks();
+  //   }, 100);
+  //   return () => clearTimeout(timeout);
+  // });
 
   const components: Components = {
     // Headings
@@ -299,20 +297,59 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
 
     // Links
     a: ({ href, children }) => {
-      const spellMatch = href?.match(/^spell:(\d+)$/);
-      if (spellMatch) {
+      const match = href?.match(/spell:(\d+)\/name:([^|]+)/);
+
+      const isRaidplanLink = /\/raidplan\//.test(href ?? "");
+      if (isRaidplanLink) {
         return (
-          <a
-            href={`https://www.wowhead.com/spell=${spellMatch[1]}`}
-            target="_blank"
-            rel="noopener noreferrer"
-            data-wh-icon-size="small"
+          <Link
+            to={href ?? ""}
             className={`
+              inline-flex items-center gap-1
               font-medium underline decoration-2 underline-offset-2
               transition-all duration-200
               ${isDark ? c.link.dark : c.link.light}
             `}
           >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="inline shrink-0 w-3 h-3"
+            >
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <rect x="13" y="10" width="7" height="5" rx="1" />
+            </svg>
+            {children}
+          </Link>
+        );
+      }
+      if (match) {
+        const [, spellId, spellName] = match;
+        return (
+          <a
+            href={`https://www.wowhead.com/spell=${spellId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-wh-icon-size="small"
+            className={`
+              font-medium underline decoration-2 underline-offset-2
+              transition-all duration-200 inline-block w-auto
+              ${isDark ? c.link.dark : c.link.light}
+            `}
+          >
+            {spellName ? (
+              <img
+                src={`https://wow.zamimg.com/images/wow/icons/small/${spellName}.jpg`}
+                className="w-5 h-5 inline mr-1"
+              />
+            ) : (
+              <></>
+            )}
             {children}
           </a>
         );
@@ -350,42 +387,42 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     ),
 
     // Code blocks
-    code: ({ inline, className, children, ...props }: any) => {
-      const match = /language-(\w+)/.exec(className || "");
-      const language = match ? match[1] : "";
+    // code: ({ className, children, ...props }) => {
+    //   const match = /language-(\w+)/.exec(className || "");
+    //   const language = match ? match[1] : "";
 
-      return !inline && language ? (
-        <div className={`${s.codeBlock} rounded-xl overflow-hidden`}>
-          <SyntaxHighlighter
-            style={isDark ? vscDarkPlus : vs}
-            language={language}
-            PreTag="div"
-            customStyle={{
-              margin: 0,
-              borderRadius: "0.75rem",
-              padding: s.codePadding,
-            }}
-            {...props}
-          >
-            {String(children).replace(/\n$/, "")}
-          </SyntaxHighlighter>
-        </div>
-      ) : (
-        <code
-          className={`
-            ${s.inlineCode} font-mono
-            ${
-              isDark
-                ? `bg-slate-800 ${c.inlineCode.dark} border border-slate-700`
-                : `bg-slate-200 ${c.inlineCode.light} border border-slate-300`
-            }
-          `}
-          {...props}
-        >
-          {children}
-        </code>
-      );
-    },
+    //   return language ? (
+    //     <div className={`${s.codeBlock} rounded-xl overflow-hidden`}>
+    //       <SyntaxHighlighter
+    //         style={isDark ? vscDarkPlus : vs}
+    //         language={language}
+    //         PreTag="div"
+    //         customStyle={{
+    //           margin: 0,
+    //           borderRadius: "0.75rem",
+    //           padding: s.codePadding,
+    //         }}
+    //         {...props}
+    //       >
+    //         {String(children).replace(/\n$/, "")}
+    //       </SyntaxHighlighter>
+    //     </div>
+    //   ) : (
+    //     <code
+    //       className={`
+    //         ${s.inlineCode} font-mono
+    //         ${
+    //           isDark
+    //             ? `bg-slate-800 ${c.inlineCode.dark} border border-slate-700`
+    //             : `bg-slate-200 ${c.inlineCode.light} border border-slate-300`
+    //         }
+    //       `}
+    //       {...props}
+    //     >
+    //       {children}
+    //     </code>
+    //   );
+    // },
 
     // Horizontal rule
     hr: () => (

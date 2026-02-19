@@ -117,6 +117,19 @@ export const useRecentlyViewedPlans = (user: User | null | undefined): RecentPla
   return recentlyViewedPlans;
 };
 
+const BASE_TITLE = "Krankenprep";
+
+export const useDocumentTitle = (...segments: (string | undefined | null | false)[]) => {
+  useEffect(() => {
+    const parts = segments.filter(Boolean) as string[];
+    document.title = parts.length > 0
+      ? `KP - ${parts.join(" - ")}`
+      : BASE_TITLE;
+
+    return () => { document.title = BASE_TITLE; };
+  }, [segments.join("||")]);
+};
+
 export const useDebounce = (value: string, delay: number) => {
   const [debouncedValue, setDebouncedValue] = useState<string>(value)
 
