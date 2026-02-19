@@ -1,4 +1,9 @@
-import { useTeam, useTheme, usePrepPreferences } from "../../hooks";
+import {
+  useTeam,
+  useTheme,
+  usePrepPreferences,
+  useDocumentTitle,
+} from "../../hooks";
 import { PrepPreferencesProvider } from "../../context/PrepPreferencesProvider";
 import { PrepToolbar } from "../PrepToolbar";
 import { useEffect, useMemo, useRef, useState, type FC } from "react";
@@ -36,10 +41,13 @@ export const Prep: FC = () => {
   const { boss, setBoss } = useTeam();
   const { isAuthenticated, isSessionLoading } = useSession();
   const { "*": splat = "" } = useParams();
-  const [bossId, , sectionId, , noteId] = splat.split("/");
+  const [bossId, , sectionId, , raidplanId, , tabId] = splat.split("/");
+  const noteId = 1;
   // "1/section/2/note/3" → ["1", "section", "2", "note", "3"]
   const navigate = useNavigate();
   const { data: expData } = useCurrentExpansion();
+
+  useDocumentTitle("Prep", boss?.name);
 
   // Hydrate boss from URL param
   useEffect(() => {
@@ -79,6 +87,9 @@ export const Prep: FC = () => {
           <BossSelection />
           {boss ? (
             <BossDisplay
+              raidplanShareId={raidplanId}
+              tabId={tabId}
+              urlBossId={bossId}
               urlSectionId={sectionId ? Number(sectionId) : null}
               urlNoteId={noteId ? Number(noteId) : null}
               navigate={navigate}
@@ -97,12 +108,18 @@ type BossProps = {
   urlSectionId: number | null;
   urlNoteId: number | null;
   navigate: ReturnType<typeof useNavigate>;
+  raidplanShareId: string | null;
+  tabId: string | null;
+  urlBossId: string | null;
 };
 
 const BossDisplay: FC<BossProps> = ({
   urlSectionId,
   urlNoteId,
   navigate,
+  raidplanShareId,
+  tabId,
+  urlBossId,
 }) => {
   const { team, boss } = useTeam();
   const { name, splash_img_url } = boss ?? {};
@@ -113,7 +130,6 @@ const BossDisplay: FC<BossProps> = ({
   const [highlightedNoteId, setHighlightedNoteId] = useState<number | null>(
     null,
   );
-  const [selectedPlanId] = useState("");
 
   const hasScrolledToNote = useRef(false);
 
@@ -121,8 +137,8 @@ const BossDisplay: FC<BossProps> = ({
   console.log("selectedSectionId", selectedSectionId);
 
   const { data: planData } = useGetRaidplanById(
-    selectedPlanId,
-    !!selectedPlanId,
+    raidplanShareId ?? "",
+    !!raidplanShareId,
   );
 
   const isUserAdmin = team?.name == "owner";
@@ -172,7 +188,14 @@ const BossDisplay: FC<BossProps> = ({
           <div className="sticky top-0 z-10 pb-3">
             {planData ? (
               <div className="w-full">
-                <PlanViewer tabs={planData?.content} />
+                <PlanViewer
+                  viewUrl={`${planData?.sequence}/${planData?.share_id}`}
+                  onClose={() => {
+                    navigate(`/prep/${urlBossId}/section/${urlSectionId}`);
+                  }}
+                  tabs={planData?.content}
+                  startingId={tabId}
+                />
               </div>
             ) : (
               <StaticHeroImage
@@ -224,7 +247,7 @@ const BossDisplay: FC<BossProps> = ({
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-3 bg-red">
               {sections.map((section) => {
                 const isSelected = selectedSection?.id === section?.id;
                 return (
@@ -233,11 +256,12 @@ const BossDisplay: FC<BossProps> = ({
                     variant={section.variant}
                     hover={false}
                     isActive={isSelected}
-                    onClick={() =>
+                    onClick={() => {
+                      if (isSelected) return;
                       navigate(`/prep/${boss?.id}/section/${section.id}`, {
                         replace: true,
-                      })
-                    }
+                      });
+                    }}
                   >
                     <div className="flex flex-col gap-2">
                       <div className="flex flex-row justify-between items-center">

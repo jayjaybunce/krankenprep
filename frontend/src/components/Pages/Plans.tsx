@@ -1,4 +1,5 @@
 import { type FC, useState, useMemo } from "react";
+import { useDocumentTitle } from "../../hooks";
 import { useMyRaidplans } from "../../api/queryHooks";
 import { Link } from "react-router-dom";
 import { Card } from "../Card";
@@ -31,6 +32,7 @@ const raids = [
 ];
 
 const Plans: FC = () => {
+  useDocumentTitle("My Plans");
   const { data: raidPlans, isLoading } = useMyRaidplans();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;

@@ -1,10 +1,4 @@
-import {
-  useRef,
-  type FC,
-  type RefObject,
-  useState,
-  useEffect,
-} from "react";
+import { useRef, type FC, type RefObject, useState, useEffect } from "react";
 import { Stage as StageType } from "konva/lib/Stage";
 import { Layer, Stage, Rect, Group, Transformer } from "react-konva";
 import type { KonvaEventObject, NodeConfig, Node } from "konva/lib/Node";
@@ -73,8 +67,6 @@ export const PlanTab: FC<PlanTabProps> = ({
 
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
-  const canvasHeight = height ? height : 800;
-  const canvasWidth = width ? width : 1400;
 
   // Attach transformer to group when selection changes
   useEffect(() => {
@@ -127,7 +119,8 @@ export const PlanTab: FC<PlanTabProps> = ({
     const commonProps = {
       key: shape.id,
       // Don't allow individual selection when shape is in group or locked
-      onSelect: inGroup || shape.locked ? () => {} : () => setSelectedId(shape.id),
+      onSelect:
+        inGroup || shape.locked ? () => {} : () => setSelectedId(shape.id),
       onChange: handleChange,
       isSelected,
       shapeProps: modifiedShapeProps,
@@ -185,10 +178,11 @@ export const PlanTab: FC<PlanTabProps> = ({
       return;
     }
 
-    // Ignore clicks on transformer or group
+    // Ignore clicks on transformer, group, or shape labels
     if (
       e.target.getParent() === trRef.current ||
-      e.target.parent === groupRef.current
+      e.target.parent === groupRef.current ||
+      e.target.attrs.name === "shape-label"
     ) {
       return;
     }
@@ -297,8 +291,8 @@ export const PlanTab: FC<PlanTabProps> = ({
   return (
     <Stage
       ref={ref}
-      width={canvasWidth}
-      height={canvasHeight}
+      width={width}
+      height={height}
       className={`${isActive ? "block" : "hidden"}`}
       onClick={(e) => {
         // Don't process click if we just completed a drag selection
@@ -333,8 +327,8 @@ export const PlanTab: FC<PlanTabProps> = ({
               id: "background",
               x: 0,
               y: 0,
-              width: canvasWidth,
-              height: canvasHeight,
+              width: width,
+              height: height,
               type: "img",
               src: backgroundSrc,
               scaleX: 1,

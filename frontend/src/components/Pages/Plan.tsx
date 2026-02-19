@@ -1,10 +1,12 @@
 import { createRef, useEffect, useState, type FC } from "react";
 import Planner, { type Tab } from "../Planner/Planner";
+import { v4 as uuid } from "uuid";
 import { useLocation } from "react-router-dom";
 import {
   useRaidData,
   useUser,
   useRecentlyViewedPlans,
+  useDocumentTitle,
   type RecentPlans,
   type PlanShallow,
 } from "../../hooks";
@@ -18,6 +20,7 @@ const Plan: FC = () => {
   const { isLoading: isUserLoading, user } = useUser();
   const { id, status } = getIdFromPathname(location.pathname);
   const { data, isLoading, refetch } = useGetRaidplanById(id, id == "");
+  useDocumentTitle("Planner", raidData[0].raidName);
   const getMode = () => {
     if (!id) {
       return "create";
@@ -92,7 +95,7 @@ const Plan: FC = () => {
   const [tabs, setTabs] = useState<Tab[]>([
     {
       shapes: [],
-      id: "1",
+      id: uuid(),
       backgroundSrc: raidData[0].bosses[0].backgrounds[0].src,
       ref: createRef<StageType | null>(),
       boss: raidData[0].bosses[0].name,
@@ -109,13 +112,15 @@ const Plan: FC = () => {
 
   useEffect(() => {
     if (id && !isLoading && data) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTabs(data?.content);
     }
-  }, [data]);
+  }, [data, id, isLoading]);
 
   return (
     <Planner
       tabs={tabs}
+      name={data?.name}
       setTabs={setTabs}
       raidData={raidData}
       mode={getMode()}

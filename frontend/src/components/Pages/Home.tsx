@@ -2,7 +2,7 @@ import { type FC } from "react";
 import { useSession } from "@descope/react-sdk";
 import { Card } from "../Card";
 import Button from "../Button";
-import { useRecentlyViewedPlans, useTheme, useUser } from "../../hooks";
+import { useRecentlyViewedPlans, useTheme, useUser, useDocumentTitle } from "../../hooks";
 import {
   Calendar,
   BookOpen,
@@ -20,6 +20,7 @@ import { getRelativeTime } from "../../utils/timeUtils";
 
 const Home: FC = () => {
   const { isAuthenticated, isSessionLoading } = useSession();
+  useDocumentTitle("Home");
 
   if (isSessionLoading) {
     return (

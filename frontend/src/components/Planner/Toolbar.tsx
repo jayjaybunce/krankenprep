@@ -1,4 +1,11 @@
-import { CircleIcon, Square, TriangleIcon, TriangleRight, Save, Type } from "lucide-react";
+import {
+  CircleIcon,
+  Square,
+  TriangleIcon,
+  TriangleRight,
+  Save,
+  Type,
+} from "lucide-react";
 import type { Dispatch, FC, ReactNode, SetStateAction } from "react";
 
 type ToolbarProps = {
@@ -52,9 +59,7 @@ const shapes: ToolbarShape[] = [
     type: "right triangle",
   },
   {
-    toolbarEl: (
-      <Type height={24} width={24} stroke="white" />
-    ),
+    toolbarEl: <Type height={24} width={24} stroke="white" />,
     type: "text",
   },
 ];
@@ -247,7 +252,7 @@ export const Toolbar: FC<ToolbarProps> = ({
   const isPresetColor = colors.some((c) => c.value === drawingColor);
 
   return (
-    <div className="flex flex-col gap-2.5 p-2.5 bg-gradient-to-b from-slate-900 to-slate-800 rounded-lg shadow-xl border border-slate-700 w-44">
+    <div className="flex flex-col gap-2.5 p-2.5 bg-gradient-to-b from-slate-900 to-slate-800 rounded-lg shadow-xl border border-slate-700 w-30">
       {/* Save Button */}
       {onSave && (
         <div className="space-y-1">
