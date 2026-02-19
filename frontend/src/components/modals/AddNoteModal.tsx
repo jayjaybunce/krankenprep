@@ -56,7 +56,7 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
     spell_name: string,
     icon_name: string,
   ) => {
-    const spellMarkdown = `[${spell_name}](spell:${spell_id}|name:${icon_name})`;
+    const spellMarkdown = `[${spell_name}](spell:${spell_id}/name:${icon_name})`;
     const textarea = contentRef.current;
     if (textarea) {
       const start = textarea.selectionStart;
