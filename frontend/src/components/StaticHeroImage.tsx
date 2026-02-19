@@ -17,7 +17,7 @@ export const StaticHeroImage: FC<StaticHeroImageProps> = ({
 }) => {
   return (
     <div
-      className={`relative overflow-hidden ${className}`}
+      className={`relative overflow-hidden my-[28.2px] ${className}`}
       // style={{ height: 500 }}
     >
       <div
@@ -29,13 +29,7 @@ export const StaticHeroImage: FC<StaticHeroImageProps> = ({
       />
 
       {/* Subtle vignette overlay */}
-      <div
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(circle at 50% 50%, transparent 0%, rgba(0,0,0,0.1) 100%)",
-        }}
-      />
+      <div className="absolute inset-0 pointer-events-none" />
 
       {/* Title and subtitles */}
       {(title || subtitles.length > 0) && (
@@ -44,7 +38,8 @@ export const StaticHeroImage: FC<StaticHeroImageProps> = ({
             <div
               className="pointer-events-auto px-6 py-2 font-bold text-white tracking-wide"
               style={{
-                background: "linear-gradient(to bottom, #cc2020 0%, #8b0000 50%, #5c0000 100%)",
+                background:
+                  "linear-gradient(to bottom, #cc2020 0%, #8b0000 50%, #5c0000 100%)",
                 border: "3px solid #1a1a1a",
                 borderRadius: "4px",
                 boxShadow:
