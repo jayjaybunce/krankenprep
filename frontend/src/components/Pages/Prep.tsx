@@ -136,7 +136,7 @@ const BossDisplay: FC<BossProps> = ({
   const selectedSectionId = urlSectionId ?? null;
   console.log("selectedSectionId", selectedSectionId);
 
-  const { data: planData } = useGetRaidplanById(
+  const { data: planData, isLoading: isPlanLoading } = useGetRaidplanById(
     raidplanShareId ?? "",
     !!raidplanShareId,
   );
@@ -186,7 +186,22 @@ const BossDisplay: FC<BossProps> = ({
       <div className="w-1/2 flex flex-col h-full">
         <div className="flex-1 h-full">
           <div className="sticky top-0 z-10 pb-3">
-            {planData ? (
+            {raidplanShareId && isPlanLoading ? (
+              <Card variant="elevated" hover={false}>
+                <div className="flex flex-col gap-1">
+                  <div className="flex flex-row gap-2 items-center">
+                    {[0, 1, 2].map((i) => (
+                      <div
+                        key={i}
+                        className="h-8 w-10 rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse"
+                      />
+                    ))}
+                    <div className="h-8 w-10 rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                  </div>
+                  <div className="aspect-video w-full rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse" />
+                </div>
+              </Card>
+            ) : planData ? (
               <div className="w-full">
                 <PlanViewer
                   viewUrl={`${planData?.sequence}/${planData?.share_id}`}
@@ -200,7 +215,7 @@ const BossDisplay: FC<BossProps> = ({
             ) : (
               <StaticHeroImage
                 imageUrl={splash_img_url ?? ""}
-                className="w-full aspect-video rounded-lg"
+                className="aspect-video rounded-lg"
                 title={
                   <h1 className="font-montserrat text-2xl font-bold dark:text-white text-black bg-blend-color-burn">
                     {name}

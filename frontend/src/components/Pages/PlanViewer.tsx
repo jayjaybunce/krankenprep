@@ -62,7 +62,6 @@ const PlanViewer: FC<PlanViewerProps> = ({
     const updateScale = () => {
       if (containerRef.current) {
         const containerWidth = containerRef.current.offsetWidth - 32;
-        console.log("Here", containerWidth);
         const newScale = containerWidth / baseW;
         setScale(newScale);
       }
@@ -77,90 +76,84 @@ const PlanViewer: FC<PlanViewerProps> = ({
       cancelAnimationFrame(rafId);
     };
   }, [baseW]);
-  console.log(viewUrl);
 
   return (
     <div className="flex justify-center items-start w-full">
       <div className="w-full max-w-[95vw]" ref={containerRef}>
         <Card variant="elevated" hover={false}>
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            {/* Tabs Overlay - rendered after PlanTabs so it paints on top */}
+            <div className=" left-4 z-20 flex flex-row gap-2 items-center flex-wrap max-w-[calc(100%-2rem)]">
+              {tabs &&
+                tabs.map((tab, index) => (
+                  <div
+                    key={tab.id}
+                    className={`
+                            flex items-center gap-2 px-3 py-1 rounded-xl
+                            border transition-all duration-200 cursor-pointer
+                            backdrop-blur-md shadow-lg
+                            ${
+                              activeTab === index
+                                ? colorMode === "dark"
+                                  ? "bg-cyan-500/30 border-cyan-500 text-cyan-400 shadow-cyan-500/20"
+                                  : "bg-cyan-50/90 border-cyan-500 text-cyan-700"
+                                : colorMode === "dark"
+                                  ? "bg-slate-900/70 border-slate-800 text-slate-300 hover:bg-slate-900/90 hover:border-slate-700"
+                                  : "bg-white/70 border-slate-200 text-slate-700 hover:bg-white/90 hover:border-slate-300"
+                            }
+                          `}
+                    onClick={() => handleTabClick(index)}
+                  >
+                    <span className="text-xl font-medium">{index + 1}</span>
+                  </div>
+                ))}
+              <div
+                className={`
+                        flex items-center gap-2 px-4 py-2 rounded-xl
+                        border transition-all duration-200 cursor-pointer
+                        backdrop-blur-md shadow-lg
+                        ${
+                          colorMode === "dark"
+                            ? "bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30 shadow-red-500/20"
+                            : "bg-red-50/90 border-red-400 text-red-600 hover:bg-red-100/90"
+                        }
+                      `}
+                onClick={onClose}
+              >
+                <XIcon size={16} />
+              </div>
+              <a href={`${window.location.origin}${viewUrl}`} target="_blank">
+                <div
+                  className={`
+                          flex items-center gap-2 px-4 py-2 rounded-xl
+                          border transition-all duration-200 cursor-pointer
+                          backdrop-blur-md shadow-lg
+                          ${
+                            colorMode === "dark"
+                              ? "bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30 shadow-red-500/20"
+                              : "bg-red-50/90 border-red-400 text-red-600 hover:bg-red-100/90"
+                          }
+                        `}
+                >
+                  <ExternalLink size={16} />
+                </div>
+              </a>
+            </div>
             {/* Canvas Area - View Only */}
-            <div className="flex flex-row justify-center mt-2 w-full overflow-hidden">
+            <div className="flex flex-row justify-center w-full">
               <div
                 style={{
                   zoom: scale,
                 }}
               >
                 <div
-                  className="relative"
+                  className="relative z-10 mt-2"
                   // style={{
                   //   transformOrigin: "top left",
                   //   width: `${baseW}px`,
                   //   height: `${baseH}px`,
                   // }}
                 >
-                  {/* Tabs Overlay */}
-                  <div className="absolute top-4 left-4 z-10 flex flex-row gap-2 items-center flex-wrap max-w-[calc(100%-2rem)]">
-                    {tabs &&
-                      tabs.map((tab, index) => (
-                        <div
-                          key={tab.id}
-                          className={`
-                        flex items-center gap-2 px-4 py-2 rounded-xl
-                        border transition-all duration-200 cursor-pointer
-                        backdrop-blur-md shadow-lg
-                        ${
-                          activeTab === index
-                            ? colorMode === "dark"
-                              ? "bg-cyan-500/30 border-cyan-500 text-cyan-400 shadow-cyan-500/20"
-                              : "bg-cyan-50/90 border-cyan-500 text-cyan-700"
-                            : colorMode === "dark"
-                              ? "bg-slate-900/70 border-slate-800 text-slate-300 hover:bg-slate-900/90 hover:border-slate-700"
-                              : "bg-white/70 border-slate-200 text-slate-700 hover:bg-white/90 hover:border-slate-300"
-                        }
-                      `}
-                          onClick={() => handleTabClick(index)}
-                        >
-                          <span className="text-sm font-medium">
-                            {index + 1}
-                          </span>
-                        </div>
-                      ))}
-                    <div
-                      className={`
-                        flex items-center gap-2 px-4 py-2 rounded-xl
-                        border transition-all duration-200 cursor-pointer
-                        backdrop-blur-md shadow-lg
-                        ${
-                          colorMode === "dark"
-                            ? "bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30 shadow-red-500/20"
-                            : "bg-red-50/90 border-red-400 text-red-600 hover:bg-red-100/90"
-                        }
-                      `}
-                      onClick={onClose}
-                    >
-                      <XIcon size={16} />
-                    </div>
-                    <a
-                      href={`${window.location.origin}${viewUrl}`}
-                      target="_blank"
-                    >
-                      <div
-                        className={`
-                        flex items-center gap-2 px-4 py-2 rounded-xl
-                        border transition-all duration-200 cursor-pointer
-                        backdrop-blur-md shadow-lg
-                        ${
-                          colorMode === "dark"
-                            ? "bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30 shadow-red-500/20"
-                            : "bg-red-50/90 border-red-400 text-red-600 hover:bg-red-100/90"
-                        }
-                      `}
-                      >
-                        <ExternalLink size={16} />
-                      </div>
-                    </a>
-                  </div>
                   {tabs?.map((tab, i) => {
                     return (
                       <PlanTab
