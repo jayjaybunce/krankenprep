@@ -1,5 +1,5 @@
 import { useEffect, useRef, type FC } from "react";
-import { Image as KonvaImage, Transformer } from "react-konva";
+import { Image as KonvaImage, Transformer, Text as KonvaText } from "react-konva";
 import type { Shape } from "./Planner";
 import useImage from "use-image";
 import { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
@@ -22,6 +22,7 @@ export const Image: FC<ImageProps> = ({
 }) => {
   const trRef = useRef<TransformerType>(null);
   const shapeRef = useRef<Konva.Image>(null);
+  const textRef = useRef<Konva.Text>(null);
   const [image] = useImage(src, "anonymous");
 
   useEffect(() => {
@@ -30,8 +31,8 @@ export const Image: FC<ImageProps> = ({
     }
   }, [isSelected]);
 
-  // Remove src and type from props to avoid passing them to KonvaImage
-  const { src: _src, type: _type, ...restProps } = shapeProps;
+  // Remove src, type, text, and labelFontSize from props to avoid passing them to KonvaImage
+  const { src: _src, type: _type, text: _t, labelFontSize: _lf, ...restProps } = shapeProps;
   const imgProps = { ...restProps, fill: "" };
 
   return (
@@ -60,7 +61,14 @@ export const Image: FC<ImageProps> = ({
             rotation: node.rotation(),
             width: Math.max(5, node.width() * scaleX),
             height: Math.max(node.height() * scaleY),
+            labelFontSize: Math.max(8, (shapeProps.labelFontSize || 14) * Math.min(scaleX, scaleY)),
           });
+        }}
+        onDragMove={(e) => {
+          if (textRef.current) {
+            textRef.current.x(e.target.x());
+            textRef.current.y(e.target.y());
+          }
         }}
         onDragEnd={(e) => {
           onChange({
@@ -69,6 +77,25 @@ export const Image: FC<ImageProps> = ({
             y: e.target.y(),
           });
         }}
+      />
+      <KonvaText
+        ref={textRef}
+        x={shapeProps.x}
+        y={shapeProps.y}
+        offsetX={250 - (shapeProps.width || 40) / 2}
+        offsetY={(shapeProps.labelFontSize || 14) + 4}
+        width={500}
+        wrap="none"
+        rotation={shapeProps.rotation}
+        text={shapeProps.text || ""}
+        fontSize={shapeProps.labelFontSize || 14}
+        fill="white"
+        align="center"
+        fontStyle="bold"
+        name="shape-label"
+        visible={!!shapeProps.text}
+        onClick={(e) => { e.cancelBubble = true; }}
+        onTap={(e) => { e.cancelBubble = true; }}
       />
       {isSelected && !shapeProps.locked && <Transformer ref={trRef} flipEnabled={false} />}
     </>

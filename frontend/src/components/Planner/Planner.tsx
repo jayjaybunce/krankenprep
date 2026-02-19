@@ -10,6 +10,7 @@ import {
   type SetStateAction,
 } from "react";
 import { Square, Circle as CircleIcon, Plus } from "lucide-react";
+import { v4 as uuid } from "uuid";
 import { Stage as StageType } from "konva/lib/Stage";
 import type { KonvaEventObject } from "konva/lib/Node";
 import Konva from "konva";
@@ -46,6 +47,7 @@ export type Shape = {
   fontSize?: number; // For text elements
   fontFamily?: string; // For text elements
   locked?: boolean; // For locking shapes
+  labelFontSize?: number; // Font size for shape label, scales with shape transforms
 };
 
 export type Tab = {
@@ -66,9 +68,38 @@ type PlannerProps = {
   mode?: "edit" | "view" | "create";
   id?: number | undefined;
   minimode?: boolean;
+  name?: string;
 };
 
-const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
+const Planner: FC<PlannerProps> = ({
+  tabs,
+  setTabs,
+  raidData,
+  mode,
+  id,
+  name = "",
+}) => {
+  const maxWidth = 1800;
+  const canvasHeight = 720;
+  const canvasWidth = 1280;
+
+  const calculateScaleFactor = () => {
+    const sideBarWidth = 279;
+    const toolBarWidth = 120;
+    const propertiesWidth = 224;
+    const totalXAxisPadding = 40;
+    const extraPadding = 40;
+    const xAxisUnavailableWidth =
+      sideBarWidth +
+      toolBarWidth +
+      propertiesWidth +
+      totalXAxisPadding +
+      extraPadding;
+    const maxAvailableWidth = window.innerWidth - xAxisUnavailableWidth;
+    const finalWidth =
+      maxAvailableWidth > maxWidth ? maxWidth : maxAvailableWidth;
+    return finalWidth / canvasWidth;
+  };
   const navigate = useNavigate();
   const location = useLocation();
   const [dragEl, setDragEl] = useState<AllowedShapes | null>(null);
@@ -87,10 +118,11 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
     y: number;
     shapeId?: string;
   } | null>(null);
-  const [planName, setPlanName] = useState<string>("");
+  const [planName, setPlanName] = useState<string>(name);
   const [copiedShapes, setCopiedShapes] = useState<Shape[]>([]);
   const [drawingMode, setDrawingMode] = useState(false);
   const [drawingColor, setDrawingColor] = useState("white");
+  const [scaleFactor, setScaleFactor] = useState(calculateScaleFactor());
   const [drawingThickness, setDrawingThickness] = useState(2);
   const user = useUser();
 
@@ -121,6 +153,7 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
             navigate(location.pathname + `/${res.edit_id}`, {
               flushSync: true,
             });
+            setPlanName(res.name);
           },
         },
       );
@@ -165,7 +198,7 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
           type: dragEl,
           x: position?.x as number,
           y: position?.y as number,
-          id: Date.now().toString(),
+          id: uuid(),
           scaleX: 1,
           scaleY: 1,
           stroke: "white",
@@ -190,7 +223,7 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
           type: dragEl,
           x: position?.x as number,
           y: position?.y as number,
-          id: Date.now().toString(),
+          id: uuid(),
           scaleX: 1,
           scaleY: 1,
           stroke: "white",
@@ -214,7 +247,7 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
         type: dragEl,
         x: position?.x as number,
         y: position?.y as number,
-        id: Date.now().toString(),
+        id: uuid(),
         scaleX: 1,
         scaleY: 1,
         stroke: "white",
@@ -232,14 +265,10 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
   };
 
   const handleChange = (changes: Shape) => {
-    // Handles changes movement and transform of all single selected shapes and icons
-    console.log(changes);
-    console.log(tabs);
     const copyTabs = [...tabs];
-    const nonSelectedShapes = copyTabs[activeTab].shapes.filter(
-      (shape) => shape.id != selectedId,
+    copyTabs[activeTab].shapes = copyTabs[activeTab].shapes.map((shape) =>
+      shape.id === changes.id ? changes : shape,
     );
-    copyTabs[activeTab].shapes = [...nonSelectedShapes, changes];
     setTabs(copyTabs);
   };
 
@@ -321,7 +350,7 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
 
     const copyTabs = [...tabs];
     const shapeIndex = copyTabs[activeTab].shapes.findIndex(
-      (s) => s.id === contextMenu.shapeId
+      (s) => s.id === contextMenu.shapeId,
     );
 
     if (shapeIndex !== -1) {
@@ -341,7 +370,7 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
 
     const copyTabs = [...tabs];
     const shapeIndex = copyTabs[activeTab].shapes.findIndex(
-      (s) => s.id === contextMenu.shapeId
+      (s) => s.id === contextMenu.shapeId,
     );
 
     if (shapeIndex !== -1) {
@@ -371,7 +400,7 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
         type,
         x: contextMenu.x,
         y: contextMenu.y,
-        id: Date.now().toString(),
+        id: uuid(),
         scaleX: 1,
         scaleY: 1,
         strokeWidth: 0,
@@ -425,22 +454,22 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
 
   const handleAddTab = () => {
     const currentTab = tabs[activeTab];
-    const { raidIndex, bossIndex } = currentTab;
+    const copiedShapes: Shape[] = currentTab.shapes.map((shape) => {
+      return {
+        ...shape,
+        id: uuid(),
+      };
+    });
     const newTab: Tab = {
-      id: Date.now().toString(),
-      shapes: [],
-      backgroundSrc: raidData[raidIndex].bosses[bossIndex].backgrounds[0].src,
+      ...currentTab,
+      id: uuid(),
       ref: createRef<StageType>(),
-      raidIndex,
-      bossIndex,
-      backgroundIndex: 0,
-      boss: raidData[raidIndex].bosses[bossIndex].name,
+      shapes: copiedShapes,
     };
     const newTabs = tabs ? [...tabs, newTab] : [newTab];
     setTabs(newTabs);
     setActiveTab(newTabs.length - 1);
   };
-
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);
@@ -493,23 +522,30 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
       // Delete key handler
       if (e.key === "Delete") {
         if (selectedId || selectedIds.length > 0) {
-          setTabs((prevTabs: Tab[]) => {
-            const copyTabs = [...prevTabs];
-            const nonSelectedShapes = copyTabs[activeTab].shapes.filter(
-              (s: Shape) => s.id !== selectedId && !selectedIds.includes(s.id),
-            );
-            copyTabs[activeTab].shapes = nonSelectedShapes;
-            return copyTabs;
-          });
+          setTabs((prevTabs: Tab[]) =>
+            prevTabs.map((tab, i) =>
+              i === activeTab
+                ? {
+                    ...tab,
+                    shapes: tab.shapes.filter(
+                      (s: Shape) =>
+                        s.id !== selectedId && !selectedIds.includes(s.id),
+                    ),
+                  }
+                : tab,
+            ),
+          );
           setSelectedId(null);
           setSelectedIds([]);
         }
       }
 
       // Copy (Ctrl+C) handler
-      if ((e.ctrlKey || e.metaKey) && e.key === "c") {
-        const shapesToCopy = tabs[activeTab].shapes.filter(
-          (shape) => shape.id === selectedId || selectedIds.includes(shape.id),
+      if ((e.ctrlKey || e.metaKey) && e.key === "c" && !e.repeat) {
+        const selectedSet = new Set(selectedIds);
+        if (selectedId) selectedSet.add(selectedId);
+        const shapesToCopy = tabs[activeTab].shapes.filter((shape) =>
+          selectedSet.has(shape.id),
         );
         if (shapesToCopy.length > 0) {
           setCopiedShapes(shapesToCopy);
@@ -518,23 +554,49 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
       }
 
       // Paste (Ctrl+V) handler
-      if ((e.ctrlKey || e.metaKey) && e.key === "v") {
+      if ((e.ctrlKey || e.metaKey) && e.key === "v" && !e.repeat) {
         if (copiedShapes.length > 0) {
-          const newShapes = copiedShapes.map((shape) => ({
-            ...shape,
-            id: `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
-            x: shape.x + 20, // Offset by 20px so it's visible
-            y: shape.y + 20,
-          }));
+          const stage = tabs[activeTab].ref.current;
+          const pointerPos = stage?.getPointerPosition();
 
-          setTabs((prevTabs: Tab[]) => {
-            const copyTabs = [...prevTabs];
-            copyTabs[activeTab].shapes = [
-              ...copyTabs[activeTab].shapes,
-              ...newShapes,
-            ];
-            return copyTabs;
-          });
+          let newShapes: Shape[];
+
+          if (pointerPos) {
+            // Compute bounding box center of the copied shapes
+            const minX = Math.min(...copiedShapes.map((s) => s.x));
+            const minY = Math.min(...copiedShapes.map((s) => s.y));
+            const maxX = Math.max(...copiedShapes.map((s) => s.x));
+            const maxY = Math.max(...copiedShapes.map((s) => s.y));
+            const centerX = (minX + maxX) / 2;
+            const centerY = (minY + maxY) / 2;
+
+            // Offset so the center of the selection lands on the cursor
+            const offsetX = pointerPos.x - centerX;
+            const offsetY = pointerPos.y - centerY;
+
+            newShapes = copiedShapes.map((shape) => ({
+              ...shape,
+              id: uuid(),
+              x: shape.x + offsetX,
+              y: shape.y + offsetY,
+            }));
+          } else {
+            // Fallback if cursor is not over the canvas
+            newShapes = copiedShapes.map((shape) => ({
+              ...shape,
+              id: uuid(),
+              x: shape.x + 20,
+              y: shape.y + 20,
+            }));
+          }
+
+          setTabs((prevTabs: Tab[]) =>
+            prevTabs.map((tab, i) =>
+              i === activeTab
+                ? { ...tab, shapes: [...tab.shapes, ...newShapes] }
+                : tab,
+            ),
+          );
 
           // Select the newly pasted shapes
           if (newShapes.length === 1) {
@@ -604,14 +666,23 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
   );
 
   const handleAddLine = (line: Shape) => {
-    setTabs((prevTabs: Tab[]) => {
-      const copyTabs = [...prevTabs];
-      copyTabs[activeTab].shapes = [...copyTabs[activeTab].shapes, line];
-      return copyTabs;
-    });
+    setTabs((prevTabs: Tab[]) =>
+      prevTabs.map((tab, i) =>
+        i === activeTab ? { ...tab, shapes: [...tab.shapes, line] } : tab,
+      ),
+    );
   };
 
-  console.log(tabs);
+  useEffect(() => {
+    const listener = () => {
+      setScaleFactor(calculateScaleFactor());
+    };
+    window.addEventListener("resize", listener);
+
+    return () => {
+      window.removeEventListener("resize", listener);
+    };
+  }, []);
 
   return (
     <div className="flex justify-center items-start min-h-screen p-8">
@@ -701,7 +772,11 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
                 label="Select Map:"
                 options={backgroundOptions}
                 value={tabs[activeTab]?.backgroundIndex.toString() ?? "0"}
-                onChange={(value) => handleBackgroundChange(Array.isArray(value) ? Number(value[0]) : Number(value))}
+                onChange={(value) =>
+                  handleBackgroundChange(
+                    Array.isArray(value) ? Number(value[0]) : Number(value),
+                  )
+                }
                 placeholder="Choose a map..."
                 variant="default"
                 size="md"
@@ -785,6 +860,9 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
           )}
           <div
             className="relative"
+            style={{
+              zoom: scaleFactor,
+            }}
             onDragOver={(e) => e.preventDefault()}
             onDrop={handleToolbarShapeDrop}
           >
@@ -793,6 +871,8 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
                 <PlanTab
                   key={tab.id}
                   ref={tab.ref}
+                  height={canvasHeight}
+                  width={canvasWidth}
                   isActive={i === activeTab}
                   backgroundSrc={tab.backgroundSrc}
                   selectedId={selectedId}
@@ -824,7 +904,9 @@ const Planner: FC<PlannerProps> = ({ tabs, setTabs, raidData, mode, id }) => {
                   {contextMenu.shapeId ? (
                     // Show lock/unlock for shapes
                     <>
-                      {tabs[activeTab]?.shapes.find((s) => s.id === contextMenu.shapeId)?.locked ? (
+                      {tabs[activeTab]?.shapes.find(
+                        (s) => s.id === contextMenu.shapeId,
+                      )?.locked ? (
                         <button
                           className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2 text-gray-800"
                           onClick={handleUnlockShape}

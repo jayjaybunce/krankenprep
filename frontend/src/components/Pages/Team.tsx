@@ -1,6 +1,6 @@
 import { type FC, useState } from "react";
 import { useGetTeamById } from "../../api/queryHooks";
-import { useTeam, useTheme } from "../../hooks";
+import { useTeam, useTheme, useDocumentTitle } from "../../hooks";
 import {
   Users,
   Link as LinkIcon,
@@ -20,6 +20,7 @@ import { useNavigate } from "react-router-dom";
 const Team: FC = () => {
   const navigator = useNavigate();
   const { team } = useTeam();
+  useDocumentTitle("Team", team?.team?.name);
   const { colorMode } = useTheme();
   const [isInviteLinkModalOpen, setIsInviteLinkModalOpen] = useState(false);
 

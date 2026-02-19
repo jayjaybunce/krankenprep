@@ -1,15 +1,41 @@
-import { useState, type FC, useRef, useLayoutEffect } from "react";
+import {
+  useState,
+  type FC,
+  useRef,
+  useLayoutEffect,
+  useEffect,
+  useMemo,
+} from "react";
 import { Card } from "../Card";
 import { useTheme } from "../../hooks";
 import { PlanTab } from "../Planner/PlanTab";
 import type { Tab } from "../Planner/Planner";
+import { ExternalLink, XIcon } from "lucide-react";
 
 type PlanViewerProps = {
+  viewUrl: string;
   tabs: Tab[];
+  startingId?: string | null;
+  onClose: () => void;
 };
 
-const PlanViewer: FC<PlanViewerProps> = ({ tabs }) => {
-  const [activeTab, setActiveTab] = useState(0);
+const PlanViewer: FC<PlanViewerProps> = ({
+  tabs,
+  startingId,
+  onClose,
+  viewUrl,
+}) => {
+  const index = useMemo(() => {
+    if (startingId) {
+      const index = tabs.findIndex((x) => x.id === startingId);
+      if (index != -1) {
+        return index;
+      }
+      return 0;
+    }
+    return 0;
+  }, [tabs, startingId]);
+  const [activeTab, setActiveTab] = useState(index);
   const { colorMode } = useTheme();
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5); // Start with a reasonable default
@@ -18,14 +44,26 @@ const PlanViewer: FC<PlanViewerProps> = ({ tabs }) => {
     setActiveTab(index);
   };
 
-  const baseH = 800;
-  const baseW = 1400;
+  const baseH = 720;
+  const baseW = 1280;
+
+  useEffect(() => {
+    if (startingId) {
+      const index = tabs.findIndex((x) => x.id === startingId);
+      if (index != -1) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setActiveTab(index);
+      }
+      setActiveTab(index);
+    }
+  }, [tabs, startingId]);
 
   useLayoutEffect(() => {
     const updateScale = () => {
       if (containerRef.current) {
-        const containerWidth = containerRef.current.offsetWidth;
-        const newScale = Math.min(containerWidth / baseW, 1);
+        const containerWidth = containerRef.current.offsetWidth - 32;
+        console.log("Here", containerWidth);
+        const newScale = containerWidth / baseW;
         setScale(newScale);
       }
     };
@@ -39,6 +77,7 @@ const PlanViewer: FC<PlanViewerProps> = ({ tabs }) => {
       cancelAnimationFrame(rafId);
     };
   }, [baseW]);
+  console.log(viewUrl);
 
   return (
     <div className="flex justify-center items-start w-full">
@@ -49,18 +88,16 @@ const PlanViewer: FC<PlanViewerProps> = ({ tabs }) => {
             <div className="flex flex-row justify-center mt-2 w-full overflow-hidden">
               <div
                 style={{
-                  width: `${baseW * scale}px`,
-                  height: `${baseH * scale}px`,
+                  zoom: scale,
                 }}
               >
                 <div
                   className="relative"
-                  style={{
-                    transform: `scale(${scale})`,
-                    transformOrigin: "top left",
-                    width: `${baseW}px`,
-                    height: `${baseH}px`,
-                  }}
+                  // style={{
+                  //   transformOrigin: "top left",
+                  //   width: `${baseW}px`,
+                  //   height: `${baseH}px`,
+                  // }}
                 >
                   {/* Tabs Overlay */}
                   <div className="absolute top-4 left-4 z-10 flex flex-row gap-2 items-center flex-wrap max-w-[calc(100%-2rem)]">
@@ -89,6 +126,40 @@ const PlanViewer: FC<PlanViewerProps> = ({ tabs }) => {
                           </span>
                         </div>
                       ))}
+                    <div
+                      className={`
+                        flex items-center gap-2 px-4 py-2 rounded-xl
+                        border transition-all duration-200 cursor-pointer
+                        backdrop-blur-md shadow-lg
+                        ${
+                          colorMode === "dark"
+                            ? "bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30 shadow-red-500/20"
+                            : "bg-red-50/90 border-red-400 text-red-600 hover:bg-red-100/90"
+                        }
+                      `}
+                      onClick={onClose}
+                    >
+                      <XIcon size={16} />
+                    </div>
+                    <a
+                      href={`${window.location.origin}${viewUrl}`}
+                      target="_blank"
+                    >
+                      <div
+                        className={`
+                        flex items-center gap-2 px-4 py-2 rounded-xl
+                        border transition-all duration-200 cursor-pointer
+                        backdrop-blur-md shadow-lg
+                        ${
+                          colorMode === "dark"
+                            ? "bg-red-500/20 border-red-500 text-red-400 hover:bg-red-500/30 shadow-red-500/20"
+                            : "bg-red-50/90 border-red-400 text-red-600 hover:bg-red-100/90"
+                        }
+                      `}
+                      >
+                        <ExternalLink size={16} />
+                      </div>
+                    </a>
                   </div>
                   {tabs?.map((tab, i) => {
                     return (

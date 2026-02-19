@@ -51,8 +51,12 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
     });
   };
 
-  const handleSearchResultClick = (spell_id: number, spell_name: string) => {
-    const spellMarkdown = `[${spell_name}](spell:${spell_id})`;
+  const handleSearchResultClick = (
+    spell_id: number,
+    spell_name: string,
+    icon_name: string,
+  ) => {
+    const spellMarkdown = `[${spell_name}](spell:${spell_id}|name:${icon_name})`;
     const textarea = contentRef.current;
     if (textarea) {
       const start = textarea.selectionStart;
@@ -89,12 +93,6 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
       size="full"
       actions={
         <>
-          <a
-            href="https://www.wowhead.com/spell=1249265/umbral-collapse"
-            className="text-white"
-          >
-            Umbral Collapse
-          </a>
           <button
             onClick={() => onClose(false)}
             className={`
@@ -147,10 +145,21 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
             value={formState.content}
             placeholder="Add markdown or text"
             onChange={(e) => {
-              const thingSplit = e.target.value.split("$");
-              if (thingSplit.length === 2) {
-                setShowBox(true);
-                setIconQuery(thingSplit[1]);
+              const value = e.target.value;
+              const cursorPos = e.target.selectionStart;
+              // Look backwards from cursor for a `$` trigger
+              const textBeforeCursor = value.slice(0, cursorPos);
+              const dollarIndex = textBeforeCursor.lastIndexOf("$");
+              if (dollarIndex !== -1) {
+                const query = textBeforeCursor.slice(dollarIndex + 1);
+                // Only treat as active query if there's no space in it
+                if (!query.includes("\n")) {
+                  setShowBox(true);
+                  setIconQuery(query);
+                } else {
+                  setShowBox(false);
+                  setIconQuery("");
+                }
               } else {
                 setShowBox(false);
                 setIconQuery("");
