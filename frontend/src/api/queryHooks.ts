@@ -45,12 +45,37 @@ export const useServers = (region_filter?: string) => {
     })
 }
 
+export type Wishlist = {
+    id: number
+    wowaudit_id: number
+    name: string
+    description: string
+    fight_style: string
+    number_of_bosses: number
+    fight_duration: number 
+    sockets: boolean
+    pi: boolean
+    expert_mode: boolean
+    match_equipped_gear: boolean
+    upgrade_level: number 
+    upgrade_level_mythic: number 
+    upgrade_level_heroic: number
+    upgrade_level_normal: number 
+    upgrade_level_lfr: number 
+    upgrade_level_raid_finder: number 
+}
+
 export type Team = {
         id: number,
         name: string,
         server: string,
         region: string,
         rio_url: string,
+        wowaudit_integration: boolean,
+        wowaudit_data_synced_at: string,
+        wowaudit_url: string,
+        wowaudit_api_key: string,
+        wishlist_configs: Wishlist[] | null
         roles: MyRole[]
         invite_links: InviteLink[]
         phases: []

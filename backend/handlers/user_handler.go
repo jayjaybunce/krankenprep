@@ -44,7 +44,7 @@ func GetMyTeams(c *gin.Context) {
 	log.Printf("Found user with id: %v", user.ID)
 
 	roles := []models.Role{}
-	database.DB.Model(&models.Role{}).Where("user_id = ?", user.ID).Joins("Team").Find(&roles)
+	database.DB.Model(&models.Role{}).Where("user_id = ?", user.ID).Joins("Team").Preload("Team.WishlistConfigs").Find(&roles)
 	c.JSON(http.StatusOK, roles)
 
 	// c.JSON(http.StatusOK, "in /me/teams")

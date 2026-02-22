@@ -17,6 +17,7 @@ import { Descope, useSession } from "@descope/react-sdk";
 import { useEffect, useState } from "react";
 import { Dropdown } from "./form/Dropdown";
 import { CreateTeamModal } from "./modals/CreateTeamModal";
+import { WowAuditPopup } from "./WowAuditPopup";
 import {
   useCurrentExpansion,
   useMyTeams,
@@ -387,6 +388,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
         isOpen={isCreateTeamModalOpen}
         onClose={setIsCreateTeamModalOpen}
       />
+      {team && <WowAuditPopup />}
     </>
   );
 };

@@ -17,12 +17,14 @@ type PlanViewerProps = {
   tabs: Tab[];
   startingId?: string | null;
   onClose: () => void;
+  onTabChange?: (tabId: string) => void;
 };
 
 const PlanViewer: FC<PlanViewerProps> = ({
   tabs,
   startingId,
   onClose,
+  onTabChange,
   viewUrl,
 }) => {
   const index = useMemo(() => {
@@ -42,6 +44,9 @@ const PlanViewer: FC<PlanViewerProps> = ({
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);
+    if (tabs[index]) {
+      onTabChange?.(tabs[index].id);
+    }
   };
 
   const baseH = 720;
