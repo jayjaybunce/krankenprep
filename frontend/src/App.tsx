@@ -44,7 +44,7 @@ function App() {
                           element={<Prep />}
                         /> */}
                         <Route path="/invite" element={<RedeemInvite />} />
-                        <Route path="/team" element={<Team />} />
+                        <Route path="/team/*" element={<Team />} />
                       </Routes>
                     </Layout>
                   </Router>
