@@ -208,6 +208,12 @@ const BossDisplay: FC<BossProps> = ({
                   onClose={() => {
                     navigate(`/prep/${urlBossId}/section/${urlSectionId}`);
                   }}
+                  onTabChange={(newTabId) => {
+                    navigate(
+                      `/prep/${urlBossId}/section/${urlSectionId}/raidplan/${raidplanShareId}/tab/${newTabId}`,
+                      { replace: true },
+                    );
+                  }}
                   tabs={planData?.content}
                   startingId={tabId}
                 />

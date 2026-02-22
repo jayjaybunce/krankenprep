@@ -6,7 +6,10 @@ type CreateTeamPayload = {
     name: string,
     rio_url: string,
     server: string,
-    region: string
+    region: string,
+    wowaudit_integration: boolean,
+    wowaudit_url?: string,
+    wowaudit_api_key?: string,
 }
 
 type CreateSectionPayload = {
@@ -215,13 +218,28 @@ export const useRedeemInviteLink = () => {
     })
 }
 
+export const useSyncWowAuditWishlists = (teamId: number) => {
+    const { url, headers } = useKpApi(`/teams/${teamId}/wowaudit/sync`)
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationKey: ["syncWowAuditWishlists"],
+        mutationFn: () => fetch(url, {
+            method: "POST",
+            headers,
+        }).then(res => res.json()),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`]})
+            queryClient.invalidateQueries({ queryKey: ["my_teams"]})
+        }
+    })
+}
+
 export const useDeleteMemberFromTeam = (teamId: number) => {
     const { headers, apiUrl } = useKpApi(``)
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["deleteMemberFromTeam"],
-        // @ts-expect-error
-        // Working on implementation
+        // @ts-expect-error Working on implementation
         mutationFn: () => fetch(apiUrl + `/teams/${teamId}/member/${roleId}`, {
             method: "DELETE",
             headers
