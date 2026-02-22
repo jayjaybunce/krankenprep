@@ -121,9 +121,11 @@ export const BossSelection: FC = () => {
       <div className="flex flex-row gap-1.5">
         {expData?.map((exp) => {
           return exp?.seasons?.map((seasons) => {
-            return seasons?.raids?.map((raid, i) => {
-              return <RaidDisplay raid={raid} index={i} />;
-            });
+            return seasons?.raids
+              ?.sort((a, b) => (a.order > b.order ? 1 : -1))
+              .map((raid, i) => {
+                return <RaidDisplay raid={raid} index={i} />;
+              });
           });
         })}
       </div>
