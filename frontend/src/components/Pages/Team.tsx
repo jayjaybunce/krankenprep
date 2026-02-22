@@ -24,8 +24,9 @@ import {
   useRevokeInviteLink,
   useSyncWowAuditWishlists,
   useUpdateTeam,
+  useDeleteMemberFromTeam,
 } from "../../api/mutationHooks";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 const AVAILABLE_TRACK_UPGRAGES = 6;
 
@@ -118,6 +119,8 @@ const WishlistCard: FC<{ wishlist: Wishlist; colorMode: string }> = ({
 
 const Team: FC = () => {
   const navigator = useNavigate();
+  const { "*": tabSlug } = useParams();
+  const activeTab = tabSlug || "members";
   const { team } = useTeam();
   useDocumentTitle("Team", team?.team?.name);
   const { colorMode } = useTheme();
@@ -131,6 +134,10 @@ const Team: FC = () => {
   const { mutate: updateTeam, isPending: isUpdating } = useUpdateTeam(
     team?.team_id ?? -1,
   );
+  const { mutate: deleteMember } = useDeleteMemberFromTeam(
+    team?.team_id ?? -1,
+  );
+  const [deletingRoleId, setDeletingRoleId] = useState<number | null>(null);
 
   // WowAudit integration settings state
   const [wowAuditEnabled, setWowAuditEnabled] = useState(false);
@@ -276,7 +283,29 @@ const Team: FC = () => {
           </p>
         </div>
 
-        {/* WowAudit Integration */}
+        {/* Tab bar */}
+        <div
+          className={`flex gap-1 border-b ${colorMode === "dark" ? "border-slate-800" : "border-slate-200"}`}
+        >
+          {(["members", "settings"] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => navigator(`/team/${tab}`, { replace: true })}
+              className={`px-4 py-2 text-sm font-medium font-montserrat capitalize border-b-2 -mb-px transition-colors ${
+                activeTab === tab
+                  ? "border-cyan-500 text-cyan-500"
+                  : colorMode === "dark"
+                    ? "border-transparent text-slate-400 hover:text-slate-200"
+                    : "border-transparent text-slate-500 hover:text-slate-900"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        {/* Settings tab — WowAudit Integration */}
+        {activeTab === "settings" && (
         <div
           className={`rounded-xl border ${
             colorMode === "dark"
@@ -497,7 +526,9 @@ const Team: FC = () => {
             </div>
           </div>
         </div>
+        )}
 
+        {activeTab === "members" && (<>
         {/* Team Members */}
         <div
           className={`rounded-xl border ${
@@ -597,12 +628,32 @@ const Team: FC = () => {
                       >
                         {role.user?.name || "N/A"}
                       </td>
+                      <td className="px-6 py-4 text-right">
+                        {role.user_id !== team?.user_id && (
+                          <Button
+                            variant="danger"
+                            size="xs"
+                            disabled={deletingRoleId === role.id}
+                            onClick={() => {
+                              setDeletingRoleId(role.id);
+                              deleteMember(role.id, {
+                                onSettled: () => setDeletingRoleId(null),
+                              });
+                            }}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                            {deletingRoleId === role.id
+                              ? "Removing..."
+                              : "Remove"}
+                          </Button>
+                        )}
+                      </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
                     <td
-                      colSpan={3}
+                      colSpan={4}
                       className={`px-6 py-8 text-center text-sm ${
                         colorMode === "dark"
                           ? "text-slate-500"
@@ -828,6 +879,7 @@ const Team: FC = () => {
             </table>
           </div>
         </div>
+        </>)}
       </div>
 
       <CreateInviteLinkModal

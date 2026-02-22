@@ -258,16 +258,14 @@ export const useSyncWowAuditWishlists = (teamId: number) => {
 }
 
 export const useDeleteMemberFromTeam = (teamId: number) => {
-    const { headers, apiUrl } = useKpApi(``)
+    const { headers, url } = useKpApi(`/teams/${teamId}/member`)
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["deleteMemberFromTeam"],
-        // @ts-expect-error Working on implementation
-        mutationFn: () => fetch(apiUrl + `/teams/${teamId}/member/${roleId}`, {
+        mutationFn: (roleId: number) => fetch(`${url}/${roleId}`, {
             method: "DELETE",
             headers
-        })
-        .then((res) => res.json()),
+        }).then((res) => res.json()),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`]})
         }
