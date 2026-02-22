@@ -82,6 +82,63 @@ func CreateTeam(c *gin.Context) {
 	})
 }
 
+type UpdateTeamPayload struct {
+	WowAuditIntegration bool   `json:"wowaudit_integration"`
+	WowAuditUrl         string `json:"wowaudit_url"`
+	WowAuditApiKey      string `json:"wowaudit_api_key"`
+}
+
+func UpdateTeam(c *gin.Context) {
+	val, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context is broken"})
+		return
+	}
+	user, ok := val.(*models.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user type"})
+		return
+	}
+
+	teamIdParam := c.Param("teamId")
+	teamId, err := strconv.ParseUint(teamIdParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid team id"})
+		return
+	}
+
+	role := models.Role{}
+	if err := database.DB.Where("team_id = ? AND user_id = ? AND name IN ?", teamId, user.ID, []string{"owner", "admin"}).First(&role).Error; err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	var payload UpdateTeamPayload
+	if err := c.BindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	team := models.Team{}
+	if err := database.DB.First(&team, teamId).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "team not found"})
+		return
+	}
+
+	team.WowAuditIntegration = payload.WowAuditIntegration
+	team.WowAuditUrl = payload.WowAuditUrl
+	if payload.WowAuditApiKey != "" {
+		team.WowAuditApiKey = payload.WowAuditApiKey
+	}
+
+	if err := database.DB.Save(&team).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update team"})
+		return
+	}
+
+	c.JSON(http.StatusOK, team)
+}
+
 type TestWowAuditPayload struct {
 	ApiKey string `json:"api_key"`
 }
