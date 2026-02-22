@@ -1,6 +1,7 @@
-import { type FC, useState } from "react";
+import { type FC, useState, useEffect, useRef } from "react";
 import { useGetTeamById, type Wishlist } from "../../api/queryHooks";
-import { useTeam, useTheme, useDocumentTitle } from "../../hooks";
+import { useTeam, useTheme, useDocumentTitle, useKpApi } from "../../hooks";
+import { TextInput, Toggle } from "../form";
 import { formatDistanceToNow } from "date-fns";
 import {
   Users,
@@ -12,16 +13,23 @@ import {
   Trash2,
   RefreshCw,
   Zap,
+  FlaskConical,
+  CheckCircle,
+  LoaderCircle,
+  Save,
 } from "lucide-react";
 import Button from "../Button";
 import { CreateInviteLinkModal } from "../modals/CreateInviteLinkModal";
 import {
   useRevokeInviteLink,
   useSyncWowAuditWishlists,
+  useUpdateTeam,
 } from "../../api/mutationHooks";
 import { useNavigate } from "react-router-dom";
 
 const AVAILABLE_TRACK_UPGRAGES = 6;
+
+type WowAuditTestStatus = "idle" | "loading" | "success" | "error";
 
 const WishlistCard: FC<{ wishlist: Wishlist; colorMode: string }> = ({
   wishlist,
@@ -120,11 +128,93 @@ const Team: FC = () => {
     useRevokeInviteLink(team?.team_id ?? -1);
   const { mutate: syncWishlists, isPending: isSyncing } =
     useSyncWowAuditWishlists(team?.team_id ?? -1);
+  const { mutate: updateTeam, isPending: isUpdating } = useUpdateTeam(
+    team?.team_id ?? -1,
+  );
+
+  // WowAudit integration settings state
+  const [wowAuditEnabled, setWowAuditEnabled] = useState(false);
+  const [wowAuditGuildUrl, setWowAuditGuildUrl] = useState("");
+  const [wowAuditApiKey, setWowAuditApiKey] = useState("");
+  const [wowAuditTestStatus, setWowAuditTestStatus] =
+    useState<WowAuditTestStatus>("idle");
+  const initialized = useRef(false);
+  const { url: wowAuditTestUrl, headers: wowAuditTestHeaders } = useKpApi(
+    "/teams/wowaudit/test",
+  );
+
+  useEffect(() => {
+    if (data && !initialized.current) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setWowAuditEnabled(data.wowaudit_integration);
+      setWowAuditGuildUrl(data.wowaudit_url ?? "");
+      setWowAuditApiKey(data.wowaudit_api_key ?? "");
+      initialized.current = true;
+    }
+  }, [data]);
 
   const handleRevokeInvite = (tokenHash: string) => {
     if (!team?.team_id) return;
     revokeInviteLink(tokenHash);
   };
+
+  const isValidUrl = (value: string) => {
+    try {
+      const u = new URL(value);
+      return u.protocol !== "" && u.host !== "";
+    } catch {
+      return false;
+    }
+  };
+
+  const handleWowAuditTest = async () => {
+    setWowAuditTestStatus("loading");
+    try {
+      const res = await fetch(wowAuditTestUrl, {
+        method: "POST",
+        headers: wowAuditTestHeaders,
+        body: JSON.stringify({ api_key: wowAuditApiKey }),
+      });
+      if (!res.ok) {
+        setWowAuditTestStatus("error");
+        return;
+      }
+      const resData = await res.json();
+      const responseUrlBase = resData.url
+        ?.replace(/\/main$/, "")
+        .replace(/\/$/, "");
+      const enteredUrlBase = wowAuditGuildUrl
+        .replace(/\/main$/, "")
+        .replace(/\/$/, "");
+      if (responseUrlBase && responseUrlBase === enteredUrlBase) {
+        setWowAuditTestStatus("success");
+      } else {
+        setWowAuditTestStatus("error");
+      }
+    } catch {
+      setWowAuditTestStatus("error");
+    }
+  };
+
+  const handleUpdateTeam = () => {
+    updateTeam({
+      wowaudit_integration: wowAuditEnabled,
+      wowaudit_url: wowAuditGuildUrl,
+      wowaudit_api_key: wowAuditApiKey,
+    });
+  };
+
+  const credentialsUnchanged =
+    wowAuditGuildUrl === (data?.wowaudit_url ?? "") &&
+    wowAuditApiKey === (data?.wowaudit_api_key ?? "");
+  const wowAuditGuildUrlValid = isValidUrl(wowAuditGuildUrl);
+  const wowAuditBothFilled =
+    wowAuditGuildUrlValid && wowAuditApiKey.trim() !== "";
+  const canSaveWowAudit =
+    !wowAuditEnabled ||
+    (wowAuditBothFilled &&
+      (wowAuditTestStatus === "success" ||
+        (credentialsUnchanged && data?.wowaudit_integration)));
 
   const isUserAdmin = team?.name == "owner";
   if (!isUserAdmin) {
@@ -290,6 +380,121 @@ const Team: FC = () => {
                 ))}
               </div>
             )}
+          </div>
+
+          {/* WowAudit Settings */}
+          <div
+            className={`p-4 border-t flex flex-col gap-4 ${
+              colorMode === "dark" ? "border-slate-800" : "border-slate-200"
+            }`}
+          >
+            <h3
+              className={`text-sm font-semibold font-montserrat ${
+                colorMode === "dark" ? "text-slate-300" : "text-slate-700"
+              }`}
+            >
+              Integration Settings
+            </h3>
+            <Toggle
+              variant="default"
+              label="Enable WowAudit integration"
+              checked={wowAuditEnabled}
+              onChange={(e) => {
+                setWowAuditEnabled(e.target.checked);
+                setWowAuditTestStatus("idle");
+              }}
+            />
+            {wowAuditEnabled && (
+              <div className="flex flex-col gap-4">
+                <div className="flex flex-row gap-4">
+                  <TextInput
+                    value={wowAuditGuildUrl}
+                    variant="minimal"
+                    className="font-montserrat"
+                    label="WowAudit Guild URL"
+                    placeholder="https://wowaudit.com/us/area-52/your-guild"
+                    disabled={wowAuditTestStatus === "success"}
+                    onChange={(e) => {
+                      setWowAuditGuildUrl(e.target.value);
+                      setWowAuditTestStatus("idle");
+                    }}
+                  />
+                  <TextInput
+                    value={wowAuditApiKey}
+                    variant="minimal"
+                    className="font-montserrat"
+                    label="WowAudit API Key"
+                    placeholder="Your WowAudit API key"
+                    type="password"
+                    disabled={wowAuditTestStatus === "success"}
+                    onChange={(e) => {
+                      setWowAuditApiKey(e.target.value);
+                      setWowAuditTestStatus("idle");
+                    }}
+                  />
+                </div>
+                {wowAuditBothFilled && (
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={handleWowAuditTest}
+                      disabled={
+                        wowAuditTestStatus === "loading" ||
+                        wowAuditTestStatus === "success"
+                      }
+                      className={`
+                        flex items-center gap-2 px-4 py-2 rounded-xl font-medium font-montserrat text-sm
+                        transition-all duration-200
+                        disabled:opacity-50 disabled:cursor-not-allowed
+                        ${
+                          wowAuditTestStatus === "success"
+                            ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
+                            : wowAuditTestStatus === "error"
+                              ? "bg-rose-600 text-white hover:bg-rose-500"
+                              : colorMode === "dark"
+                                ? "bg-slate-700 text-slate-200 hover:bg-slate-600"
+                                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                        }
+                      `}
+                    >
+                      {wowAuditTestStatus === "loading" ? (
+                        <LoaderCircle className="w-4 h-4 animate-spin" />
+                      ) : wowAuditTestStatus === "success" ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : (
+                        <FlaskConical className="w-4 h-4" />
+                      )}
+                      {wowAuditTestStatus === "success"
+                        ? "Verified"
+                        : wowAuditTestStatus === "error"
+                          ? "Retry"
+                          : "Test"}
+                    </button>
+                    {wowAuditTestStatus === "error" && (
+                      <span
+                        className={`text-xs font-montserrat ${
+                          colorMode === "dark"
+                            ? "text-rose-400"
+                            : "text-rose-600"
+                        }`}
+                      >
+                        Could not verify — check the URL and API key.
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="flex justify-end">
+              <Button
+                variant="primary"
+                size="sm"
+                onClick={handleUpdateTeam}
+                disabled={!canSaveWowAudit || isUpdating}
+              >
+                <Save className="w-4 h-4" />
+                {isUpdating ? "Saving..." : "Save"}
+              </Button>
+            </div>
           </div>
         </div>
 

@@ -30,6 +30,29 @@ type CreateSectionPayload = {
 // 	Region string `json:"region"`
 // }
 
+type UpdateTeamPayload = {
+    wowaudit_integration: boolean,
+    wowaudit_url: string,
+    wowaudit_api_key: string,
+}
+
+export const useUpdateTeam = (teamId: number) => {
+    const { url, headers } = useKpApi(`/teams/${teamId}`)
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationKey: ["updateTeam"],
+        mutationFn: (payload: UpdateTeamPayload) => fetch(url, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify(payload)
+        }).then(res => res.json()),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`]})
+            queryClient.invalidateQueries({ queryKey: ["my_teams"]})
+        }
+    })
+}
+
 export const useCreateTeam = () => {
     const {url, headers} = useKpApi("/team")
     const queryClient = useQueryClient()

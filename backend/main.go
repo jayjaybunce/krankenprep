@@ -65,6 +65,7 @@ func main() {
 		protected.GET("/servers", handlers.GetServers)
 		protected.GET("/regions", handlers.GetRegions)
 		protected.POST("/team", handlers.CreateTeam)
+		protected.PUT("/teams/:teamId", handlers.UpdateTeam)
 		protected.POST("/teams/wowaudit/test", handlers.TestWowAuditIntegration)
 		protected.POST("/teams/:teamId/wowaudit/sync", handlers.SyncWowAuditWishlists)
 		protected.POST("/teams/:teamId/wowaudit/upload", handlers.UploadDroptimizer)
