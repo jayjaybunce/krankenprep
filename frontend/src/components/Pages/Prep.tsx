@@ -20,6 +20,8 @@ import {
   Target,
   ArrowRight,
   HelpCircle,
+  Pencil,
+  Trash2,
 } from "lucide-react";
 import { Card } from "../Card";
 import { AddSectionModal } from "../modals/AddSectionModal";
@@ -27,11 +29,19 @@ import Badge from "../Badge";
 import { AddNoteModal } from "../modals/AddNoteModal";
 import { MarkdownGuideModal } from "../modals/MarkdownGuideModal";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useCreateNote, useCreateSection } from "../../api/mutationHooks";
+import {
+  useCreateNote,
+  useCreateSection,
+  useDeleteNote,
+  useDeleteSection,
+  useUpdateNote,
+  useUpdateSection,
+} from "../../api/mutationHooks";
 import {
   useCurrentExpansion,
   useGetRaidplanById,
   useTeamAndBossSections,
+  type Section,
 } from "../../api/queryHooks";
 import { MarkdownRenderer } from "../MarkdownRenderer";
 import { BossSelection } from "../BossSelection";
@@ -127,14 +137,15 @@ const BossDisplay: FC<BossProps> = ({
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showMarkdownGuide, setShowMarkdownGuide] = useState(false);
-  const [highlightedNoteId, setHighlightedNoteId] = useState<number | null>(
-    null,
-  );
+  const [highlightedNoteId, setHighlightedNoteId] = useState<number | null>(null);
+  const [editingSection, setEditingSection] = useState<Section | null>(null);
+  const [editingNote, setEditingNote] = useState<{ id: number; content: string } | null>(null);
+  const [pendingDeleteSectionId, setPendingDeleteSectionId] = useState<number | null>(null);
+  const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<number | null>(null);
 
   const hasScrolledToNote = useRef(false);
 
   const selectedSectionId = urlSectionId ?? null;
-  console.log("selectedSectionId", selectedSectionId);
 
   const { data: planData, isLoading: isPlanLoading } = useGetRaidplanById(
     raidplanShareId ?? "",
@@ -147,10 +158,26 @@ const BossDisplay: FC<BossProps> = ({
     boss?.id?.toString(),
     team?.id?.toString(),
   );
+  const { mutate: updateSection } = useUpdateSection(
+    boss?.id?.toString(),
+    team?.team_id?.toString(),
+  );
+  const { mutate: deleteSection } = useDeleteSection(
+    boss?.id?.toString(),
+    team?.team_id?.toString(),
+  );
 
   const { mutate: createNote } = useCreateNote(
     boss?.id?.toString(),
     team?.id?.toString(),
+  );
+  const { mutate: updateNote } = useUpdateNote(
+    boss?.id?.toString(),
+    team?.team_id?.toString(),
+  );
+  const { mutate: deleteNote } = useDeleteNote(
+    boss?.id?.toString(),
+    team?.team_id?.toString(),
   );
 
   const { data } = useTeamAndBossSections(
@@ -289,19 +316,57 @@ const BossDisplay: FC<BossProps> = ({
                         <h2 className="font-montserrat text-xl font-bold text-black dark:text-white">
                           {section?.name || "Section Name"}
                         </h2>
-                        {section.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-2 mt-1">
-                            {section.tags.split("-$-").map((tag) => (
-                              <Badge
-                                key={tag}
-                                variant="primary"
-                                uppercase={false}
-                              >
-                                {tag}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {section.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {section.tags.split("-$-").map((tag) => (
+                                <Badge
+                                  key={tag}
+                                  variant="primary"
+                                  uppercase={false}
+                                >
+                                  {tag}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                          {isUserAdmin && (
+                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                              {pendingDeleteSectionId === section.id ? (
+                                <>
+                                  <span className="text-xs text-rose-400 font-medium font-montserrat mr-1">Delete?</span>
+                                  <button
+                                    onClick={() => { deleteSection(section.id); setPendingDeleteSectionId(null); }}
+                                    className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 transition-colors"
+                                  >
+                                    Yes
+                                  </button>
+                                  <button
+                                    onClick={() => setPendingDeleteSectionId(null)}
+                                    className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-slate-700/50 text-slate-400 hover:bg-slate-600/50 transition-colors"
+                                  >
+                                    No
+                                  </button>
+                                </>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => setEditingSection(section)}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-700/50 transition-colors"
+                                  >
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
+                                    onClick={() => setPendingDeleteSectionId(section.id)}
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-700/50 transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </Card>
@@ -396,6 +461,42 @@ const BossDisplay: FC<BossProps> = ({
                           })()}
                         </p>
                       </div>
+                      {isUserAdmin && (
+                        <div className="flex items-center gap-1 shrink-0">
+                          {pendingDeleteNoteId === note.id ? (
+                            <>
+                              <span className="text-xs text-rose-400 font-medium font-montserrat mr-1">Delete?</span>
+                              <button
+                                onClick={() => { deleteNote(note.id); setPendingDeleteNoteId(null); }}
+                                className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 transition-colors"
+                              >
+                                Yes
+                              </button>
+                              <button
+                                onClick={() => setPendingDeleteNoteId(null)}
+                                className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-slate-200/50 dark:bg-slate-700/50 text-slate-400 hover:bg-slate-300/50 dark:hover:bg-slate-600/50 transition-colors"
+                              >
+                                No
+                              </button>
+                            </>
+                          ) : (
+                            <>
+                              <button
+                                onClick={() => setEditingNote({ id: note.id, content: note.content })}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </button>
+                              <button
+                                onClick={() => setPendingDeleteNoteId(note.id)}
+                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </>
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     <div className="font-montserrat text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert max-w-none">
@@ -433,35 +534,59 @@ const BossDisplay: FC<BossProps> = ({
       </div>
 
       <AddSectionModal
-        isOpen={isAddingSection}
-        onClose={() => setIsAddingSection(false)}
+        isOpen={isAddingSection || editingSection !== null}
+        onClose={() => { setIsAddingSection(false); setEditingSection(null); }}
         title={`${boss?.name} for ${team?.team?.name}`}
+        initialValues={editingSection ? {
+          sectionName: editingSection.name,
+          variant: editingSection.variant,
+          tags: editingSection.tags.split("-$-").filter(Boolean),
+          description: editingSection.description,
+          tagInput: "",
+        } : undefined}
         onSave={(form) => {
-          const payload = {
-            boss_id: boss?.id as number,
-            team_id: team?.team_id as number,
-            description: form.description,
-            name: form.sectionName,
-            variant: Array.isArray(form.variant)
-              ? form.variant.join("-$-")
-              : form.variant,
-            tags: form.tags.join("-$-"),
-          };
-          createSection(payload);
-          setIsAddingSection(false);
+          const variant = Array.isArray(form.variant) ? form.variant.join("-$-") : form.variant;
+          const tags = form.tags.join("-$-");
+          if (editingSection) {
+            updateSection({
+              sectionId: editingSection.id,
+              name: form.sectionName,
+              description: form.description,
+              variant,
+              tags,
+            });
+            setEditingSection(null);
+          } else {
+            createSection({
+              boss_id: boss?.id as number,
+              team_id: team?.team_id as number,
+              description: form.description,
+              name: form.sectionName,
+              variant,
+              tags,
+            });
+            setIsAddingSection(false);
+          }
         }}
       />
 
       <AddNoteModal
-        isOpen={isAddingNote}
-        onClose={() => setIsAddingNote(false)}
+        isOpen={isAddingNote || editingNote !== null}
+        onClose={() => { setIsAddingNote(false); setEditingNote(null); }}
         title={`${selectedSection?.name}`}
+        initialValues={editingNote ? { content: editingNote.content } : undefined}
+        urlBossId={boss?.id?.toString()}
+        urlSectionId={selectedSection?.id?.toString()}
         onSave={(formState) => {
-          const payload = {
-            section_id: selectedSection?.id as number,
-            content: formState.content,
-          };
-          createNote(payload);
+          if (editingNote) {
+            updateNote({ noteId: editingNote.id, content: formState.content });
+            setEditingNote(null);
+          } else {
+            createNote({
+              section_id: selectedSection?.id as number,
+              content: formState.content,
+            });
+          }
         }}
       />
 

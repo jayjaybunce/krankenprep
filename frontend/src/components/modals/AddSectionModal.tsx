@@ -1,5 +1,5 @@
 import type { Dispatch, FC, SetStateAction } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Modal } from "../Modal";
 import { Save, X as XIcon } from "lucide-react";
 import { useTheme } from "../../hooks";
@@ -23,6 +23,7 @@ type AddSectionModalProps = {
   onClose: Dispatch<SetStateAction<boolean>>;
   title: string | null | undefined;
   onSave: (form: AddSectionForm) => void;
+  initialValues?: Partial<AddSectionForm>;
 };
 
 const defaultFormState: AddSectionForm = {
@@ -38,9 +39,17 @@ export const AddSectionModal: FC<AddSectionModalProps> = ({
   onClose,
   title,
   onSave,
+  initialValues,
 }) => {
   const { colorMode } = useTheme();
   const [formState, setFormState] = useState<AddSectionForm>(defaultFormState);
+
+  useEffect(() => {
+    if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFormState(initialValues ? { ...defaultFormState, ...initialValues } : defaultFormState);
+    }
+  }, [isOpen, initialValues]);
 
   const handleFormChange = (key: string, value: string) => {
     setFormState((prevState) => {
@@ -100,7 +109,7 @@ export const AddSectionModal: FC<AddSectionModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={() => onClose(false)}
-      title={`Add section to ${title}`}
+      title={initialValues ? `Edit section in ${title}` : `Add section to ${title}`}
       subtitle="Share resources with your teammates or anyone you want"
       variant="neon-gradient"
       size="xl"

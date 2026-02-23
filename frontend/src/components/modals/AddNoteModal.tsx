@@ -1,5 +1,5 @@
 import type { Dispatch, FC, SetStateAction } from "react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal } from "../Modal";
 import { Save, X as XIcon } from "lucide-react";
 import { useTheme } from "../../hooks";
@@ -7,6 +7,7 @@ import { Textarea } from "../form";
 import { MarkdownRenderer } from "../MarkdownRenderer";
 import { getCaretCoordinates } from "../../utils/caretPosition";
 import SpellSearchAndSelection from "../SpellSearchAndSelection";
+import RaidplanSearchAndSelection from "../RaidplanSearchAndSelection";
 
 export type AddNoteForm = {
   content: string;
@@ -17,6 +18,9 @@ type AddSectionModalProps = {
   onClose: Dispatch<SetStateAction<boolean>>;
   title: string | null | undefined;
   onSave: (form: AddNoteForm) => void;
+  initialValues?: Partial<AddNoteForm>;
+  urlBossId?: string;
+  urlSectionId?: string;
 };
 
 const defaultFormState: AddNoteForm = {
@@ -28,13 +32,37 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
   onClose,
   title,
   onSave,
+  initialValues,
+  urlBossId,
+  urlSectionId,
 }) => {
   const { colorMode } = useTheme();
   const [formState, setFormState] = useState<AddNoteForm>(defaultFormState);
+
+  useEffect(() => {
+    if (isOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setFormState(initialValues ? { ...defaultFormState, ...initialValues } : defaultFormState);
+    }
+  }, [isOpen, initialValues]);
+
   const contentRef = useRef<HTMLTextAreaElement>(null);
+
+  // ── Spell search state ──────────────────────────────────────────────────────
   const [showBox, setShowBox] = useState<boolean>(false);
   const [iconQuery, setIconQuery] = useState("");
   const [iconSearchState, setIconSearchState] = useState({
+    top: 0,
+    left: 0,
+    height: 0,
+    x: 0,
+    y: 0,
+  });
+
+  // ── Raidplan search state ───────────────────────────────────────────────────
+  const [showRaidplanBox, setShowRaidplanBox] = useState<boolean>(false);
+  const [raidplanQuery, setRaidplanQuery] = useState("");
+  const [raidplanSearchState, setRaidplanSearchState] = useState({
     top: 0,
     left: 0,
     height: 0,
@@ -62,14 +90,12 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
       const start = textarea.selectionStart;
       const end = textarea.selectionEnd;
       const text = formState.content;
-      // Find the `$query` that triggered the search and replace it
       const before = text.lastIndexOf("$", start);
       if (before !== -1) {
         const newContent =
           text.slice(0, before) + spellMarkdown + text.slice(end);
         handleFormChange("content", newContent);
       } else {
-        // Fallback: insert at cursor
         const newContent =
           text.slice(0, start) + spellMarkdown + text.slice(end);
         handleFormChange("content", newContent);
@@ -77,6 +103,45 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
     }
     setShowBox(false);
     setIconQuery("");
+  };
+
+  const handleRaidplanResultClick = (
+    shareId: string,
+    tabId: string | null,
+    planName: string,
+    tabIndex: number | null,
+  ) => {
+    const label =
+      tabIndex !== null ? `${planName} - Slide ${tabIndex + 1}` : planName;
+
+    let path: string;
+    if (urlBossId && urlSectionId) {
+      path = `/prep/${urlBossId}/section/${urlSectionId}/raidplan/${shareId}`;
+      if (tabId) path += `/tab/${tabId}`;
+    } else {
+      path = `/raidplan/${shareId}`;
+      if (tabId) path += `/tab/${tabId}`;
+    }
+
+    const raidplanMarkdown = `[${label}](${path})`;
+    const textarea = contentRef.current;
+    if (textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const text = formState.content;
+      const before = text.lastIndexOf("@", start);
+      if (before !== -1) {
+        const newContent =
+          text.slice(0, before) + raidplanMarkdown + text.slice(end);
+        handleFormChange("content", newContent);
+      } else {
+        const newContent =
+          text.slice(0, start) + raidplanMarkdown + text.slice(end);
+        handleFormChange("content", newContent);
+      }
+    }
+    setShowRaidplanBox(false);
+    setRaidplanQuery("");
   };
 
   const handleSave = () => {
@@ -87,7 +152,7 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={() => onClose(false)}
-      title={`Add note to ${title}`}
+      title={initialValues ? `Edit note in ${title}` : `Add note to ${title}`}
       subtitle="Share resources with your teammates or anyone you want"
       variant="neon-gradient"
       size="full"
@@ -115,7 +180,6 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
               handleSave();
               setFormState(defaultFormState);
             }}
-            // disabled={!acceptTerms || !teamName}
             className={`
               px-4 py-2 rounded-xl font-medium font-montserrat
               transition-all duration-200
@@ -126,7 +190,6 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
           >
             <div className="flex items-center gap-2">
               <Save className="w-4 h-4" />
-              {/* {isPending ? <LoaderCircle /> : "Create Team"} */}
             </div>
           </button>
         </>
@@ -147,25 +210,49 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
             onChange={(e) => {
               const value = e.target.value;
               const cursorPos = e.target.selectionStart;
-              // Look backwards from cursor for a `$` trigger
               const textBeforeCursor = value.slice(0, cursorPos);
+
               const dollarIndex = textBeforeCursor.lastIndexOf("$");
-              if (dollarIndex !== -1) {
+              const atIndex = textBeforeCursor.lastIndexOf("@");
+
+              const useSpell =
+                dollarIndex !== -1 &&
+                (atIndex === -1 || dollarIndex > atIndex);
+              const useRaidplan =
+                atIndex !== -1 &&
+                (dollarIndex === -1 || atIndex > dollarIndex);
+
+              if (useSpell) {
                 const query = textBeforeCursor.slice(dollarIndex + 1);
-                // Only treat as active query if there's no space in it
                 if (!query.includes("\n")) {
                   setShowBox(true);
                   setIconQuery(query);
+                  setShowRaidplanBox(false);
+                  setRaidplanQuery("");
                 } else {
                   setShowBox(false);
                   setIconQuery("");
                 }
+              } else if (useRaidplan) {
+                const query = textBeforeCursor.slice(atIndex + 1);
+                if (!query.includes("\n")) {
+                  setShowRaidplanBox(true);
+                  setRaidplanQuery(query);
+                  setShowBox(false);
+                  setIconQuery("");
+                } else {
+                  setShowRaidplanBox(false);
+                  setRaidplanQuery("");
+                }
               } else {
                 setShowBox(false);
                 setIconQuery("");
+                setShowRaidplanBox(false);
+                setRaidplanQuery("");
               }
 
-              handleFormChange("content", e.target.value);
+              handleFormChange("content", value);
+
               if (contentRef.current == null) return;
               const caret = getCaretCoordinates(
                 contentRef.current,
@@ -173,13 +260,22 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
               );
               const boundingRects = contentRef.current.getClientRects().item(0);
               if (boundingRects === null) return;
-              setIconSearchState({
+              const searchState = {
                 ...caret,
                 x: boundingRects.x,
                 y: boundingRects.y,
-              });
+              };
+              setIconSearchState(searchState);
+              setRaidplanSearchState(searchState);
             }}
           />
+          <p className="text-xs text-slate-500 font-montserrat">
+            Type{" "}
+            <span className="text-cyan-400 font-semibold">$</span> to insert a
+            spell ·{" "}
+            <span className="text-cyan-400 font-semibold">@</span> to link a
+            raid plan
+          </p>
         </div>
         <div className="flex flex-col w-full h-full">
           <label
@@ -206,11 +302,18 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
           </div>
         </div>
       </div>
+
       <SpellSearchAndSelection
         {...iconSearchState}
         onClick={handleSearchResultClick}
         show={showBox}
         query={iconQuery}
+      />
+      <RaidplanSearchAndSelection
+        {...raidplanSearchState}
+        show={showRaidplanBox}
+        query={raidplanQuery}
+        onClick={handleRaidplanResultClick}
       />
     </Modal>
   );

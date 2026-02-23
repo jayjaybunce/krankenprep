@@ -78,10 +78,14 @@ func main() {
 
 		// Section endpoints
 		protected.POST("/sections", handlers.CreateSection)
+		protected.PUT("/sections/:sectionId", handlers.UpdateSection)
+		protected.DELETE("/sections/:sectionId", handlers.DeleteSection)
 		protected.GET("/teams/:teamId/sections/boss/:bossId", handlers.GetSectionsByTeamAndBoss)
 
 		// Note endpoints
 		protected.POST("/notes", handlers.CreateNote)
+		protected.PUT("/notes/:noteId", handlers.UpdateNote)
+		protected.DELETE("/notes/:noteId", handlers.DeleteNote)
 		protected.GET("/notes/section/:sectionId", handlers.GetNotesBySection)
 
 		// InviteLink endpoints
