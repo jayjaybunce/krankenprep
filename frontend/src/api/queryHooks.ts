@@ -191,7 +191,7 @@ export const useTeamAndBossSections = (bossId: string | undefined, teamId: strin
     })
 }
 
-type RaidPlan = {
+export type RaidPlan = {
     id: number
     content: Tab[]
     name: string

@@ -228,6 +228,193 @@ func GetNotesBySection(c *gin.Context) {
 	})
 }
 
+type UpdateSectionPayload struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Variant     string `json:"variant"`
+	Tags        string `json:"tags"`
+}
+
+func UpdateSection(c *gin.Context) {
+	val, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context is broken"})
+		return
+	}
+	user, ok := val.(*models.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user type"})
+		return
+	}
+
+	sectionIDParam := c.Param("sectionId")
+	sectionID, err := strconv.ParseUint(sectionIDParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid section ID"})
+		return
+	}
+
+	var payload UpdateSectionPayload
+	if err := c.BindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	var section models.Section
+	if err := database.DB.First(&section, sectionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Section not found"})
+		return
+	}
+
+	var role models.Role
+	if err := database.DB.Where("user_id = ? AND team_id = ? AND name IN ?", user.ID, section.TeamID, []string{"owner", "admin"}).First(&role).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized to update this section"})
+		return
+	}
+
+	updates := map[string]any{
+		"name":        payload.Name,
+		"description": payload.Description,
+		"variant":     payload.Variant,
+		"tags":        payload.Tags,
+	}
+	if err := database.DB.Model(&section).Updates(updates).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update section"})
+		return
+	}
+
+	database.DB.Preload("Notes").First(&section, sectionID)
+	c.JSON(http.StatusOK, gin.H{"section": section})
+}
+
+func DeleteSection(c *gin.Context) {
+	val, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context is broken"})
+		return
+	}
+	user, ok := val.(*models.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user type"})
+		return
+	}
+
+	sectionIDParam := c.Param("sectionId")
+	sectionID, err := strconv.ParseUint(sectionIDParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid section ID"})
+		return
+	}
+
+	var section models.Section
+	if err := database.DB.First(&section, sectionID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Section not found"})
+		return
+	}
+
+	var role models.Role
+	if err := database.DB.Where("user_id = ? AND team_id = ? AND name IN ?", user.ID, section.TeamID, []string{"owner", "admin"}).First(&role).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized to delete this section"})
+		return
+	}
+
+	if err := database.DB.Delete(&section).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete section"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Section deleted successfully"})
+}
+
+type UpdateNotePayload struct {
+	Content string `json:"content"`
+}
+
+func UpdateNote(c *gin.Context) {
+	val, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context is broken"})
+		return
+	}
+	user, ok := val.(*models.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user type"})
+		return
+	}
+
+	noteIDParam := c.Param("noteId")
+	noteID, err := strconv.ParseUint(noteIDParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid note ID"})
+		return
+	}
+
+	var payload UpdateNotePayload
+	if err := c.BindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	var note models.Note
+	if err := database.DB.Preload("Section").First(&note, noteID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Note not found"})
+		return
+	}
+
+	var role models.Role
+	if err := database.DB.Where("user_id = ? AND team_id = ? AND name IN ?", user.ID, note.Section.TeamID, []string{"owner", "admin"}).First(&role).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized to update this note"})
+		return
+	}
+
+	if err := database.DB.Model(&note).Update("content", payload.Content).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update note"})
+		return
+	}
+
+	database.DB.First(&note, noteID)
+	c.JSON(http.StatusOK, gin.H{"note": note})
+}
+
+func DeleteNote(c *gin.Context) {
+	val, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context is broken"})
+		return
+	}
+	user, ok := val.(*models.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user type"})
+		return
+	}
+
+	noteIDParam := c.Param("noteId")
+	noteID, err := strconv.ParseUint(noteIDParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid note ID"})
+		return
+	}
+
+	var note models.Note
+	if err := database.DB.Preload("Section").First(&note, noteID).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Note not found"})
+		return
+	}
+
+	var role models.Role
+	if err := database.DB.Where("user_id = ? AND team_id = ? AND name IN ?", user.ID, note.Section.TeamID, []string{"owner", "admin"}).First(&role).Error; err != nil {
+		c.JSON(http.StatusForbidden, gin.H{"error": "Not authorized to delete this note"})
+		return
+	}
+
+	if err := database.DB.Delete(&note).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete note"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Note deleted successfully"})
+}
+
 type CreateRaidplanPayload struct {
 	Name     string         `json:"name"`
 	Content  datatypes.JSON `json:"content"`
