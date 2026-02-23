@@ -87,6 +87,37 @@ export const useCreateSection = (bossId: string | undefined, teamId: string | un
     })
 }
 
+type UpdateSectionPayload = {
+    name: string
+    description: string
+    variant: string
+    tags: string
+}
+
+export const useUpdateSection = (bossId: string | undefined, teamId: string | undefined) => {
+    const { url, headers } = useKpApi("/sections")
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ sectionId, ...payload }: { sectionId: number } & UpdateSectionPayload) =>
+            fetch(`${url}/${sectionId}`, { method: "PUT", headers, body: JSON.stringify(payload) }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`team_${teamId}_boss_${bossId}`] })
+        }
+    })
+}
+
+export const useDeleteSection = (bossId: string | undefined, teamId: string | undefined) => {
+    const { url, headers } = useKpApi("/sections")
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (sectionId: number) =>
+            fetch(`${url}/${sectionId}`, { method: "DELETE", headers }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`team_${teamId}_boss_${bossId}`] })
+        }
+    })
+}
+
 type CreateNotePayload = {
     section_id: number,
     content: string
@@ -104,6 +135,30 @@ export const useCreateNote = (bossId: string | undefined, teamId: string | undef
         }),
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_${teamId}_boss_${bossId}`]})
+        }
+    })
+}
+
+export const useUpdateNote = (bossId: string | undefined, teamId: string | undefined) => {
+    const { url, headers } = useKpApi("/notes")
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: ({ noteId, content }: { noteId: number; content: string }) =>
+            fetch(`${url}/${noteId}`, { method: "PUT", headers, body: JSON.stringify({ content }) }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`team_${teamId}_boss_${bossId}`] })
+        }
+    })
+}
+
+export const useDeleteNote = (bossId: string | undefined, teamId: string | undefined) => {
+    const { url, headers } = useKpApi("/notes")
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (noteId: number) =>
+            fetch(`${url}/${noteId}`, { method: "DELETE", headers }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`team_${teamId}_boss_${bossId}`] })
         }
     })
 }
