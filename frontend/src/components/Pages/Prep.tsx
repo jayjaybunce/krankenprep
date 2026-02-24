@@ -137,11 +137,20 @@ const BossDisplay: FC<BossProps> = ({
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showMarkdownGuide, setShowMarkdownGuide] = useState(false);
-  const [highlightedNoteId, setHighlightedNoteId] = useState<number | null>(null);
+  const [highlightedNoteId, setHighlightedNoteId] = useState<number | null>(
+    null,
+  );
   const [editingSection, setEditingSection] = useState<Section | null>(null);
-  const [editingNote, setEditingNote] = useState<{ id: number; content: string } | null>(null);
-  const [pendingDeleteSectionId, setPendingDeleteSectionId] = useState<number | null>(null);
-  const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<number | null>(null);
+  const [editingNote, setEditingNote] = useState<{
+    id: number;
+    content: string;
+  } | null>(null);
+  const [pendingDeleteSectionId, setPendingDeleteSectionId] = useState<
+    number | null
+  >(null);
+  const [pendingDeleteNoteId, setPendingDeleteNoteId] = useState<number | null>(
+    null,
+  );
 
   const hasScrolledToNote = useRef(false);
 
@@ -152,7 +161,7 @@ const BossDisplay: FC<BossProps> = ({
     !!raidplanShareId,
   );
 
-  const isUserAdmin = team?.name == "owner";
+  const isUserAdmin = ["owner", "admin"].includes(team?.name ?? "");
 
   const { mutate: createSection } = useCreateSection(
     boss?.id?.toString(),
@@ -331,18 +340,28 @@ const BossDisplay: FC<BossProps> = ({
                             </div>
                           )}
                           {isUserAdmin && (
-                            <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                            <div
+                              className="flex items-center gap-1"
+                              onClick={(e) => e.stopPropagation()}
+                            >
                               {pendingDeleteSectionId === section.id ? (
                                 <>
-                                  <span className="text-xs text-rose-400 font-medium font-montserrat mr-1">Delete?</span>
+                                  <span className="text-xs text-rose-400 font-medium font-montserrat mr-1">
+                                    Delete?
+                                  </span>
                                   <button
-                                    onClick={() => { deleteSection(section.id); setPendingDeleteSectionId(null); }}
+                                    onClick={() => {
+                                      deleteSection(section.id);
+                                      setPendingDeleteSectionId(null);
+                                    }}
                                     className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 transition-colors"
                                   >
                                     Yes
                                   </button>
                                   <button
-                                    onClick={() => setPendingDeleteSectionId(null)}
+                                    onClick={() =>
+                                      setPendingDeleteSectionId(null)
+                                    }
                                     className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-slate-700/50 text-slate-400 hover:bg-slate-600/50 transition-colors"
                                   >
                                     No
@@ -357,7 +376,9 @@ const BossDisplay: FC<BossProps> = ({
                                     <Pencil className="w-3.5 h-3.5" />
                                   </button>
                                   <button
-                                    onClick={() => setPendingDeleteSectionId(section.id)}
+                                    onClick={() =>
+                                      setPendingDeleteSectionId(section.id)
+                                    }
                                     className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-700/50 transition-colors"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
@@ -465,9 +486,14 @@ const BossDisplay: FC<BossProps> = ({
                         <div className="flex items-center gap-1 shrink-0">
                           {pendingDeleteNoteId === note.id ? (
                             <>
-                              <span className="text-xs text-rose-400 font-medium font-montserrat mr-1">Delete?</span>
+                              <span className="text-xs text-rose-400 font-medium font-montserrat mr-1">
+                                Delete?
+                              </span>
                               <button
-                                onClick={() => { deleteNote(note.id); setPendingDeleteNoteId(null); }}
+                                onClick={() => {
+                                  deleteNote(note.id);
+                                  setPendingDeleteNoteId(null);
+                                }}
                                 className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 transition-colors"
                               >
                                 Yes
@@ -482,7 +508,12 @@ const BossDisplay: FC<BossProps> = ({
                           ) : (
                             <>
                               <button
-                                onClick={() => setEditingNote({ id: note.id, content: note.content })}
+                                onClick={() =>
+                                  setEditingNote({
+                                    id: note.id,
+                                    content: note.content,
+                                  })
+                                }
                                 className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
                               >
                                 <Pencil className="w-3.5 h-3.5" />
@@ -535,17 +566,26 @@ const BossDisplay: FC<BossProps> = ({
 
       <AddSectionModal
         isOpen={isAddingSection || editingSection !== null}
-        onClose={() => { setIsAddingSection(false); setEditingSection(null); }}
+        onClose={() => {
+          setIsAddingSection(false);
+          setEditingSection(null);
+        }}
         title={`${boss?.name} for ${team?.team?.name}`}
-        initialValues={editingSection ? {
-          sectionName: editingSection.name,
-          variant: editingSection.variant,
-          tags: editingSection.tags.split("-$-").filter(Boolean),
-          description: editingSection.description,
-          tagInput: "",
-        } : undefined}
+        initialValues={
+          editingSection
+            ? {
+                sectionName: editingSection.name,
+                variant: editingSection.variant,
+                tags: editingSection.tags.split("-$-").filter(Boolean),
+                description: editingSection.description,
+                tagInput: "",
+              }
+            : undefined
+        }
         onSave={(form) => {
-          const variant = Array.isArray(form.variant) ? form.variant.join("-$-") : form.variant;
+          const variant = Array.isArray(form.variant)
+            ? form.variant.join("-$-")
+            : form.variant;
           const tags = form.tags.join("-$-");
           if (editingSection) {
             updateSection({
@@ -572,9 +612,14 @@ const BossDisplay: FC<BossProps> = ({
 
       <AddNoteModal
         isOpen={isAddingNote || editingNote !== null}
-        onClose={() => { setIsAddingNote(false); setEditingNote(null); }}
+        onClose={() => {
+          setIsAddingNote(false);
+          setEditingNote(null);
+        }}
         title={`${selectedSection?.name}`}
-        initialValues={editingNote ? { content: editingNote.content } : undefined}
+        initialValues={
+          editingNote ? { content: editingNote.content } : undefined
+        }
         urlBossId={boss?.id?.toString()}
         urlSectionId={selectedSection?.id?.toString()}
         onSave={(formState) => {
