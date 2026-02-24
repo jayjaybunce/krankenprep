@@ -84,7 +84,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
   const { user, isLoading } = useUser();
 
   const { team, setTeam } = useTeam();
-  const isUserAdmin = team?.name == "owner";
+  const isUserAdmin = ["owner", "admin"].includes(team?.name ?? "");
   const location = useLocation();
   const { data: myTeamsData, error: myTeamsError } = useMyTeams();
 
