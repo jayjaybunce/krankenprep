@@ -56,6 +56,7 @@ func main() {
 		public.POST("/raidplans", handlers.CreateRaidplan)
 		public.GET("/raidplans/:raidplanId", handlers.GetRaidplan)
 		public.PUT("/raidplans/:raidplanId", handlers.UpdateRaidplan)
+		public.GET("/teams/invite", handlers.GetInviteLink)
 	}
 
 	// Protected endpoints (auth required)
@@ -91,7 +92,6 @@ func main() {
 		// InviteLink endpoints
 		protected.POST("/teams/invite", handlers.CreateInviteLink)
 		protected.POST("/teams/invite/redeem", handlers.RedeemInviteLink)
-		protected.GET("/teams/invite", handlers.GetInviteLink)
 		protected.DELETE("/teams/invite", handlers.RevokeInviteLink)
 
 		// Spell endpoints

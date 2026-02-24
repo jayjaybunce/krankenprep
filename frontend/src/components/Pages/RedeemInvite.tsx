@@ -8,16 +8,16 @@ import Button from "../Button";
 import { Users, MapPin, AlertCircle, CheckCircle, Info } from "lucide-react";
 import { SkeletonCard } from "../Skeleton";
 import { TeamContext } from "../../context/TeamContext";
+import { useSession } from "@descope/react-sdk";
+import Login from "../Login";
 
 const RedeemInvite: FC = () => {
   const [searchParams] = useSearchParams();
+  const { isAuthenticated, isSessionLoading } = useSession();
   const navigate = useNavigate();
   const token = searchParams.get("token");
   const { data, isLoading, error } = useGetInviteLinkWithToken(token ?? "");
-  const {
-    mutate: redeemInvite,
-    isSuccess,
-  } = useRedeemInviteLink();
+  const { mutate: redeemInvite, isSuccess } = useRedeemInviteLink();
   const { setTeam } = useContext(TeamContext);
   const { data: myTeams, refetch: refetchMyTeams } = useMyTeams();
   const [joinedTeamId, setJoinedTeamId] = useState<number | null>(null);
@@ -44,7 +44,30 @@ const RedeemInvite: FC = () => {
     });
   };
 
-  console.log(data);
+  if (!isSessionLoading && !isAuthenticated) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center p-8">
+        <div className="max-w-md w-full space-y-6">
+          <div className="text-center space-y-2">
+            <h1 className="font-montserrat text-3xl font-black bg-linear-to-r from-cyan-400 via-blue-500 to-purple-600 bg-clip-text text-transparent">
+              You've Been Invited!
+            </h1>
+          </div>
+          <div className="flex flex-col gap-4">
+            <div className="text-center space-y-1">
+              <h2 className="font-montserrat text-lg font-bold dark:text-white text-black">
+                Sign up or sign in to join the team
+              </h2>
+            </div>
+            <Login
+              redirectUrl={`${window.location.origin}/invite?token=${token}`}
+            />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Loading state
   if (isLoading) {
     return (

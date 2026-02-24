@@ -1,6 +1,11 @@
 import { Descope, useSession } from "@descope/react-sdk";
+import type { FC } from "react";
 
-export default function Login() {
+type LoginProps = {
+  redirectUrl?: string;
+};
+
+export const Login: FC<LoginProps> = ({ redirectUrl }) => {
   const { isAuthenticated, isSessionLoading } = useSession();
   return (
     <div className="w-full flex h-full justify-center align-middle items-center">
@@ -9,7 +14,7 @@ export default function Login() {
           <Descope
             flowId="sign-up-or-in"
             theme="dark"
-            redirectUrl={import.meta.env.VITE_REDIRECT_URL}
+            redirectUrl={redirectUrl ?? import.meta.env.VITE_REDIRECT_URL}
             // onSuccess={(e: any) => {
             //   console.log(e.detail.user.name);
             //   console.log(e.detail.user.email);
@@ -26,4 +31,6 @@ export default function Login() {
       </div>
     </div>
   );
-}
+};
+
+export default Login;
