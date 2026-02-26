@@ -3,6 +3,7 @@ import {
   useTheme,
   usePrepPreferences,
   useDocumentTitle,
+  useIsMobile,
 } from "../../hooks";
 import { PrepPreferencesProvider } from "../../context/PrepPreferencesProvider";
 import { PrepToolbar } from "../PrepToolbar";
@@ -20,6 +21,7 @@ import {
   Target,
   ArrowRight,
   HelpCircle,
+  History,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -46,6 +48,7 @@ import {
 import { MarkdownRenderer } from "../MarkdownRenderer";
 import { BossSelection } from "../BossSelection";
 import PlanViewer from "./PlanViewer";
+import { NoteDiffView } from "../NoteDiffView";
 
 export const Prep: FC = () => {
   const { boss, setBoss } = useTeam();
@@ -88,11 +91,10 @@ export const Prep: FC = () => {
   if (!isAuthenticated) {
     return <UnauthenticatedPrepView />;
   }
-  console.log("bossId", bossId);
 
   return (
     <PrepPreferencesProvider>
-      <div className="w-full h-full flex flex-col items-center px-20 py-5">
+      <div className="w-full h-full flex flex-col items-center px-4 lg:px-20 py-5">
         <div className="h-full w-full flex flex-col gap-5">
           <BossSelection />
           {boss ? (
@@ -152,7 +154,30 @@ const BossDisplay: FC<BossProps> = ({
     null,
   );
 
+  const [hiddenDiffIds, setHiddenDiffIds] = useState<Set<number>>(new Set());
+  const toggleDiff = (id: number) =>
+    setHiddenDiffIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+
   const hasScrolledToNote = useRef(false);
+  const isMobile = useIsMobile();
+  const [activePanel, setActivePanel] = useState<0 | 1 | 2>(0);
+  const touchStartX = useRef(0);
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    if (delta < -50 && activePanel < 2) setActivePanel((activePanel + 1) as 0 | 1 | 2);
+    if (delta > 50 && activePanel > 0) setActivePanel((activePanel - 1) as 0 | 1 | 2);
+  };
 
   const selectedSectionId = urlSectionId ?? null;
 
@@ -216,57 +241,99 @@ const BossDisplay: FC<BossProps> = ({
     });
   }, [urlNoteId, selectedSection]);
 
-  return (
-    <div className="flex flex-row justify-center h-[calc(100vh-10rem)]">
-      {/* Left column: Sticky raidplan + scrollable sections */}
-      <div className="w-1/2 flex flex-col h-full">
-        <div className="flex-1 h-full">
-          <div className="sticky top-0 z-10 pb-3">
-            {raidplanShareId && isPlanLoading ? (
-              <Card variant="elevated" hover={false}>
-                <div className="flex flex-col gap-1">
-                  <div className="flex flex-row gap-2 items-center">
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className="h-8 w-10 rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse"
-                      />
-                    ))}
-                    <div className="h-8 w-10 rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse" />
-                  </div>
-                  <div className="aspect-video w-full rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse" />
-                </div>
-              </Card>
-            ) : planData ? (
-              <div className="w-full">
-                <PlanViewer
-                  viewUrl={`${planData?.sequence}/${planData?.share_id}`}
-                  onClose={() => {
-                    navigate(`/prep/${urlBossId}/section/${urlSectionId}`);
-                  }}
-                  onTabChange={(newTabId) => {
-                    navigate(
-                      `/prep/${urlBossId}/section/${urlSectionId}/raidplan/${raidplanShareId}/tab/${newTabId}`,
-                      { replace: true },
-                    );
-                  }}
-                  tabs={planData?.content}
-                  startingId={tabId}
+  const raidplanJsx = (
+    <div className="sticky top-0 z-10 pb-3">
+      {raidplanShareId && isPlanLoading ? (
+        <Card variant="elevated" hover={false}>
+          <div className="flex flex-col gap-1">
+            <div className="flex flex-row gap-2 items-center">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-8 w-10 rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse"
                 />
-              </div>
-            ) : (
-              <StaticHeroImage
-                imageUrl={splash_img_url ?? ""}
-                className="aspect-video rounded-lg"
-                title={
-                  <h1 className="font-montserrat text-2xl font-bold dark:text-white text-black bg-blend-color-burn">
-                    {name}
-                  </h1>
-                }
-                backgroundPosition="center 10%"
-              />
-            )}
+              ))}
+              <div className="h-8 w-10 rounded-xl bg-slate-200 dark:bg-slate-700 animate-pulse" />
+            </div>
+            <div className="aspect-video w-full rounded-lg bg-slate-200 dark:bg-slate-700 animate-pulse" />
           </div>
+        </Card>
+      ) : planData ? (
+        <div className="w-full">
+          <PlanViewer
+            viewUrl={`${planData?.sequence}/${planData?.share_id}`}
+            onClose={() => {
+              navigate(`/prep/${urlBossId}/section/${urlSectionId}`);
+            }}
+            onTabChange={(newTabId) => {
+              navigate(
+                `/prep/${urlBossId}/section/${urlSectionId}/raidplan/${raidplanShareId}/tab/${newTabId}`,
+                { replace: true },
+              );
+            }}
+            tabs={planData?.content}
+            startingId={tabId}
+          />
+        </div>
+      ) : (
+        <StaticHeroImage
+          imageUrl={splash_img_url ?? ""}
+          className="aspect-video rounded-lg"
+          title={
+            <h1 className="font-montserrat text-2xl font-bold dark:text-white text-black bg-blend-color-burn">
+              {name}
+            </h1>
+          }
+          backgroundPosition="center 10%"
+        />
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      {/* Mobile tab switcher */}
+      <div className="flex lg:hidden gap-1 mb-2 p-1 bg-slate-200/30 dark:bg-slate-800/30 rounded-xl shrink-0">
+        {(["Raidplan", "Sections", "Notes"] as const).map((label, i) => (
+          <button
+            key={label}
+            onClick={() => setActivePanel(i as 0 | 1 | 2)}
+            className={`flex-1 py-2 text-sm font-montserrat font-semibold rounded-lg transition-all duration-150 ${
+              activePanel === i
+                ? "bg-white dark:bg-slate-700 text-black dark:text-white shadow-sm"
+                : "text-slate-500"
+            }`}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      <div
+        className="flex-1 min-h-0 lg:h-[calc(100vh-10rem)] overflow-hidden"
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
+      >
+        <div
+          className="flex h-full transition-transform duration-300 ease-out"
+          style={isMobile ? { width: "300%", transform: `translateX(-${activePanel * 33.333}%)` } : undefined}
+        >
+      {/* Panel 0: Raidplan (mobile only) */}
+      <div
+        className="lg:hidden flex flex-col h-full overflow-y-auto"
+        style={isMobile ? { width: "33.333%" } : undefined}
+      >
+        {raidplanJsx}
+      </div>
+
+      {/* Panel 1: Sections */}
+      <div
+        className="lg:w-1/2 flex flex-col h-full overflow-y-auto"
+        style={isMobile ? { width: "33.333%" } : undefined}
+      >
+        {/* Desktop only: sticky raidplan above sections */}
+        <div className="hidden lg:block">
+          {raidplanJsx}
         </div>
         <div className="flex flex-row gap-2 items-center justify-between pl-3">
           <div className="flex flex-row items-center gap-2">
@@ -398,10 +465,13 @@ const BossDisplay: FC<BossProps> = ({
         </div>
       </div>
 
-      <div className="w-px bg-slate-300 dark:bg-slate-700 mx-4" />
+      <div className="hidden lg:block w-px bg-slate-300 dark:bg-slate-700 mx-4 shrink-0" />
 
-      {/* Right column: Notes (independently scrollable) */}
-      <div className="flex flex-col h-full w-1/2">
+      {/* Panel 2: Notes */}
+      <div
+        className="lg:w-1/2 flex flex-col h-full overflow-y-auto"
+        style={isMobile ? { width: "33.333%" } : undefined}
+      >
         <div className="flex flex-row gap-2 items-center justify-between">
           <div className="flex flex-row gap-2 items-center">
             <div className="w-1 h-5 bg-gradient-to-b from-orange-500 to-red-600 rounded-full" />
@@ -482,6 +552,23 @@ const BossDisplay: FC<BossProps> = ({
                           })()}
                         </p>
                       </div>
+                      {note.has_diff && (
+                        <button
+                          onClick={() => toggleDiff(note.id)}
+                          title={
+                            hiddenDiffIds.has(note.id)
+                              ? "Show changes"
+                              : "Hide changes"
+                          }
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            hiddenDiffIds.has(note.id)
+                              ? "text-slate-400 hover:text-amber-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
+                              : "text-amber-400 bg-amber-500/10 hover:bg-amber-500/20"
+                          }`}
+                        >
+                          <History className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                       {isUserAdmin && (
                         <div className="flex items-center gap-1 shrink-0">
                           {pendingDeleteNoteId === note.id ? (
@@ -531,12 +618,16 @@ const BossDisplay: FC<BossProps> = ({
                     </div>
 
                     <div className="font-montserrat text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert max-w-none">
-                      <MarkdownRenderer
-                        size={markdownSize}
-                        color={markdownColor}
-                      >
-                        {note.content}
-                      </MarkdownRenderer>
+                      {note.has_diff && !hiddenDiffIds.has(note.id) ? (
+                        <NoteDiffView diffs={note.diffs!} color={markdownColor} size={markdownSize} />
+                      ) : (
+                        <MarkdownRenderer
+                          size={markdownSize}
+                          color={markdownColor}
+                        >
+                          {note.content}
+                        </MarkdownRenderer>
+                      )}
                     </div>
                   </div>
                 ))
@@ -563,6 +654,8 @@ const BossDisplay: FC<BossProps> = ({
           )}
         </div>
       </div>
+        </div>{/* end sliding track */}
+      </div>{/* end overflow container */}
 
       <AddSectionModal
         isOpen={isAddingSection || editingSection !== null}
@@ -639,7 +732,7 @@ const BossDisplay: FC<BossProps> = ({
         isOpen={showMarkdownGuide}
         onClose={() => setShowMarkdownGuide(false)}
       />
-    </div>
+    </>
   );
 };
 
