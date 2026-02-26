@@ -11,6 +11,8 @@ import {
   ChevronLeft,
   ChevronRight,
   ShieldHalf,
+  Menu,
+  X,
 } from "lucide-react";
 import { useTeam, useTheme, useUser } from "../hooks";
 import { Descope, useSession } from "@descope/react-sdk";
@@ -79,6 +81,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
     const saved = localStorage.getItem("sidebarExpanded");
     return saved !== null ? JSON.parse(saved) : true;
   });
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const { isAuthenticated, isSessionLoading, sessionToken } = useSession();
 
   const { user, isLoading } = useUser();
@@ -110,6 +113,14 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
     localStorage.setItem("sidebarExpanded", JSON.stringify(isSidebarExpanded));
   }, [isSidebarExpanded]);
 
+  useEffect(() => { setIsMobileDrawerOpen(false); }, [location.pathname]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setIsMobileDrawerOpen(false); };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, []);
+
   const teamsOptions: DropdownOption<MyRole>[] =
     !isLoading && !myTeamsError && Array.isArray(myTeamsData)
       ? myTeamsData?.map((myRole) => {
@@ -122,9 +133,131 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
 
   return (
     <>
-      <div className="flex h-100 min-h-full relative">
+      {/* ── Mobile top bar (hidden on lg+) ── */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-40 flex items-center justify-between px-4 h-12 bg-black border-b border-neutral-900">
+        <button
+          onClick={() => setIsMobileDrawerOpen(true)}
+          className="p-1.5 rounded-md hover:bg-neutral-800 transition"
+        >
+          <Menu className="w-5 h-5 text-white" />
+        </button>
+        <h1 className="text-white font-montserrat font-black text-base tracking-wide">
+          KRANKENPREP
+        </h1>
+        <button
+          onClick={() => toggleColorMode()}
+          className="p-1.5 rounded-md bg-neutral-800 hover:bg-neutral-700 transition"
+        >
+          {colorMode === "dark" ? (
+            <Sun className="w-4 h-4 text-amber-400" />
+          ) : (
+            <Moon className="w-4 h-4 text-blue-400" />
+          )}
+        </button>
+      </div>
+
+      {/* ── Mobile drawer backdrop ── */}
+      {isMobileDrawerOpen && (
         <div
-          className={`bg-white dark:bg-black border-gray-200 dark:border-neutral-900 border-r flex flex-col sticky top-0 transition-all duration-300 ${
+          className="lg:hidden fixed inset-0 z-40 bg-black/60 backdrop-blur-sm"
+          onClick={() => setIsMobileDrawerOpen(false)}
+        />
+      )}
+
+      {/* ── Mobile drawer panel ── */}
+      <div
+        className={`lg:hidden fixed top-0 left-0 z-50 h-full w-72 bg-black border-r border-neutral-900 flex flex-col p-5 gap-5 overflow-y-auto transition-transform duration-300 ${
+          isMobileDrawerOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex items-center justify-between">
+          <h1 className="text-white font-montserrat font-black text-xl">KRANKENPREP</h1>
+          <button
+            onClick={() => setIsMobileDrawerOpen(false)}
+            className="p-1.5 rounded-md hover:bg-neutral-800 transition"
+          >
+            <X className="w-5 h-5 text-white" />
+          </button>
+        </div>
+
+        {/* User */}
+        {user && !isLoading && (
+          <button className="p-2 rounded-md bg-neutral-800 hover:bg-neutral-700 flex flex-row items-center gap-2 w-full">
+            <CircleUserRoundIcon className="w-6 h-6 text-teal-200" />
+            <div className="text-lg">
+              <span className="text-white">{user?.btag?.split("#")[0]}</span>
+              <span className="text-gray-400">{"#" + user?.btag?.split("#")[1]}</span>
+            </div>
+          </button>
+        )}
+
+        {/* Auth */}
+        {!isAuthenticated && !isSessionLoading && (
+          <div className="w-full">
+            <Descope
+              flowId="sign-up-or-in"
+              theme={colorMode}
+              onError={(err) => console.log("Error!", err)}
+            />
+          </div>
+        )}
+
+        {/* Team dropdown */}
+        {isAuthenticated && !isSessionLoading && (
+          <Dropdown<MyRole>
+            variant="minimal"
+            label="Team"
+            value={team}
+            onChange={(value) => {
+              if (Array.isArray(value)) setTeam(value[0] ?? null);
+              else if (typeof value !== "function") setTeam(value);
+            }}
+            valueComparator={(a, b) => a.team_id === b.team_id}
+            getOptionKey={(option) => option.value.team_id}
+            placeholder="Select a team..."
+            actions={[
+              {
+                label: "Create a team",
+                handleClick: () => setIsCreateTeamModalOpen(true),
+                icon: <Plus className="w-6 h-5 text-cyan-600 dark:text-cyan-400" />,
+              },
+            ]}
+            options={teamsOptions}
+          />
+        )}
+
+        {/* Nav links */}
+        <div className="flex flex-col gap-2">
+          {(
+            [
+              { to: "/", icon: Target, label: "Home" },
+              { to: "/prep", icon: BookOpen, label: "Prep" },
+              { to: "/plans", icon: Calendar, label: "Plan" },
+              ...(team && isUserAdmin ? [{ to: "/team", icon: ShieldHalf, label: "Team" }] : []),
+            ] as const
+          ).map(({ to, icon: Icon, label }) => (
+            <Link
+              key={to}
+              to={to}
+              className={`w-full p-2 rounded-md bg-linear-to-r transition-all duration-200 flex items-center gap-2 border ${
+                location.pathname === to
+                  ? "from-cyan-900/80 to-blue-900/80 border-cyan-400/60 shadow-lg shadow-cyan-500/20"
+                  : "from-cyan-900/60 to-blue-900/60 border-cyan-500/20"
+              }`}
+            >
+              <Icon className={`w-4 h-4 ${location.pathname === to ? "text-cyan-200" : "text-cyan-300"}`} />
+              <span className={`text-sm font-montserrat font-semibold ${location.pathname === to ? "text-cyan-200" : "text-cyan-300"}`}>
+                {label}
+              </span>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex h-100 min-h-full relative">
+        {/* ── Desktop sidebar (hidden on mobile) ── */}
+        <div
+          className={`hidden lg:flex bg-white dark:bg-black border-gray-200 dark:border-neutral-900 border-r flex-col sticky top-0 transition-all duration-300 ${
             isSidebarExpanded ? "w-70 p-5" : "w-16 p-3"
           }`}
         >
@@ -380,7 +513,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
             </div>
           </div>
         </div>
-        <div className="flex-1 overflow-y-scroll dark:bg-neutral-950 bg-neutral-50 w-full">
+        <div className="flex-1 overflow-y-scroll dark:bg-neutral-950 bg-neutral-50 w-full pt-12 lg:pt-0">
           {children}
         </div>
       </div>

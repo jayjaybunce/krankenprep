@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"krankenprep/database"
 	"krankenprep/models"
@@ -15,6 +16,38 @@ import (
 	"gorm.io/datatypes"
 	"gorm.io/gorm"
 )
+
+// noteToDTO flattens a Note + its latest NoteVersion into a wire-safe NoteDTO.
+// Note itself has no Content field — all content lives in NoteVersion.
+func noteToDTO(note models.Note, latest models.NoteVersion) models.NoteDTO {
+	hasDiff := latest.Version > 1 && len(latest.Diffs) > 2
+	return models.NoteDTO{
+		ID:        note.ID,
+		SectionID: note.SectionID,
+		Content:   latest.Content,
+		Version:   latest.Version,
+		HasDiff:   hasDiff,
+		Diffs:     latest.Diffs,
+		CreatedAt: latest.CreatedAt,
+		UpdatedAt: latest.UpdatedAt,
+	}
+}
+
+// SectionResponse is the wire representation of a Section with notes as NoteDTOs.
+type SectionResponse struct {
+	ID          uint             `json:"id"`
+	Name        string           `json:"name"`
+	Description string           `json:"description"`
+	Variant     string           `json:"variant"`
+	Tags        string           `json:"tags"`
+	TeamID      uint             `json:"team_id"`
+	Team        models.Team      `json:"team,omitempty"`
+	BossID      uint             `json:"boss_id"`
+	Boss        models.Boss      `json:"boss,omitempty"`
+	Notes       []models.NoteDTO `json:"notes"`
+	CreatedAt   time.Time        `json:"created_at"`
+	UpdatedAt   time.Time        `json:"updated_at"`
+}
 
 type CreateSectionPayload struct {
 	TeamID      uint   `json:"team_id"`
@@ -126,9 +159,58 @@ func GetSectionsByTeamAndBoss(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"sections": sections,
-	})
+	// Collect all note IDs across all sections.
+	var noteIDs []uint
+	for _, s := range sections {
+		for _, n := range s.Notes {
+			noteIDs = append(noteIDs, n.ID)
+		}
+	}
+
+	// Batch-fetch the latest NoteVersion per note in a single query.
+	var latestVersions []models.NoteVersion
+	if len(noteIDs) > 0 {
+		if err := database.DB.Raw(
+			`SELECT DISTINCT ON (note_id) * FROM note_versions
+			 WHERE note_id IN ? ORDER BY note_id, version DESC`, noteIDs,
+		).Scan(&latestVersions).Error; err != nil {
+			log.Printf("Error fetching note versions: %v", err)
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch note versions"})
+			return
+		}
+	}
+
+	versionMap := make(map[uint]models.NoteVersion, len(latestVersions))
+	for _, v := range latestVersions {
+		versionMap[v.NoteID] = v
+	}
+
+	// Transform sections into SectionResponse with NoteDTOs.
+	result := make([]SectionResponse, len(sections))
+	for i, s := range sections {
+		dtos := make([]models.NoteDTO, 0, len(s.Notes))
+		for _, n := range s.Notes {
+			if v, ok := versionMap[n.ID]; ok {
+				dtos = append(dtos, noteToDTO(n, v))
+			}
+		}
+		result[i] = SectionResponse{
+			ID:          s.ID,
+			Name:        s.Name,
+			Description: s.Description,
+			Variant:     s.Variant,
+			Tags:        s.Tags,
+			TeamID:      s.TeamID,
+			Team:        s.Team,
+			BossID:      s.BossID,
+			Boss:        s.Boss,
+			Notes:       dtos,
+			CreatedAt:   s.CreatedAt,
+			UpdatedAt:   s.UpdatedAt,
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"sections": result})
 }
 
 type CreateNotePayload struct {
@@ -167,12 +249,8 @@ func CreateNote(c *gin.Context) {
 	}
 
 	// Create the note
-	now := time.Now()
 	note := models.Note{
 		SectionID: createNotePayload.SectionID,
-		Content:   createNotePayload.Content,
-		CreatedAt: now,
-		UpdatedAt: now,
 	}
 
 	result := gorm.WithResult()
@@ -183,11 +261,25 @@ func CreateNote(c *gin.Context) {
 		return
 	}
 
+	now := time.Now()
+	normalizedMarkdown := utilities.NormalizeMarkdown(createNotePayload.Content)
+	noteVersion := models.NoteVersion{
+		NoteID:      note.ID,
+		Version:     1,
+		Content:     createNotePayload.Content,
+		ContentHash: HashTokenSHA256(normalizedMarkdown),
+		CreatedAt:   now,
+		UpdatedAt:   now,
+		AuthorID:    user.ID,
+	}
+	result = gorm.WithResult()
+	err = gorm.G[models.NoteVersion](database.DB, result).Create(ctx, &noteVersion)
+
 	log.Printf("SUCCESS: Created note with id %v for section %v", note.ID, section.ID)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Note created successfully",
-		"note":    note,
+		"note":    noteToDTO(note, noteVersion),
 	})
 }
 
@@ -367,13 +459,56 @@ func UpdateNote(c *gin.Context) {
 		return
 	}
 
-	if err := database.DB.Model(&note).Update("content", payload.Content).Error; err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update note"})
+	// Get the LATEST version (DESC), not the oldest.
+	var latestVersion models.NoteVersion
+	if err := database.DB.Where("note_id = ?", noteID).Order("version DESC").First(&latestVersion).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "Note version not found"})
 		return
 	}
 
-	database.DB.First(&note, noteID)
-	c.JSON(http.StatusOK, gin.H{"note": note})
+	normalizedMarkdown := utilities.NormalizeMarkdown(payload.Content)
+	newContentHash := HashTokenSHA256(normalizedMarkdown)
+
+	// No-op: content unchanged.
+	if newContentHash == latestVersion.ContentHash {
+		c.JSON(http.StatusOK, gin.H{"note": noteToDTO(note, latestVersion)})
+		return
+	}
+
+	// Compute line-level diff from previous content to new content.
+	diffs, _ := utilities.DiffMarkdown(latestVersion.Content, payload.Content)
+	diffsJSON, err := json.Marshal(diffs)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to marshal diffs"})
+		return
+	}
+
+	// Create the new version.
+	now := time.Now()
+	newVersion := models.NoteVersion{
+		NoteID:       note.ID,
+		Version:      latestVersion.Version + 1,
+		Content:      payload.Content,
+		ContentHash:  newContentHash,
+		Diffs:        datatypes.JSON(diffsJSON),
+		DiffStrategy: "lcs-line",
+		CreatedAt:    now,
+		UpdatedAt:    now,
+		AuthorID:     user.ID,
+	}
+	if err := database.DB.Create(&newVersion).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create note version"})
+		return
+	}
+
+	// Prune: keep only the last 2 versions (the new one + the one before it).
+	if latestVersion.Version > 1 {
+		database.DB.
+			Where("note_id = ? AND version < ?", note.ID, latestVersion.Version).
+			Delete(&models.NoteVersion{})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"note": noteToDTO(note, newVersion)})
 }
 
 func DeleteNote(c *gin.Context) {

@@ -22,12 +22,37 @@ type Section struct {
 }
 
 type Note struct {
-	ID        uint      `json:"id" gorm:"primaryKey"`
-	SectionID uint      `json:"section_id"`
-	Section   Section   `json:"section" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
-	Content   string    `json:"content" gorm:"type:text"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        uint          `json:"id" gorm:"primaryKey"`
+	SectionID uint          `json:"section_id" gorm:"index;not null"`
+	Section   *Section      `json:"section,omitempty" gorm:"foreignKey:SectionID;references:ID;constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Versions  []NoteVersion `json:"-" gorm:"foreignKey:NoteID;constraint:OnDelete:CASCADE;"`
+}
+
+type NoteVersion struct {
+	ID           uint           `json:"id" gorm:"primaryKey"`
+	NoteID       uint           `json:"note_id" gorm:"not null;index;uniqueIndex:uniq_note_version"`
+	Version      uint           `json:"version" gorm:"not null;uniqueIndex:uniq_note_version"`
+	Content      string         `json:"content" gorm:"type:text;not null"`
+	ContentHash  string         `json:"content_hash" gorm:"size:64;not null;index"`
+	CreatedAt    time.Time      `json:"created_at"`
+	UpdatedAt    time.Time      `json:"updated_at"`
+	AuthorID     uint           `json:"author_id" gorm:"not null;index"`
+	Author       *User          `json:"author,omitempty" gorm:"foreignKey:AuthorID;references:ID"`
+	Diffs        datatypes.JSON `json:"diffs"`
+	DiffStrategy string         `json:"diff_strategy"`
+}
+
+// NoteDTO is the wire representation of a Note with its latest NoteVersion flattened in.
+// Note itself has no Content field — content lives in NoteVersion.
+type NoteDTO struct {
+	ID        uint           `json:"id"`
+	SectionID uint           `json:"section_id"`
+	Content   string         `json:"content"`
+	Version   uint           `json:"version"`
+	HasDiff   bool           `json:"has_diff"`
+	Diffs     datatypes.JSON `json:"diffs,omitempty"`
+	CreatedAt time.Time      `json:"created_at"`
+	UpdatedAt time.Time      `json:"updated_at"`
 }
 
 type RaidPlan struct {

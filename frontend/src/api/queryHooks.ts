@@ -141,10 +141,18 @@ export const useCurrentExpansion = () => {
     })
 }
 
+export type DiffOp = {
+    type: "equal" | "insert" | "delete"
+    lines: string[]
+}
+
 type Note = {
     id: number
     section_id: number
     content: string
+    version: number
+    has_diff: boolean
+    diffs?: DiffOp[]
     created_at: string
     updated_at: string
 }

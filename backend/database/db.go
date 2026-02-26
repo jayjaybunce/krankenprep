@@ -29,6 +29,7 @@ func Connect() {
 		&models.Team{},
 		&models.Section{},
 		&models.Note{},
+		&models.NoteVersion{},
 		&models.Role{},
 		&models.Expansion{},
 		&models.Season{},

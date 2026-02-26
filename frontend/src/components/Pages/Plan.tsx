@@ -1,4 +1,5 @@
 import { createRef, useEffect, useState, type FC } from "react";
+import { RotateCw } from "lucide-react";
 import Planner, { type Tab } from "../Planner/Planner";
 import { v4 as uuid } from "uuid";
 import { useLocation } from "react-router-dom";
@@ -15,6 +16,18 @@ import { getIdFromPathname } from "../../utils/idUtils";
 import { useGetRaidplanById } from "../../api/queryHooks";
 
 const Plan: FC = () => {
+  const [isPortrait, setIsPortrait] = useState(
+    () => window.innerHeight > window.innerWidth && window.innerWidth < 1024,
+  );
+
+  useEffect(() => {
+    const mq = window.matchMedia("(orientation: portrait)");
+    const handler = () =>
+      setIsPortrait(mq.matches && window.innerWidth < 1024);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
   const location = useLocation();
   const raidData = useRaidData(location.pathname);
   const { isLoading: isUserLoading, user } = useUser();
@@ -116,6 +129,22 @@ const Plan: FC = () => {
       setTabs(data?.content);
     }
   }, [data, id, isLoading]);
+
+  if (isPortrait) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-5 text-center px-8">
+        <RotateCw className="w-14 h-14 text-cyan-400" />
+        <div>
+          <h2 className="font-montserrat font-bold text-white text-2xl mb-2">
+            Rotate your device
+          </h2>
+          <p className="text-slate-400 text-sm font-montserrat">
+            The Raid Planner requires landscape mode
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <Planner

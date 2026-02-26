@@ -84,7 +84,7 @@ const Plans: FC = () => {
         </div>
 
         {/* Raid Selection Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
           {raids.map((raid) => (
             <Link key={raid.name} to={raid.route}>
               <Card variant="elevated" hover={true}>

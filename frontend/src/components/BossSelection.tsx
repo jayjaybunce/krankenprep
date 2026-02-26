@@ -1,181 +1,216 @@
 import {
-  useEffect,
   useState,
-  type Dispatch,
+  useRef,
+  useEffect,
+  useCallback,
   type FC,
-  type SetStateAction,
 } from "react";
+import { createPortal, preload } from "react-dom";
+import { ChevronDown, Check, Swords } from "lucide-react";
 import { useCurrentExpansion } from "../api/queryHooks";
-import { preload } from "react-dom";
 import { type Boss, type Raid } from "../types/api/expansion";
-import type { DropdownOption } from "./form/Dropdown";
 import { useTeam } from "../hooks";
 import { useNavigate } from "react-router-dom";
 
-type BossButtonProps = {
-  selected: boolean;
-  boss: Boss;
-  setBoss: Dispatch<SetStateAction<Boss | null>>;
+const raidColors = [
+  { accent: "from-cyan-400 to-blue-500",      text: "text-cyan-400/80"    },
+  { accent: "from-purple-400 to-fuchsia-500", text: "text-purple-400/80"  },
+  { accent: "from-emerald-400 to-teal-500",   text: "text-emerald-400/80" },
+  { accent: "from-rose-400 to-pink-500",       text: "text-rose-400/80"    },
+];
+
+type BossDropdownProps = {
+  raids: { raid: Raid; index: number }[];
+  boss: Boss | null;
+  setBoss: (b: Boss | null) => void;
 };
 
-const BossButton: FC<BossButtonProps> = ({ boss: b, selected, setBoss }) => {
+const BossDropdown: FC<BossDropdownProps> = ({ raids, boss, setBoss }) => {
   const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const [menuPos, setMenuPos] = useState({ top: 0, left: 0, width: 0 });
+
+  const updatePos = useCallback(() => {
+    if (triggerRef.current) {
+      const r = triggerRef.current.getBoundingClientRect();
+      setMenuPos({ top: r.bottom + 6, left: r.left, width: Math.max(r.width, 280) });
+    }
+  }, []);
+
+  useEffect(() => {
+    const onDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (!triggerRef.current?.contains(t) && !menuRef.current?.contains(t)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDown);
+    return () => document.removeEventListener("mousedown", onDown);
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    updatePos();
+    window.addEventListener("resize", updatePos);
+    window.addEventListener("scroll", updatePos, true);
+    return () => {
+      window.removeEventListener("resize", updatePos);
+      window.removeEventListener("scroll", updatePos, true);
+    };
+  }, [isOpen, updatePos]);
+
+  const handleSelect = (b: Boss) => {
+    if (boss?.id === b.id) {
+      setBoss(null);
+      navigate("/prep", { replace: true });
+    } else {
+      setBoss(b);
+      navigate(`/prep/${b.id}`, { replace: true });
+    }
+    setIsOpen(false);
+  };
+
   return (
-    <button
-      onClick={() => {
-        if (selected) {
-          setBoss(null);
-          navigate("/prep", { replace: true });
-        } else {
-          setBoss(b);
-          navigate(`/prep/${b.id}`, { replace: true });
-        }
-      }}
-      className={`flex h-8 overflow-hidden rounded-lg bg-gradient-to-r
-                                      ${selected ? "from-cyan-900/60 to-blue-900/60" : "from-slate-800/80 to-slate-700/80"}
-                                      hover:from-cyan-900/60 hover:to-blue-900/60 border
-                                      ${selected ? "border-cyan-400/40" : "border-cyan-500/20"}
-                                      hover:border-cyan-400/40 shadow-lg
-                                      ${selected ? "shadow-cyan-500/20" : "shadow-slate-900/40"}
-                                      hover:shadow-cyan-500/20 backdrop-blur-sm
-                                      transition-all duration-200 ${selected ? "scale-[1.02]" : ""}
-                                      hover:scale-[1.02] cursor-pointer group`}
-    >
-      <img className="w-auto h-full object-cover" src={b.icon_img_url} />
-      <div
-        className={`flex font-montserrat items-center w-full truncate px-3 font-semibold text-sm ${selected ? "text-cyan-300" : "text-slate-200"} group-hover:text-cyan-300`}
+    <div className="relative">
+      {/* Trigger */}
+      <button
+        ref={triggerRef}
+        type="button"
+        onClick={() => { updatePos(); setIsOpen((o) => !o); }}
+        className={`flex items-center gap-2.5 pl-2 pr-3 h-10 rounded-xl border font-montserrat
+          backdrop-blur-xl transition-all duration-200 cursor-pointer
+          ${boss
+            ? "bg-slate-900/70 border-cyan-400/50 shadow-[0_0_18px_rgba(34,211,238,0.2)]"
+            : "bg-slate-900/50 border-slate-700/60 hover:border-slate-600"
+          }`}
       >
-        {b.name}
-      </div>
-    </button>
+        {boss ? (
+          <>
+            <img
+              src={boss.icon_img_url}
+              className="w-6 h-6 rounded-md object-cover shrink-0"
+            />
+            <span className="text-sm font-semibold text-cyan-300 whitespace-nowrap">
+              {boss.name}
+            </span>
+          </>
+        ) : (
+          <>
+            <Swords className="w-4 h-4 text-slate-500 shrink-0" />
+            <span className="text-sm text-slate-500 whitespace-nowrap">
+              Select a boss
+            </span>
+          </>
+        )}
+        <ChevronDown
+          className={`w-4 h-4 shrink-0 transition-transform duration-200
+            ${isOpen ? "rotate-180" : ""}
+            ${boss ? "text-cyan-400/60" : "text-slate-500"}`}
+        />
+      </button>
+
+      {/* Panel */}
+      {isOpen && createPortal(
+        <div
+          ref={menuRef}
+          style={{ top: menuPos.top, left: menuPos.left, width: menuPos.width }}
+          className="fixed z-50 rounded-xl border border-slate-700/60
+            bg-slate-900/95 backdrop-blur-xl shadow-2xl shadow-slate-950/60
+            overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
+        >
+          <div className="overflow-y-auto max-h-[360px]">
+            {raids.map(({ raid, index }, i) => {
+              const colors = raidColors[index % raidColors.length];
+              const sortedBosses = [...(raid.bosses ?? [])].sort((a, b) =>
+                a.order < b.order ? -1 : 1,
+              );
+              return (
+                <div key={raid.id}>
+                  {/* Raid header */}
+                  {i > 0 && <div className="mx-3 h-px bg-slate-800/80" />}
+                  <div className="flex items-center gap-2 px-3 pt-3 pb-1.5">
+                    <div
+                      className={`w-[3px] h-3 rounded-full bg-linear-to-b shrink-0 ${colors.accent}`}
+                    />
+                    <span
+                      className={`text-[10px] uppercase tracking-[0.12em] font-montserrat font-bold ${colors.text}`}
+                    >
+                      {raid.name}
+                    </span>
+                  </div>
+                  {/* Boss rows */}
+                  {sortedBosses.map((b) => {
+                    const selected = b.id === boss?.id;
+                    return (
+                      <button
+                        key={b.id}
+                        type="button"
+                        onClick={() => handleSelect(b)}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2
+                          font-montserrat transition-all duration-100 cursor-pointer
+                          ${selected
+                            ? "bg-cyan-500/15 text-cyan-300"
+                            : "text-slate-300 hover:bg-slate-800/60 hover:text-cyan-300"
+                          }`}
+                      >
+                        <img
+                          src={b.icon_img_url}
+                          className="w-7 h-7 rounded-md object-cover shrink-0"
+                        />
+                        <span className="text-sm font-medium text-left flex-1 truncate">
+                          {b.name}
+                        </span>
+                        {selected && (
+                          <Check className="w-3.5 h-3.5 text-cyan-400 shrink-0" />
+                        )}
+                      </button>
+                    );
+                  })}
+                  <div className="pb-1.5" />
+                </div>
+              );
+            })}
+          </div>
+        </div>,
+        document.body,
+      )}
+    </div>
   );
 };
 
 export const BossSelection: FC = () => {
-  const [raid] = useState<Raid | null>(() => {
-    const stored = localStorage.getItem("kp_selected_expansion");
-    return stored ? JSON.parse(stored) : null;
-  });
-  const {
-    isLoading: isExpLoading,
-    data: expData,
-    error: expError,
-  } = useCurrentExpansion();
+  const { boss, setBoss } = useTeam();
+  const { isLoading: isExpLoading, data: expData, error: expError } =
+    useCurrentExpansion();
 
   console.log(isExpLoading, expError);
 
   useEffect(() => {
-    // Preload all boss splash images ezpz lol
     expData?.forEach((exp) => {
       exp?.seasons?.forEach((s) => {
         s?.raids?.forEach((r) => {
           r?.bosses?.forEach((b) => {
-            if (b?.splash_img_url) {
-              preload(b.splash_img_url, { as: "image" });
-            }
+            if (b?.splash_img_url) preload(b.splash_img_url, { as: "image" });
           });
         });
       });
     });
   }, [expData]);
 
-  const raidOptions: DropdownOption<Raid>[] = [];
-  expData?.forEach((exp) => {
-    exp?.seasons?.forEach((s) => {
-      s.raids?.forEach((r) => raidOptions.push({ value: r, label: r?.name }));
-    });
-  });
-
-  useEffect(() => {
-    localStorage.setItem("kp_selected_expansion", JSON.stringify(raid));
-  }, [raid]);
+  const raids =
+    expData
+      ?.flatMap((exp) =>
+        exp?.seasons?.flatMap((s) =>
+          s?.raids?.map((raid, i) => ({ raid, index: i })) ?? [],
+        ) ?? [],
+      )
+      ?.sort((a, b) => a.raid.order - b.raid.order) ?? [];
 
   return (
-    <div className="flex flex-row w-full gap-2 items-center sticky top-5 z-10">
-      {/* <div className="w-60"> */}
-      {/* <Dropdown<Raid>
-          size="sm"
-          value={raid}
-          onChange={(value) => {
-            // Handle the generic dropdown type (supports arrays) but we only use single selection
-            if (typeof value === "function") {
-              // If it's a function, we need to call it with the current state
-              setRaid((prev) => {
-                const newValue = value(prev);
-                if (Array.isArray(newValue)) {
-                  return newValue[0] ?? null;
-                }
-                return newValue;
-              });
-            } else if (Array.isArray(value)) {
-              setRaid(value[0] ?? null);
-            } else {
-              setRaid(value);
-            }
-          }}
-          valueComparator={(a, b) => a.id === b.id}
-          getOptionKey={(option) => option.value.id}
-          options={raidOptions}
-        /> */}
-      {/* </div> */}
-      <div className="flex flex-row gap-1.5">
-        {expData?.map((exp) => {
-          return exp?.seasons?.map((seasons) => {
-            return seasons?.raids
-              ?.sort((a, b) => (a.order > b.order ? 1 : -1))
-              .map((raid, i) => {
-                return <RaidDisplay raid={raid} index={i} />;
-              });
-          });
-        })}
-      </div>
-      {/* {temp?.map((b) => {
-        return (
-          <BossButton boss={b} selected={b.id === boss?.id} setBoss={setBoss} />
-        );
-      })} */}
-    </div>
-  );
-};
-
-const dividerStyles = [
-  "from-cyan-400/80 to-blue-500/60 shadow-[0_0_8px_rgba(34,211,238,0.4)]",
-  "from-purple-400/80 to-fuchsia-500/60 shadow-[0_0_8px_rgba(192,132,252,0.4)]",
-  "from-emerald-400/80 to-teal-500/60 shadow-[0_0_8px_rgba(52,211,153,0.4)]",
-  "from-rose-400/80 to-pink-500/60 shadow-[0_0_8px_rgba(251,113,133,0.4)]",
-];
-
-type RaidDisplayProps = {
-  raid: Raid;
-  index: number;
-};
-
-const RaidDisplay: FC<RaidDisplayProps> = ({ raid, index }) => {
-  const { setBoss, boss } = useTeam();
-  const dividerStyle = dividerStyles[index % dividerStyles.length];
-  const sortedBosses = raid?.bosses?.sort((a, b) =>
-    a?.order < b?.order ? -1 : 1,
-  );
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-row items-center gap-2">
-        <div className="font-montserrat font-bold text-2xl text-white flex-1">
-          <h3 className="w-max">{raid.name}</h3>
-        </div>
-        <div
-          className={`w-full h-px bg-gradient-to-r ${dividerStyle} backdrop-blur-sm rounded-full`}
-        />
-      </div>
-
-      <div className="flex flex-row gap-1.5">
-        {sortedBosses?.map((b) => (
-          <BossButton
-            boss={b}
-            setBoss={setBoss}
-            selected={b?.id === boss?.id}
-          />
-        ))}
-      </div>
+    <div className="sticky top-5 z-10">
+      <BossDropdown raids={raids} boss={boss} setBoss={setBoss} />
     </div>
   );
 };

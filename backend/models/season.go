@@ -40,6 +40,7 @@ type Boss struct {
 	ID           uint      `json:"id" gorm:"primaryKey"`
 	Name         string    `json:"name" gorm:"uniqueIndex"`
 	Order        int64     `json:"order"`
+	ShortName    string    `json:"short_name"`
 	Slug         string    `json:"slug"`
 	Sections     []Section `json:"sections" gorm:"constraint:OnUpdate:CASCADE,OnDelete:RESTRICT;"`
 	SplashImgUrl string    `json:"splash_img_url"`

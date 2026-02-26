@@ -2,6 +2,7 @@ export type Boss = {
   id: number;
   name: string;
   order: number;
+  short_name: string;
   slug: string;
   phases: null | any[];
   raid_id: number;

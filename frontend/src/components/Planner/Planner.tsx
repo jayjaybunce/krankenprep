@@ -84,7 +84,9 @@ const Planner: FC<PlannerProps> = ({
   const canvasWidth = 1280;
 
   const calculateScaleFactor = () => {
-    const sideBarWidth = 279;
+    // On mobile landscape the sidebar is hidden via CSS; exclude it from calculation
+    const isMobileLandscape = window.innerWidth < 1024;
+    const sideBarWidth = isMobileLandscape ? 0 : 279;
     const toolBarWidth = 120;
     const propertiesWidth = 224;
     const totalXAxisPadding = 40;
