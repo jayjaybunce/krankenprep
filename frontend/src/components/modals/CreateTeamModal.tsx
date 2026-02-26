@@ -64,12 +64,13 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
   // Api Hooks
   const { isLoading: isServerDataLoading, data: serverData } = useServers();
   const { isLoading: isRegionDataLoading, data: regionData } = useRegions();
-  const { url: wowAuditTestUrl, headers: authHeaders } = useKpApi("/teams/wowaudit/test");
+  const { url: wowAuditTestUrl, headers: authHeaders } = useKpApi(
+    "/teams/wowaudit/test",
+  );
 
   const { mutate, isPending } = useCreateTeam();
 
   const handleSave = () => {
-    console.log("bang");
     mutate(
       {
         name: formState.teamName,
@@ -298,7 +299,10 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
               <div className="flex items-center gap-3">
                 <button
                   onClick={handleWowAuditTest}
-                  disabled={wowAuditTestStatus === "loading" || wowAuditTestStatus === "success"}
+                  disabled={
+                    wowAuditTestStatus === "loading" ||
+                    wowAuditTestStatus === "success"
+                  }
                   className={`
                     flex items-center gap-2 px-4 py-2 rounded-xl font-medium font-montserrat text-sm
                     transition-all duration-200
