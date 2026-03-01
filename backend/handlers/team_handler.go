@@ -440,7 +440,7 @@ func SyncWowAuditWishlists(c *gin.Context) {
 		wishlist.Description = cfg.Description
 		wishlist.FightStyle = cfg.FightStyle
 		wishlist.NumberOfBosses = cfg.NumberOfBosses
-		wishlist.FightDuration = cfg.FightDuration
+		wishlist.FightDuration = cfg.FightDuration * 60
 		wishlist.Sockets = cfg.Sockets
 		wishlist.Pi = cfg.Pi
 		wishlist.ExpertMode = cfg.ExpertMode
@@ -475,8 +475,8 @@ func SyncWowAuditWishlists(c *gin.Context) {
 
 // UploadDroptimizerPayload is the request body for POST /teams/:teamId/wowaudit/upload
 type UploadDroptimizerPayload struct {
-	WishlistID uint   `json:"wishlist_id" binding:"required"`
-	URL        string `json:"url" binding:"required"`
+	WishlistName string `json:"wishlist_name" binding:"required"`
+	URL          string `json:"url" binding:"required"`
 }
 
 // parsedDroptimizerMeta holds the fields extracted from a Raidbots droptimizer report
@@ -502,8 +502,8 @@ type difficultyUpgradeTrack struct {
 var raidbotsUpgradeTracks = map[string]difficultyUpgradeTrack{
 	"Mythic": {track: "Myth", maxTier: 6},
 	"Heroic": {track: "Hero", maxTier: 6},
-	"Normal": {track: "Champion", maxTier: 8},
-	"LFR":    {track: "Veteran", maxTier: 8},
+	"Normal": {track: "Champion", maxTier: 6},
+	"LFR":    {track: "Veteran", maxTier: 6},
 }
 
 // requiredBuffs lists standard raid buffs that must always be active in the sim.
@@ -670,7 +670,7 @@ func validateReportAgainstWishlist(meta *parsedDroptimizerMeta, wishlist models.
 				expectedTier = wishlist.UpgradeLevelLfr
 			}
 			if expectedTier > 0 {
-				expectedLabel := fmt.Sprintf("%s %d/%d", track.track, expectedTier, track.maxTier)
+				expectedLabel := fmt.Sprintf("%s %d/%d", track.track, expectedTier+1, track.maxTier)
 				if meta.UpgradeLevel != expectedLabel {
 					errs = append(errs, fmt.Sprintf("upgrade level for %s must be '%s' (got '%s')", meta.Difficulty, expectedLabel, meta.UpgradeLevel))
 				}
@@ -722,6 +722,8 @@ func uploadDroptimizerToWoWAudit(characterName string, characterID float64, repo
 		"replace_manual_edits": true,
 		"clear_conduits":       true,
 	}
+	fmt.Print("CharID Here")
+	fmt.Print(characterID)
 	body, err := json.Marshal(payload)
 	if err != nil {
 		return false, err
@@ -738,6 +740,24 @@ func uploadDroptimizerToWoWAudit(characterName string, characterID float64, repo
 	if err != nil {
 		return false, err
 	}
+	fmt.Printf("Here")
+	fmt.Print(resp.StatusCode)
+	fmt.Print("Status code 406")
+	if resp.StatusCode == 406 {
+		b, err := io.ReadAll(resp.Body)
+		if err != nil {
+			return false, fmt.Errorf("wowaudit rejected the upload (406)")
+		}
+		var apiErr struct {
+			Message string `json:"message"`
+			Error   string `json:"error"`
+		}
+		if jsonErr := json.Unmarshal(b, &apiErr); jsonErr != nil || apiErr.Message == "" {
+			return false, fmt.Errorf("wowaudit rejected the upload: %s", string(b))
+		}
+		return false, fmt.Errorf("%s", apiErr.Message)
+	}
+
 	defer resp.Body.Close()
 	return resp.StatusCode == http.StatusOK, nil
 }
@@ -766,6 +786,7 @@ func UploadDroptimizer(c *gin.Context) {
 
 	var payload UploadDroptimizerPayload
 	if err := c.BindJSON(&payload); err != nil {
+		fmt.Print(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request payload"})
 		return
 	}
@@ -790,7 +811,7 @@ func UploadDroptimizer(c *gin.Context) {
 
 	// Fetch the wishlist config and confirm it belongs to this team
 	wishlist := models.Wishlist{}
-	if err := database.DB.Where("id = ? AND team_id = ?", payload.WishlistID, teamId).First(&wishlist).Error; err != nil {
+	if err := database.DB.Where("name = ? AND team_id = ?", payload.WishlistName, teamId).First(&wishlist).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "wishlist configuration not found for this team"})
 		return
 	}
@@ -861,8 +882,11 @@ func UploadDroptimizer(c *gin.Context) {
 	// Upload the droptimizer to WoWAudit using the wishlist's name as the configuration name
 	success, err := uploadDroptimizerToWoWAudit(meta.Character, characterID, reportID, wishlist.Name, team.WowAuditApiKey)
 	if err != nil {
-		log.Printf("WoWAudit upload error for report %s: %v", reportID, err)
-		c.JSON(http.StatusBadGateway, gin.H{"error": "failed to upload report to WoWAudit"})
+		fmt.Printf("WoWAudit upload error for report %s: %v", reportID, err)
+		c.JSON(http.StatusUnprocessableEntity, gin.H{
+			"error":   "report validation failed",
+			"details": []string{err.Error()},
+		})
 		return
 	}
 	if !success {
@@ -871,9 +895,9 @@ func UploadDroptimizer(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"message":   "droptimizer uploaded successfully",
-		"character": meta.Character,
-		"spec":      meta.Spec,
+		"message":    "droptimizer uploaded successfully",
+		"character":  meta.Character,
+		"spec":       meta.Spec,
 		"difficulty": meta.Difficulty,
 	})
 }

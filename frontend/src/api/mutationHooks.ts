@@ -326,3 +326,38 @@ export const useDeleteMemberFromTeam = (teamId: number) => {
         }
     })
 }
+
+type UploadDroptimizerPayload = {
+    wishlist_name: string
+    url: string
+}
+
+export class DroptimizerUploadError extends Error {
+    details: string[]
+    constructor(message: string, details: string[]) {
+        super(message)
+        this.details = details
+    }
+}
+
+export const useUploadDroptimizer = (teamId: number) => {
+    const { headers, url } = useKpApi(`/teams/${teamId}/wowaudit/upload`)
+    return useMutation({
+        mutationKey: ["uploadDroptimizer", teamId],
+        mutationFn: async (payload: UploadDroptimizerPayload) => {
+            const res = await fetch(url, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(payload)
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new DroptimizerUploadError(
+                    data.error ?? "Upload failed",
+                    data.details ?? []
+                )
+            }
+            return data
+        }
+    })
+}
