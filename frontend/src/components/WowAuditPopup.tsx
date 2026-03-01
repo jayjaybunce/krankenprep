@@ -2,9 +2,10 @@ import type { FC } from "react";
 import { useState } from "react";
 import { X } from "lucide-react";
 import { useTeam } from "../hooks";
+import { useUploadDroptimizer, DroptimizerUploadError } from "../api/mutationHooks";
 
 const DISABLED_STATE = {
-  disabled: true,
+  disabled: false,
   message:
     "Raidbots and WoWAudit are not yet updated for Midnight. When they are, this feature will be enabled.",
 };
@@ -13,20 +14,41 @@ export const WowAuditPopup: FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [inputValue, setInputValue] = useState("");
   const [errors, setErrors] = useState<string[]>([]);
-  const [selectedConfigId, setSelectedConfigId] = useState<number | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
   const { team } = useTeam();
+
+  const { mutate } = useUploadDroptimizer(team?.id ?? -1);
 
   if (!team?.team?.wowaudit_integration) return null;
 
   const configs = team.team.wishlist_configs ?? [];
-  const effectiveConfigId = selectedConfigId ?? configs[0]?.id ?? null;
-  console.log("team", team);
+  const effectiveConfigId = selectedConfigId ?? configs[0]?.name ?? null;
 
   const handleSubmit = () => {
-    // Stub — wire up to upload endpoint when available
-    // effectiveConfigId holds the selected wishlist config id
+    if (!effectiveConfigId) return;
     setErrors([]);
+    setSuccessMessage(null);
+    mutate(
+      { wishlist_name: effectiveConfigId, url: inputValue },
+      {
+        onError: (err) => {
+          if (err instanceof DroptimizerUploadError && err.details.length > 0) {
+            setErrors(err.details);
+          } else {
+            setErrors([err.message]);
+          }
+        },
+        onSuccess: () => {
+          setInputValue("");
+          setSuccessMessage("Droptimizer uploaded successfully!");
+        },
+      }
+    );
   };
+
+  console.log(selectedConfigId);
+  console.log(inputValue);
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3">
@@ -62,14 +84,15 @@ export const WowAuditPopup: FC = () => {
                   key={cfg.id}
                   type="button"
                   disabled={DISABLED_STATE.disabled}
-                  onClick={() => setSelectedConfigId(cfg.id)}
+                  onClick={() => setSelectedConfigId(cfg.name)}
                   className={`
                     px-3 py-1.5 rounded-lg text-xs font-semibold font-montserrat transition
-                    ${DISABLED_STATE.disabled
-                      ? "bg-slate-700/40 text-slate-500 border border-slate-700/50 cursor-not-allowed"
-                      : effectiveConfigId === cfg.id
-                        ? "bg-cyan-600 text-white border border-transparent"
-                        : "bg-slate-700/60 text-slate-300 hover:bg-slate-600/60 hover:text-white border border-slate-600/50"
+                    ${
+                      DISABLED_STATE.disabled
+                        ? "bg-slate-700/40 text-slate-500 border border-slate-700/50 cursor-not-allowed"
+                        : effectiveConfigId === cfg.name
+                          ? "bg-cyan-600 text-white border border-transparent"
+                          : "bg-slate-700/60 text-slate-300 hover:bg-slate-600/60 hover:text-white border border-slate-600/50"
                     }
                   `}
                 >
@@ -82,18 +105,24 @@ export const WowAuditPopup: FC = () => {
             type="text"
             disabled={DISABLED_STATE.disabled}
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => { setInputValue(e.target.value); setSuccessMessage(null); }}
             placeholder="Paste Droptimizer URL..."
             className={`
               w-full bg-slate-800/80 border border-slate-600 rounded-lg
               px-3 py-2 text-sm placeholder:text-slate-500
               transition
-              ${DISABLED_STATE.disabled
-                ? "text-slate-500 cursor-not-allowed opacity-50"
-                : "text-white focus:outline-none focus:border-cyan-500/70 focus:ring-1 focus:ring-cyan-500/30"
+              ${
+                DISABLED_STATE.disabled
+                  ? "text-slate-500 cursor-not-allowed opacity-50"
+                  : "text-white focus:outline-none focus:border-cyan-500/70 focus:ring-1 focus:ring-cyan-500/30"
               }
             `}
           />
+          {successMessage && (
+            <div className="bg-emerald-900/30 border border-emerald-500/40 rounded-lg p-3">
+              <p className="text-xs text-emerald-300">{successMessage}</p>
+            </div>
+          )}
           {errors.length > 0 && (
             <div className="bg-rose-900/30 border border-rose-500/40 rounded-lg p-3 flex flex-col gap-1">
               {errors.map((err, i) => (
@@ -109,9 +138,10 @@ export const WowAuditPopup: FC = () => {
             className={`
               w-full text-white text-sm font-semibold rounded-lg
               px-4 py-2 transition
-              ${DISABLED_STATE.disabled
-                ? "bg-slate-700/50 text-slate-500 cursor-not-allowed"
-                : "bg-cyan-600 hover:bg-cyan-500"
+              ${
+                DISABLED_STATE.disabled
+                  ? "bg-slate-700/50 text-slate-500 cursor-not-allowed"
+                  : "bg-cyan-600 hover:bg-cyan-500"
               }
             `}
           >

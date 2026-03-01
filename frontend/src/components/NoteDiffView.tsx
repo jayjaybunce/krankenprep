@@ -2,6 +2,7 @@ import type { FC } from "react";
 import Markdown from "react-markdown";
 import type { Components } from "react-markdown";
 import { defaultUrlTransform } from "react-markdown";
+import { Link } from "react-router-dom";
 import { useTheme } from "../hooks";
 import type { DiffOp } from "../api/queryHooks";
 
@@ -20,9 +21,9 @@ const sizeConfig = {
     h2: "text-base font-bold mb-1 mt-2",
     h3: "text-sm font-semibold mb-1 mt-1.5",
     p: "mb-1.5 leading-snug text-xs",
-    ul: "list-disc list-outside ml-4 mb-1.5 space-y-0.5 text-xs",
-    ol: "list-decimal list-outside ml-4 mb-1.5 space-y-0.5 text-xs",
-    li: "pl-1",
+    ul: "list-disc list-inside mb-1.5 space-y-0.5 text-xs",
+    ol: "list-decimal list-inside mb-1.5 space-y-0.5 text-xs",
+    li: "ml-2",
     strong: "text-xs font-bold",
     em: "text-xs italic",
   },
@@ -31,9 +32,9 @@ const sizeConfig = {
     h2: "text-xl font-bold mb-2 mt-3",
     h3: "text-lg font-semibold mb-1.5 mt-2.5",
     p: "mb-2 leading-normal text-sm",
-    ul: "list-disc list-outside ml-5 mb-2 space-y-1 text-sm",
-    ol: "list-decimal list-outside ml-5 mb-2 space-y-1 text-sm",
-    li: "pl-1",
+    ul: "list-disc list-inside mb-2 space-y-1 text-sm",
+    ol: "list-decimal list-inside mb-2 space-y-1 text-sm",
+    li: "ml-3",
     strong: "text-sm font-bold",
     em: "text-sm italic",
   },
@@ -42,9 +43,9 @@ const sizeConfig = {
     h2: "text-3xl font-bold mb-3 mt-5",
     h3: "text-2xl font-semibold mb-3 mt-4",
     p: "mb-4 leading-relaxed",
-    ul: "list-disc list-outside ml-6 mb-4 space-y-2",
-    ol: "list-decimal list-outside ml-6 mb-4 space-y-2",
-    li: "pl-1",
+    ul: "list-disc list-inside mb-4 space-y-2",
+    ol: "list-decimal list-inside mb-4 space-y-2",
+    li: "ml-4",
     strong: "font-bold",
     em: "italic",
   },
@@ -132,20 +133,106 @@ function buildComponents(
         {children}
       </em>
     ),
-    a: ({ href, children }) => (
-      <a
-        href={href}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={`underline decoration-2 underline-offset-2 transition-colors ${isDark ? c.link.dark : c.link.light}`}
-      >
-        {children}
-      </a>
-    ),
+    a: ({ href, children }) => {
+      const match = href?.match(/spell:(\d+)\/name:([^|]+)/);
+      const isRaidplanLink = /\/raidplan\//.test(href ?? "");
+
+      if (isRaidplanLink) {
+        return (
+          <Link
+            to={href ?? ""}
+            className={`inline-flex items-center gap-1 font-medium underline decoration-2 underline-offset-2 transition-all duration-200 ${isDark ? c.link.dark : c.link.light}`}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="inline shrink-0 w-3 h-3"
+            >
+              <rect x="2" y="3" width="20" height="14" rx="2" />
+              <rect x="13" y="10" width="7" height="5" rx="1" />
+            </svg>
+            {children}
+          </Link>
+        );
+      }
+      if (match) {
+        const [, spellId, spellName] = match;
+        return (
+          <a
+            href={`https://www.wowhead.com/spell=${spellId}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            data-wh-icon-size="small"
+            className={`font-medium underline decoration-2 underline-offset-2 transition-all duration-200 inline-block w-auto ${isDark ? c.link.dark : c.link.light}`}
+          >
+            {spellName ? (
+              <img
+                src={`https://wow.zamimg.com/images/wow/icons/small/${spellName}.jpg`}
+                className="w-5 h-5 inline mr-1"
+              />
+            ) : (
+              <></>
+            )}
+            {children}
+          </a>
+        );
+      }
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`underline decoration-2 underline-offset-2 transition-colors ${isDark ? c.link.dark : c.link.light}`}
+        >
+          {children}
+        </a>
+      );
+    },
     hr: () => (
       <hr className={`my-2 border-0 h-px ${isDark ? "bg-slate-700" : "bg-slate-300"}`} />
     ),
   };
+}
+
+// Split lines into groups whenever indentation resets to less than the first
+// non-empty line's indentation. This prevents 4+-space indented sub-bullets
+// from being stranded in the same block as 0-indent lines, which would cause
+// CommonMark to treat the indented lines as code blocks.
+function splitAtIndentResets(lines: string[]): string[][] {
+  const getIndent = (l: string): number | null =>
+    l.trim().length > 0 ? (l.match(/^(\s*)/)?.[1].length ?? 0) : null;
+
+  const groups: string[][] = [[]];
+  let baseIndent: number | null = null;
+
+  for (const line of lines) {
+    const indent = getIndent(line);
+    if (indent !== null && baseIndent === null) {
+      baseIndent = indent;
+    }
+    if (indent !== null && baseIndent !== null && indent < baseIndent) {
+      groups.push([line]);
+      baseIndent = indent;
+    } else {
+      groups[groups.length - 1].push(line);
+    }
+  }
+
+  return groups.filter((g) => g.some((l) => l.trim().length > 0));
+}
+
+function buildContent(lines: string[]): string {
+  const nonEmpty = lines.filter((l) => l.trim().length > 0);
+  const minIndent =
+    nonEmpty.length > 0
+      ? Math.min(...nonEmpty.map((l) => l.match(/^(\s*)/)?.[1].length ?? 0))
+      : 0;
+  return lines.map((l) => l.slice(minIndent)).join("\n") + "\n";
 }
 
 export const NoteDiffView: FC<NoteDiffViewProps> = ({
@@ -157,20 +244,13 @@ export const NoteDiffView: FC<NoteDiffViewProps> = ({
   const isDark = colorMode === "dark";
   const components = buildComponents(color, size, isDark);
 
+  const urlTransform = (url: string) =>
+    url.startsWith("spell:") ? url : defaultUrlTransform(url);
+
   return (
     <div>
       {diffs.map((op, index) => {
-        // Dedent: subtract minimum indentation so that 4+-space-indented
-        // nested list items are not mis-parsed as indented code blocks.
-        const nonEmpty = op.lines.filter((l) => l.trim().length > 0);
-        const minIndent =
-          nonEmpty.length > 0
-            ? Math.min(
-                ...nonEmpty.map((l) => l.match(/^(\s*)/)?.[1].length ?? 0),
-              )
-            : 0;
-        const content =
-          op.lines.map((l) => l.slice(minIndent)).join("\n") + "\n";
+        const groups = splitAtIndentResets(op.lines);
 
         if (op.type === "insert") {
           return (
@@ -180,14 +260,11 @@ export const NoteDiffView: FC<NoteDiffViewProps> = ({
                 isDark ? "bg-emerald-500/10" : "bg-emerald-50"
               }`}
             >
-              <Markdown
-                components={components}
-                urlTransform={(url) =>
-                  url.startsWith("spell:") ? url : defaultUrlTransform(url)
-                }
-              >
-                {content}
-              </Markdown>
+              {groups.map((g, gi) => (
+                <Markdown key={gi} components={components} urlTransform={urlTransform}>
+                  {buildContent(g)}
+                </Markdown>
+              ))}
             </div>
           );
         }
@@ -200,14 +277,11 @@ export const NoteDiffView: FC<NoteDiffViewProps> = ({
                 isDark ? "bg-rose-500/10" : "bg-rose-50"
               }`}
             >
-              <Markdown
-                components={components}
-                urlTransform={(url) =>
-                  url.startsWith("spell:") ? url : defaultUrlTransform(url)
-                }
-              >
-                {content}
-              </Markdown>
+              {groups.map((g, gi) => (
+                <Markdown key={gi} components={components} urlTransform={urlTransform}>
+                  {buildContent(g)}
+                </Markdown>
+              ))}
             </div>
           );
         }
@@ -215,14 +289,11 @@ export const NoteDiffView: FC<NoteDiffViewProps> = ({
         // equal — render normally, no highlight
         return (
           <div key={index}>
-            <Markdown
-              components={components}
-              urlTransform={(url) =>
-                url.startsWith("spell:") ? url : defaultUrlTransform(url)
-              }
-            >
-              {content}
-            </Markdown>
+            {groups.map((g, gi) => (
+              <Markdown key={gi} components={components} urlTransform={urlTransform}>
+                {buildContent(g)}
+              </Markdown>
+            ))}
           </div>
         );
       })}
