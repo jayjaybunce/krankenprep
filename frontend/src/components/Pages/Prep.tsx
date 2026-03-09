@@ -18,7 +18,6 @@ import {
   BookOpen,
   Lightbulb,
   Users,
-  Target,
   ArrowRight,
   HelpCircle,
   History,
@@ -175,8 +174,10 @@ const BossDisplay: FC<BossProps> = ({
   };
   const handleTouchEnd = (e: React.TouchEvent) => {
     const delta = e.changedTouches[0].clientX - touchStartX.current;
-    if (delta < -50 && activePanel < 2) setActivePanel((activePanel + 1) as 0 | 1 | 2);
-    if (delta > 50 && activePanel > 0) setActivePanel((activePanel - 1) as 0 | 1 | 2);
+    if (delta < -50 && activePanel < 2)
+      setActivePanel((activePanel + 1) as 0 | 1 | 2);
+    if (delta > 50 && activePanel > 0)
+      setActivePanel((activePanel - 1) as 0 | 1 | 2);
   };
 
   const selectedSectionId = urlSectionId ?? null;
@@ -325,120 +326,285 @@ const BossDisplay: FC<BossProps> = ({
       >
         <div
           className="flex h-full transition-transform duration-300 ease-out"
-          style={isMobile ? { width: "300%", transform: `translateX(-${activePanel * 33.333}%)` } : undefined}
+          style={
+            isMobile
+              ? {
+                  width: "300%",
+                  transform: `translateX(-${activePanel * 33.333}%)`,
+                }
+              : undefined
+          }
         >
-      {/* Panel 0: Raidplan (mobile only) */}
-      <div
-        className="lg:hidden flex flex-col h-full overflow-y-auto"
-        style={isMobile ? { width: "33.333%" } : undefined}
-      >
-        {raidplanJsx}
-      </div>
-
-      {/* Panel 1: Sections */}
-      <div
-        className="lg:w-1/2 flex flex-col h-full overflow-y-auto"
-        style={isMobile ? { width: "33.333%" } : undefined}
-      >
-        {/* Desktop only: sticky raidplan above sections */}
-        <div className="hidden lg:block">
-          {raidplanJsx}
-        </div>
-        <div className="flex flex-row gap-2 items-center justify-between pl-3">
-          <div className="flex flex-row items-center gap-2">
-            <div className="w-1 h-5 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full" />
-            <h1 className="font-montserrat text-black dark:text-white text-4xl">
-              Sections
-            </h1>
+          {/* Panel 0: Raidplan (mobile only) */}
+          <div
+            className="lg:hidden flex flex-col h-full overflow-y-auto"
+            style={isMobile ? { width: "33.333%" } : undefined}
+          >
+            {raidplanJsx}
           </div>
-          {isUserAdmin && (
-            <Button
-              variant="primary"
-              size="xs"
-              onClick={() => setIsAddingSection(true)}
-              className="mt-2"
-            >
-              Add Section <PlusIcon className="w-4 h-4 ml-1" />
-            </Button>
-          )}
-        </div>
-        <div className="flex flex-col flex-2 gap-3 mt-3 p-4 overflow-y-scroll unfuck-scrollbar-1">
-          {sections.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16 px-6">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-600/20 blur-2xl rounded-full" />
-                <div className="relative bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-full p-6">
-                  <Library className="w-12 h-12 text-cyan-400" />
-                </div>
+
+          {/* Panel 1: Sections */}
+          <div
+            className="lg:w-1/2 flex flex-col h-full overflow-y-auto"
+            style={isMobile ? { width: "33.333%" } : undefined}
+          >
+            {/* Desktop only: sticky raidplan above sections */}
+            <div className="hidden lg:block">{raidplanJsx}</div>
+            <div className="flex flex-row gap-2 items-center justify-between pl-3">
+              <div className="flex flex-row items-center gap-2">
+                <div className="w-1 h-5 bg-gradient-to-b from-indigo-500 to-purple-600 rounded-full" />
+                <h1 className="font-montserrat text-black dark:text-white text-4xl">
+                  Sections
+                </h1>
               </div>
-              <h3 className="font-montserrat text-2xl font-bold text-black dark:text-white mb-2">
-                No Sections Yet
-              </h3>
-              <p className="font-montserrat text-sm text-slate-600 dark:text-slate-400 text-center max-w-md mb-4">
-                Click the 'Add Section' button above to create your first
-                section section and start organizing your boss strategy.
-              </p>
+              {isUserAdmin && (
+                <Button
+                  variant="primary"
+                  size="xs"
+                  onClick={() => setIsAddingSection(true)}
+                  className="mt-2"
+                >
+                  Add Section <PlusIcon className="w-4 h-4 ml-1" />
+                </Button>
+              )}
             </div>
-          ) : (
-            <div className="flex flex-col gap-3 bg-red">
-              {sections.map((section) => {
-                const isSelected = selectedSection?.id === section?.id;
-                return (
-                  <Card
-                    key={section.id}
-                    variant={section.variant}
-                    hover={false}
-                    isActive={isSelected}
-                    onClick={() => {
-                      if (isSelected) return;
-                      navigate(`/prep/${boss?.id}/section/${section.id}`, {
-                        replace: true,
-                      });
-                    }}
-                  >
-                    <div className="flex flex-col gap-2">
-                      <div className="flex flex-row justify-between items-center">
-                        <h2 className="font-montserrat text-xl font-bold text-black dark:text-white">
-                          {section?.name || "Section Name"}
-                        </h2>
-                        <div className="flex items-center gap-2">
-                          {section.tags.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
-                              {section.tags.split("-$-").map((tag) => (
-                                <Badge
-                                  key={tag}
-                                  variant="primary"
-                                  uppercase={false}
+            <div className="flex flex-col flex-2 gap-3 mt-3 p-4 overflow-y-scroll unfuck-scrollbar-1">
+              {sections.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 px-6">
+                  <div className="relative mb-6">
+                    <div className="absolute inset-0 bg-gradient-to-r from-cyan-500/20 to-blue-600/20 blur-2xl rounded-full" />
+                    <div className="relative bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-full p-6">
+                      <Library className="w-12 h-12 text-cyan-400" />
+                    </div>
+                  </div>
+                  <h3 className="font-montserrat text-2xl font-bold text-black dark:text-white mb-2">
+                    No Sections Yet
+                  </h3>
+                  <p className="font-montserrat text-sm text-slate-600 dark:text-slate-400 text-center max-w-md mb-4">
+                    Click the 'Add Section' button above to create your first
+                    section section and start organizing your boss strategy.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3 bg-red">
+                  {sections.map((section) => {
+                    const isSelected = selectedSection?.id === section?.id;
+                    return (
+                      <Card
+                        key={section.id}
+                        variant={section.variant}
+                        hover={false}
+                        isActive={isSelected}
+                        onClick={() => {
+                          if (isSelected) return;
+                          navigate(`/prep/${boss?.id}/section/${section.id}`, {
+                            replace: true,
+                          });
+                        }}
+                      >
+                        <div className="flex flex-col gap-2">
+                          <div className="flex flex-row justify-between items-center">
+                            <h2 className="font-montserrat text-xl font-bold text-black dark:text-white">
+                              {section?.name || "Section Name"}
+                            </h2>
+                            <div className="flex items-center gap-2">
+                              {section.tags.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {section.tags.split("-$-").map((tag) => (
+                                    <Badge
+                                      key={tag}
+                                      variant="primary"
+                                      uppercase={false}
+                                    >
+                                      {tag}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                              {isUserAdmin && (
+                                <div
+                                  className="flex items-center gap-1"
+                                  onClick={(e) => e.stopPropagation()}
                                 >
-                                  {tag}
-                                </Badge>
-                              ))}
+                                  {pendingDeleteSectionId === section.id ? (
+                                    <>
+                                      <span className="text-xs text-rose-400 font-medium font-montserrat mr-1">
+                                        Delete?
+                                      </span>
+                                      <button
+                                        onClick={() => {
+                                          deleteSection(section.id);
+                                          setPendingDeleteSectionId(null);
+                                        }}
+                                        className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 transition-colors"
+                                      >
+                                        Yes
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          setPendingDeleteSectionId(null)
+                                        }
+                                        className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-slate-700/50 text-slate-400 hover:bg-slate-600/50 transition-colors"
+                                      >
+                                        No
+                                      </button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <button
+                                        onClick={() =>
+                                          setEditingSection(section)
+                                        }
+                                        className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-700/50 transition-colors"
+                                      >
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </button>
+                                      <button
+                                        onClick={() =>
+                                          setPendingDeleteSectionId(section.id)
+                                        }
+                                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-700/50 transition-colors"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              )}
                             </div>
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="hidden lg:block w-px bg-slate-300 dark:bg-slate-700 mx-4 shrink-0" />
+
+          {/* Panel 2: Notes */}
+          <div
+            className="lg:w-1/2 flex flex-col h-full overflow-y-auto"
+            style={isMobile ? { width: "33.333%" } : undefined}
+          >
+            <div className="flex flex-row gap-2 items-center justify-between">
+              <div className="flex flex-row gap-2 items-center">
+                <div className="w-1 h-5 bg-gradient-to-b from-orange-500 to-red-600 rounded-full" />
+                <h1 className="font-montserrat text-black dark:text-white text-4xl">
+                  Notes
+                </h1>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowMarkdownGuide(true)}
+                >
+                  <HelpCircle className="w-4 h-4" /> Markdown Guide
+                </Button>
+                {selectedSection && isUserAdmin && (
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={() => setIsAddingNote(true)}
+                  >
+                    Add Note <PlusIcon className="w-4 h-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+
+            <div className="overflow-y-auto h-full unfuck-scrollbar-2 mt-4">
+              {/* <div className="flex flex-col gap-2 pl-3 mb-5"></div> */}
+
+              {!selectedSection ? (
+                <div className="flex flex-col items-center justify-center py-16 px-6">
+                  <div className="relative mb-6">
+                    <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-600/20 blur-2xl rounded-full" />
+                    <div className="relative bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-full p-6">
+                      <FileText className="w-12 h-12 text-orange-400" />
+                    </div>
+                  </div>
+                  <h3 className="font-montserrat text-2xl font-bold text-black dark:text-white mb-2">
+                    No Section Selected
+                  </h3>
+                  <p className="font-montserrat text-sm text-slate-600 dark:text-slate-400 text-center max-w-md">
+                    Select a section from the left to view and edit its notes.
+                  </p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  {selectedSection.notes && selectedSection.notes.length > 0 ? (
+                    selectedSection.notes.map((note) => (
+                      <div
+                        key={note.id}
+                        data-note-id={note.id}
+                        className={`bg-slate-100 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200 dark:border-slate-700/50 rounded-lg p-5 shadow-sm ${
+                          highlightedNoteId === note.id
+                            ? "animate-note-highlight"
+                            : ""
+                        }`}
+                      >
+                        <div className="flex items-start gap-3 mb-3">
+                          <div className="w-1 h-5 bg-gradient-to-b from-blue-500 to-cyan-600 rounded-full" />
+                          <div className="flex-1">
+                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                              {(() => {
+                                const date = new Date(note.created_at);
+
+                                if (isNaN(date.getTime())) {
+                                  return "Invalid date";
+                                }
+
+                                return date.toLocaleString("en-US", {
+                                  month: "short",
+                                  day: "numeric",
+                                  year: "numeric",
+                                  hour: "numeric",
+                                  minute: "2-digit",
+                                  hour12: true,
+                                });
+                              })()}
+                            </p>
+                          </div>
+                          {note.has_diff && (
+                            <button
+                              onClick={() => toggleDiff(note.id)}
+                              title={
+                                hiddenDiffIds.has(note.id)
+                                  ? "Show changes"
+                                  : "Hide changes"
+                              }
+                              className={`p-1.5 rounded-lg transition-colors ${
+                                hiddenDiffIds.has(note.id)
+                                  ? "text-slate-400 hover:text-amber-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
+                                  : "text-amber-400 bg-amber-500/10 hover:bg-amber-500/20"
+                              }`}
+                            >
+                              <History className="w-3.5 h-3.5" />
+                            </button>
                           )}
                           {isUserAdmin && (
-                            <div
-                              className="flex items-center gap-1"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              {pendingDeleteSectionId === section.id ? (
+                            <div className="flex items-center gap-1 shrink-0">
+                              {pendingDeleteNoteId === note.id ? (
                                 <>
                                   <span className="text-xs text-rose-400 font-medium font-montserrat mr-1">
                                     Delete?
                                   </span>
                                   <button
                                     onClick={() => {
-                                      deleteSection(section.id);
-                                      setPendingDeleteSectionId(null);
+                                      deleteNote(note.id);
+                                      setPendingDeleteNoteId(null);
                                     }}
                                     className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 transition-colors"
                                   >
                                     Yes
                                   </button>
                                   <button
-                                    onClick={() =>
-                                      setPendingDeleteSectionId(null)
-                                    }
-                                    className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-slate-700/50 text-slate-400 hover:bg-slate-600/50 transition-colors"
+                                    onClick={() => setPendingDeleteNoteId(null)}
+                                    className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-slate-200/50 dark:bg-slate-700/50 text-slate-400 hover:bg-slate-300/50 dark:hover:bg-slate-600/50 transition-colors"
                                   >
                                     No
                                   </button>
@@ -446,16 +612,21 @@ const BossDisplay: FC<BossProps> = ({
                               ) : (
                                 <>
                                   <button
-                                    onClick={() => setEditingSection(section)}
-                                    className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-700/50 transition-colors"
+                                    onClick={() =>
+                                      setEditingNote({
+                                        id: note.id,
+                                        content: note.content,
+                                      })
+                                    }
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
                                   >
                                     <Pencil className="w-3.5 h-3.5" />
                                   </button>
                                   <button
                                     onClick={() =>
-                                      setPendingDeleteSectionId(section.id)
+                                      setPendingDeleteNoteId(note.id)
                                     }
-                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-700/50 transition-colors"
+                                    className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
@@ -464,207 +635,52 @@ const BossDisplay: FC<BossProps> = ({
                             </div>
                           )}
                         </div>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      </div>
 
-      <div className="hidden lg:block w-px bg-slate-300 dark:bg-slate-700 mx-4 shrink-0" />
-
-      {/* Panel 2: Notes */}
-      <div
-        className="lg:w-1/2 flex flex-col h-full overflow-y-auto"
-        style={isMobile ? { width: "33.333%" } : undefined}
-      >
-        <div className="flex flex-row gap-2 items-center justify-between">
-          <div className="flex flex-row gap-2 items-center">
-            <div className="w-1 h-5 bg-gradient-to-b from-orange-500 to-red-600 rounded-full" />
-            <h1 className="font-montserrat text-black dark:text-white text-4xl">
-              Notes
-            </h1>
-          </div>
-          <div className="flex gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowMarkdownGuide(true)}
-            >
-              <HelpCircle className="w-4 h-4" /> Markdown Guide
-            </Button>
-            {selectedSection && isUserAdmin && (
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setIsAddingNote(true)}
-              >
-                Add Note <PlusIcon className="w-4 h-4" />
-              </Button>
-            )}
-          </div>
-        </div>
-
-        <div className="overflow-y-auto h-full unfuck-scrollbar-2 mt-4">
-          {/* <div className="flex flex-col gap-2 pl-3 mb-5"></div> */}
-
-          {!selectedSection ? (
-            <div className="flex flex-col items-center justify-center py-16 px-6">
-              <div className="relative mb-6">
-                <div className="absolute inset-0 bg-gradient-to-r from-orange-500/20 to-red-600/20 blur-2xl rounded-full" />
-                <div className="relative bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-full p-6">
-                  <FileText className="w-12 h-12 text-orange-400" />
-                </div>
-              </div>
-              <h3 className="font-montserrat text-2xl font-bold text-black dark:text-white mb-2">
-                No Section Selected
-              </h3>
-              <p className="font-montserrat text-sm text-slate-600 dark:text-slate-400 text-center max-w-md">
-                Select a section from the left to view and edit its notes.
-              </p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-4">
-              {selectedSection.notes && selectedSection.notes.length > 0 ? (
-                selectedSection.notes.map((note) => (
-                  <div
-                    key={note.id}
-                    data-note-id={note.id}
-                    className={`bg-slate-100 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200 dark:border-slate-700/50 rounded-lg p-5 shadow-sm ${
-                      highlightedNoteId === note.id
-                        ? "animate-note-highlight"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="w-1 h-5 bg-gradient-to-b from-blue-500 to-cyan-600 rounded-full" />
-                      <div className="flex-1">
-                        <p className="text-xs text-slate-500 dark:text-slate-400">
-                          {(() => {
-                            const date = new Date(note.created_at);
-
-                            if (isNaN(date.getTime())) {
-                              return "Invalid date";
-                            }
-
-                            return date.toLocaleString("en-US", {
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                              hour: "numeric",
-                              minute: "2-digit",
-                              hour12: true,
-                            });
-                          })()}
-                        </p>
-                      </div>
-                      {note.has_diff && (
-                        <button
-                          onClick={() => toggleDiff(note.id)}
-                          title={
-                            hiddenDiffIds.has(note.id)
-                              ? "Show changes"
-                              : "Hide changes"
-                          }
-                          className={`p-1.5 rounded-lg transition-colors ${
-                            hiddenDiffIds.has(note.id)
-                              ? "text-slate-400 hover:text-amber-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"
-                              : "text-amber-400 bg-amber-500/10 hover:bg-amber-500/20"
-                          }`}
-                        >
-                          <History className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-                      {isUserAdmin && (
-                        <div className="flex items-center gap-1 shrink-0">
-                          {pendingDeleteNoteId === note.id ? (
-                            <>
-                              <span className="text-xs text-rose-400 font-medium font-montserrat mr-1">
-                                Delete?
-                              </span>
-                              <button
-                                onClick={() => {
-                                  deleteNote(note.id);
-                                  setPendingDeleteNoteId(null);
-                                }}
-                                className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 transition-colors"
-                              >
-                                Yes
-                              </button>
-                              <button
-                                onClick={() => setPendingDeleteNoteId(null)}
-                                className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-slate-200/50 dark:bg-slate-700/50 text-slate-400 hover:bg-slate-300/50 dark:hover:bg-slate-600/50 transition-colors"
-                              >
-                                No
-                              </button>
-                            </>
+                        <div className="font-montserrat text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert max-w-none">
+                          {note.has_diff && !hiddenDiffIds.has(note.id) ? (
+                            <NoteDiffView
+                              diffs={note.diffs!}
+                              color={markdownColor}
+                              size={markdownSize}
+                            />
                           ) : (
-                            <>
-                              <button
-                                onClick={() =>
-                                  setEditingNote({
-                                    id: note.id,
-                                    content: note.content,
-                                  })
-                                }
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-cyan-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
-                              >
-                                <Pencil className="w-3.5 h-3.5" />
-                              </button>
-                              <button
-                                onClick={() => setPendingDeleteNoteId(note.id)}
-                                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 transition-colors"
-                              >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
-                            </>
+                            <MarkdownRenderer
+                              size={markdownSize}
+                              color={markdownColor}
+                            >
+                              {note.content}
+                            </MarkdownRenderer>
                           )}
                         </div>
-                      )}
-                    </div>
-
-                    <div className="font-montserrat text-slate-700 dark:text-slate-300 prose prose-sm dark:prose-invert max-w-none">
-                      {note.has_diff && !hiddenDiffIds.has(note.id) ? (
-                        <NoteDiffView diffs={note.diffs!} color={markdownColor} size={markdownSize} />
-                      ) : (
-                        <MarkdownRenderer
-                          size={markdownSize}
-                          color={markdownColor}
+                      </div>
+                    ))
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 px-6 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg">
+                      <FileText className="w-10 h-10 text-slate-400 dark:text-slate-600 mb-3" />
+                      <p className="font-montserrat text-sm text-slate-600 dark:text-slate-400 text-center mb-4">
+                        {isUserAdmin
+                          ? "No notes added yet. Click the button above to add your first note."
+                          : "No notes added yet. Contact your team admin to add notes."}
+                      </p>
+                      {isUserAdmin && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          onClick={() => setIsAddingNote(true)}
                         >
-                          {note.content}
-                        </MarkdownRenderer>
+                          Add Your First Note <PlusIcon className="w-4 h-4" />
+                        </Button>
                       )}
                     </div>
-                  </div>
-                ))
-              ) : (
-                <div className="flex flex-col items-center justify-center py-12 px-6 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-lg">
-                  <FileText className="w-10 h-10 text-slate-400 dark:text-slate-600 mb-3" />
-                  <p className="font-montserrat text-sm text-slate-600 dark:text-slate-400 text-center mb-4">
-                    {isUserAdmin
-                      ? "No notes added yet. Click the button above to add your first note."
-                      : "No notes added yet. Contact your team admin to add notes."}
-                  </p>
-                  {isUserAdmin && (
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      onClick={() => setIsAddingNote(true)}
-                    >
-                      Add Your First Note <PlusIcon className="w-4 h-4" />
-                    </Button>
                   )}
                 </div>
               )}
             </div>
-          )}
+          </div>
         </div>
+        {/* end sliding track */}
       </div>
-        </div>{/* end sliding track */}
-      </div>{/* end overflow container */}
+      {/* end overflow container */}
 
       <AddSectionModal
         isOpen={isAddingSection || editingSection !== null}
@@ -937,10 +953,11 @@ const NoSelectedBossDisplay: FC = () => {
 
   const raids =
     expData
-      ?.flatMap((exp) =>
-        exp?.seasons?.flatMap((s) =>
-          s?.raids?.map((raid, i) => ({ raid, index: i })) ?? [],
-        ) ?? [],
+      ?.flatMap(
+        (exp) =>
+          exp?.seasons?.flatMap(
+            (s) => s?.raids?.map((raid, i) => ({ raid, index: i })) ?? [],
+          ) ?? [],
       )
       ?.sort((a, b) => a.raid.order - b.raid.order) ?? [];
 
@@ -964,7 +981,12 @@ const NoSelectedBossDisplay: FC = () => {
               <span className="text-xs text-slate-500 dark:text-slate-500">
                 Choose a boss
               </span>
-              <BossDropdown raids={raids} boss={boss} setBoss={setBoss} fullWidth />
+              <BossDropdown
+                raids={raids}
+                boss={boss}
+                setBoss={setBoss}
+                fullWidth
+              />
             </div>
           </div>
         </Card>
