@@ -6,6 +6,7 @@ import { Reactangle } from "./Rectangle";
 import { Circle } from "./Circle";
 import { Triangle } from "./Triangle";
 import { RightTriangle } from "./RightTriangle";
+import { Ring } from "./Ring";
 import { Image } from "./Image";
 import { Line } from "./Line";
 import { Text } from "./Text";
@@ -135,6 +136,8 @@ export const PlanTab: FC<PlanTabProps> = ({
         return <Triangle {...commonProps} />;
       case "right triangle":
         return <RightTriangle {...commonProps} />;
+      case "ring":
+        return <Ring {...commonProps} />;
       case "img":
         return shape.src ? <Image {...commonProps} src={shape.src} /> : null;
       case "line":
