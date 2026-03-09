@@ -287,7 +287,8 @@ const getShapeCategory = (
     shape.type === "rect" ||
     shape.type === "circle" ||
     shape.type === "triangle" ||
-    shape.type === "right triangle"
+    shape.type === "right triangle" ||
+    shape.type === "ring"
   )
     return "shape";
   if (isClassIcon(shape)) return "class";
@@ -396,13 +397,53 @@ export const PropertiesPanel: FC<PropertiesPanelProps> = ({
           {/* Shape fill */}
           {category === "shape" && (
             <div className="space-y-1">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">
+                  Fill
+                </label>
+                <label className="flex items-center gap-1 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={selectedShape.fill === "transparent"}
+                    onChange={(e) =>
+                      onUpdate({ fill: e.target.checked ? "transparent" : "#ffffff" })
+                    }
+                    className="w-3 h-3 accent-cyan-500"
+                  />
+                  <span className="text-[9px] text-slate-400">No Fill</span>
+                </label>
+              </div>
+              {selectedShape.fill !== "transparent" && (
+                <ColorPicker
+                  value={selectedShape.fill || "#ffffff"}
+                  onChange={(color) => onUpdate({ fill: color })}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Ring width */}
+          {category === "shape" && selectedShape.type === "ring" && (
+            <div className="space-y-1">
               <label className="text-[10px] font-medium text-slate-400 uppercase tracking-wide">
-                Fill
+                Ring Width
               </label>
-              <ColorPicker
-                value={selectedShape.fill || "#ffffff"}
-                onChange={(color) => onUpdate({ fill: color })}
-              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="2"
+                  max={Math.max(3, (selectedShape.radiusX || 40) - 2)}
+                  step="1"
+                  value={selectedShape.ringWidth ?? 10}
+                  onChange={(e) =>
+                    onUpdate({ ringWidth: parseInt(e.target.value) })
+                  }
+                  className="flex-1 h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+                />
+                <span className="text-[10px] text-slate-300 font-medium w-8 text-right">
+                  {selectedShape.ringWidth ?? 10}px
+                </span>
+              </div>
             </div>
           )}
 

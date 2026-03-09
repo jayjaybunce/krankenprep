@@ -25,6 +25,7 @@ export type AllowedShapes =
   | "circle"
   | "triangle"
   | "right triangle"
+  | "ring"
   | "img"
   | "line"
   | "text";
@@ -61,6 +62,15 @@ const shapes: ToolbarShape[] = [
   {
     toolbarEl: <Type height={24} width={24} stroke="white" />,
     type: "text",
+  },
+  {
+    toolbarEl: (
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
+        <circle cx="12" cy="12" r="10" />
+        <circle cx="12" cy="12" r="5" />
+      </svg>
+    ),
+    type: "ring",
   },
 ];
 

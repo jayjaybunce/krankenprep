@@ -1,24 +1,24 @@
 import { useEffect, useRef, type FC } from "react";
-import { Transformer, Line, Text as KonvaText } from "react-konva";
+import { Transformer, Ring as KonvaRing, Text as KonvaText } from "react-konva";
 import type { Shape } from "./Planner";
 import { Transformer as TransformerType } from "konva/lib/shapes/Transformer";
 import Konva from "konva";
 
-type RightTriangle = {
+type RingProps = {
   onChange: (changes: Shape) => void;
   isSelected: boolean;
   shapeProps: Shape;
   onSelect: () => void;
 };
 
-export const RightTriangle: FC<RightTriangle> = ({
+export const Ring: FC<RingProps> = ({
   isSelected,
   shapeProps,
   onSelect,
   onChange,
 }) => {
   const trRef = useRef<TransformerType>(null);
-  const shapeRef = useRef<Konva.Line>(null);
+  const shapeRef = useRef<Konva.Ring>(null);
   const textRef = useRef<Konva.Text>(null);
 
   useEffect(() => {
@@ -27,30 +27,34 @@ export const RightTriangle: FC<RightTriangle> = ({
     }
   }, [isSelected]);
 
-  // Default right triangle points (right angle at bottom right)
-  const defaultPoints = [0, 0, 30, 30, 30, 0];
+  const outerRadius = shapeProps.radiusX || 40;
+  const ringWidth = shapeProps.ringWidth ?? 10;
+  const innerRadius = Math.max(1, outerRadius - ringWidth);
 
-  const { text: _t, labelFontSize: _lf, ...lineProps } = shapeProps;
-
-  // Compute label bounding box from points
-  const pts = shapeProps.points || defaultPoints;
-  const xs = pts.filter((_, i) => i % 2 === 0);
-  const ys = pts.filter((_, i) => i % 2 === 1);
-  const ptMinX = Math.min(...xs);
-  const ptMaxX = Math.max(...xs);
-  const ptMinY = Math.min(...ys);
+  const {
+    text: _t,
+    labelFontSize: _lf,
+    height: _h,
+    width: _w,
+    ringWidth: _rw,
+    radiusX: _rx,
+    radiusY: _ry,
+    src: _src,
+    points: _pts,
+    ...ringProps
+  } = shapeProps;
 
   return (
     <>
-      <Line
+      <KonvaRing
         draggable={isSelected && !shapeProps.locked}
-        points={shapeProps.points || defaultPoints}
-        closed
+        outerRadius={outerRadius}
+        innerRadius={innerRadius}
         onClick={onSelect}
         onTap={onSelect}
         ref={shapeRef}
-        {...lineProps}
-        fill={shapeProps.fill === "transparent" ? "transparent" : (shapeProps.fill || "#000")}
+        {...ringProps}
+        fill={shapeProps.fill === "transparent" ? "transparent" : (shapeProps.fill || "#fff")}
         id={shapeProps.id}
         name="shape"
         onTransformEnd={() => {
@@ -59,14 +63,8 @@ export const RightTriangle: FC<RightTriangle> = ({
 
           const scaleX = node.scaleX();
           const scaleY = node.scaleY();
+          const scale = Math.min(scaleX, scaleY);
 
-          // Apply the scale to the points
-          const points = node.points();
-          const newPoints = points.map((point, index) => {
-            return index % 2 === 0 ? point * scaleX : point * scaleY;
-          });
-
-          // Reset scale
           node.scaleX(1);
           node.scaleY(1);
 
@@ -75,8 +73,9 @@ export const RightTriangle: FC<RightTriangle> = ({
             x: node.x(),
             y: node.y(),
             rotation: node.rotation(),
-            points: newPoints,
-            labelFontSize: Math.max(8, (shapeProps.labelFontSize || 14) * Math.min(scaleX, scaleY)),
+            radiusX: Math.max(5, outerRadius * scale),
+            ringWidth: Math.max(2, ringWidth * scale),
+            labelFontSize: Math.max(8, (shapeProps.labelFontSize || 14) * scale),
           });
         }}
         onDragMove={(e) => {
@@ -97,8 +96,8 @@ export const RightTriangle: FC<RightTriangle> = ({
         ref={textRef}
         x={shapeProps.x}
         y={shapeProps.y}
-        offsetX={250 - (ptMinX + ptMaxX) / 2}
-        offsetY={-ptMinY + (shapeProps.labelFontSize || 14) + 4}
+        offsetX={250}
+        offsetY={outerRadius + (shapeProps.labelFontSize || 14) + 4}
         width={500}
         wrap="none"
         rotation={shapeProps.rotation}
@@ -112,7 +111,7 @@ export const RightTriangle: FC<RightTriangle> = ({
         onClick={(e) => { e.cancelBubble = true; }}
         onTap={(e) => { e.cancelBubble = true; }}
       />
-      {isSelected && !shapeProps.locked && <Transformer ref={trRef} />}
+      {isSelected && !shapeProps.locked && <Transformer ref={trRef} flipEnabled={false} />}
     </>
   );
 };

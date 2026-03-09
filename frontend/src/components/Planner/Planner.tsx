@@ -48,6 +48,7 @@ export type Shape = {
   fontFamily?: string; // For text elements
   locked?: boolean; // For locking shapes
   labelFontSize?: number; // Font size for shape label, scales with shape transforms
+  ringWidth?: number; // For ring shape: thickness (outerRadius - innerRadius)
 };
 
 export type Tab = {
@@ -113,6 +114,7 @@ const Planner: FC<PlannerProps> = ({
   const [raid, setRaid] = useState<string | null>(raidData[0].raidName);
 
   const [activeTab, setActiveTab] = useState(0);
+  const [deleteTabConfirmIndex, setDeleteTabConfirmIndex] = useState<number | null>(null);
   const [shapes, setShapes] = useState<Shape[]>([]);
   const [groupKey] = useState(0);
   const [contextMenu, setContextMenu] = useState<{
@@ -187,11 +189,36 @@ const Planner: FC<PlannerProps> = ({
       dragEl === "rect" ||
       dragEl === "circle" ||
       dragEl === "triangle" ||
-      dragEl === "right triangle";
+      dragEl === "right triangle" ||
+      dragEl === "ring";
 
     // NPC icons should be twice as large (80x80 instead of 40x40)
     // Use the isNpcDrag flag set when dragging from the NPC icons section
     const iconSize = isNpcDrag ? 80 : 40;
+
+    if (dragEl === "ring") {
+      copyTabs[activeTab].shapes = [
+        ...copyTabs[activeTab].shapes,
+        {
+          type: "ring",
+          x: position?.x as number,
+          y: position?.y as number,
+          id: uuid(),
+          scaleX: 1,
+          scaleY: 1,
+          stroke: "white",
+          strokeWidth: 0,
+          radiusX: 40,
+          radiusY: 40,
+          fill: "white",
+          rotation: 0,
+          opacity: 0.7,
+          ringWidth: 10,
+        },
+      ];
+      setTabs(copyTabs);
+      return;
+    }
 
     if (dragEl === "text") {
       copyTabs[activeTab].shapes = [
@@ -394,7 +421,8 @@ const Planner: FC<PlannerProps> = ({
       type === "rect" ||
       type === "circle" ||
       type === "triangle" ||
-      type === "right triangle";
+      type === "right triangle" ||
+      type === "ring";
 
     setShapes([
       ...shapes,
@@ -475,6 +503,18 @@ const Planner: FC<PlannerProps> = ({
 
   const handleTabClick = (index: number) => {
     setActiveTab(index);
+  };
+
+  const handleDeleteTab = (index: number) => {
+    if (tabs.length <= 1) return;
+    const newTabs = tabs.filter((_, i) => i !== index);
+    setTabs(newTabs);
+    setDeleteTabConfirmIndex(null);
+    if (activeTab >= newTabs.length) {
+      setActiveTab(newTabs.length - 1);
+    } else if (activeTab === index) {
+      setActiveTab(Math.max(0, index - 1));
+    }
   };
 
   const handleBackgroundChange = (n: number) => {
@@ -561,18 +601,34 @@ const Planner: FC<PlannerProps> = ({
           const stage = tabs[activeTab].ref.current;
           const pointerPos = stage?.getPointerPosition();
 
+          // Compute the visual center of each shape (accounts for anchor differences
+          // between shape types — circles use center, rects/images use top-left)
+          const getVisualCenter = (s: Shape) => {
+            switch (s.type) {
+              case "circle":
+              case "ring":
+                return { cx: s.x, cy: s.y };
+              case "rect":
+              case "img":
+                return { cx: s.x + (s.width || 40) / 2, cy: s.y + (s.height || 40) / 2 };
+              default:
+                return { cx: s.x, cy: s.y };
+            }
+          };
+
           let newShapes: Shape[];
 
           if (pointerPos) {
-            // Compute bounding box center of the copied shapes
-            const minX = Math.min(...copiedShapes.map((s) => s.x));
-            const minY = Math.min(...copiedShapes.map((s) => s.y));
-            const maxX = Math.max(...copiedShapes.map((s) => s.x));
-            const maxY = Math.max(...copiedShapes.map((s) => s.y));
+            // Compute bounding box center using visual centers
+            const centers = copiedShapes.map(getVisualCenter);
+            const minX = Math.min(...centers.map((c) => c.cx));
+            const minY = Math.min(...centers.map((c) => c.cy));
+            const maxX = Math.max(...centers.map((c) => c.cx));
+            const maxY = Math.max(...centers.map((c) => c.cy));
             const centerX = (minX + maxX) / 2;
             const centerY = (minY + maxY) / 2;
 
-            // Offset so the center of the selection lands on the cursor
+            // Offset so the visual center of the selection lands on the cursor
             const offsetX = pointerPos.x - centerX;
             const offsetY = pointerPos.y - centerY;
 
@@ -804,24 +860,61 @@ const Planner: FC<PlannerProps> = ({
           <div className="flex flex-row w-full gap-2 items-center flex-wrap">
             {tabs &&
               tabs.map((tab, index) => (
-                <div
-                  key={tab.id}
-                  className={`
-                    flex items-center gap-2 px-4 py-2 rounded-xl
-                    border transition-all duration-200 cursor-pointer
-                    ${
-                      activeTab === index
-                        ? colorMode === "dark"
-                          ? "bg-cyan-500/20 border-cyan-500 text-cyan-400"
-                          : "bg-cyan-50 border-cyan-500 text-cyan-700"
-                        : colorMode === "dark"
-                          ? "bg-slate-900/50 border-slate-800 text-slate-300 hover:bg-slate-900/70 hover:border-slate-700"
-                          : "bg-white/80 border-slate-200 text-slate-700 hover:bg-white hover:border-slate-300"
-                    }
-                  `}
-                  onClick={() => handleTabClick(index)}
-                >
-                  <span className="text-sm font-medium">{index + 1}</span>
+                <div key={tab.id} className="relative">
+                  {deleteTabConfirmIndex === index ? (
+                    <div className={`flex items-center gap-1 px-3 py-2 rounded-xl border text-xs font-medium ${
+                      colorMode === "dark"
+                        ? "bg-red-900/30 border-red-600 text-red-300"
+                        : "bg-red-50 border-red-400 text-red-700"
+                    }`}>
+                      <span>Delete slide {index + 1}?</span>
+                      <button
+                        className="px-1.5 py-0.5 rounded bg-red-500 text-white hover:bg-red-600 transition-colors"
+                        onClick={() => handleDeleteTab(index)}
+                      >
+                        Yes
+                      </button>
+                      <button
+                        className={`px-1.5 py-0.5 rounded hover:opacity-80 transition-opacity ${
+                          colorMode === "dark" ? "bg-slate-700 text-slate-300" : "bg-slate-200 text-slate-700"
+                        }`}
+                        onClick={() => setDeleteTabConfirmIndex(null)}
+                      >
+                        No
+                      </button>
+                    </div>
+                  ) : (
+                    <div
+                      className={`
+                        flex items-center gap-2 px-4 py-2 rounded-xl
+                        border transition-all duration-200 cursor-pointer
+                        ${
+                          activeTab === index
+                            ? colorMode === "dark"
+                              ? "bg-cyan-500/20 border-cyan-500 text-cyan-400"
+                              : "bg-cyan-50 border-cyan-500 text-cyan-700"
+                            : colorMode === "dark"
+                              ? "bg-slate-900/50 border-slate-800 text-slate-300 hover:bg-slate-900/70 hover:border-slate-700"
+                              : "bg-white/80 border-slate-200 text-slate-700 hover:bg-white hover:border-slate-300"
+                        }
+                      `}
+                      onClick={() => handleTabClick(index)}
+                    >
+                      <span className="text-sm font-medium">{index + 1}</span>
+                      {!isViewing && tabs.length > 1 && (
+                        <button
+                          className="w-4 h-4 flex items-center justify-center rounded-full text-slate-500 hover:text-red-400 hover:bg-red-500/20 transition-colors text-xs leading-none"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDeleteTabConfirmIndex(index);
+                          }}
+                          title="Delete slide"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
               ))}
             {!isViewing && (
