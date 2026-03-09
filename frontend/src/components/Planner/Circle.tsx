@@ -39,7 +39,7 @@ export const Circle: FC<CircleProps> = ({
         onTap={onSelect}
         ref={shapeRef}
         {...ellipseProps}
-        fill={shapeProps.fill || "#000"}
+        fill={shapeProps.fill === "transparent" ? "transparent" : (shapeProps.fill || "#000")}
         id={shapeProps.id}
         name="shape"
         onTransformEnd={() => {

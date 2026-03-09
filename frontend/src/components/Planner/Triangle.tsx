@@ -50,7 +50,7 @@ export const Triangle: FC<Triangle> = ({
         onTap={onSelect}
         ref={shapeRef}
         {...lineProps}
-        fill={shapeProps.fill || "#000"}
+        fill={shapeProps.fill === "transparent" ? "transparent" : (shapeProps.fill || "#000")}
         id={shapeProps.id}
         name="shape"
         onTransformEnd={() => {
