@@ -46,7 +46,7 @@ import {
   type Section,
 } from "../../api/queryHooks";
 import { MarkdownRenderer } from "../MarkdownRenderer";
-import { BossSelection } from "../BossSelection";
+import { BossDropdown, BossSelection } from "../BossSelection";
 import PlanViewer from "./PlanViewer";
 import { NoteDiffView } from "../NoteDiffView";
 
@@ -96,7 +96,7 @@ export const Prep: FC = () => {
     <PrepPreferencesProvider>
       <div className="w-full h-full flex flex-col items-center px-4 lg:px-20 py-5">
         <div className="h-full w-full flex flex-col gap-5">
-          <BossSelection />
+          {boss && <BossSelection />}
           {boss ? (
             <BossDisplay
               raidplanShareId={raidplanId}
@@ -221,6 +221,15 @@ const BossDisplay: FC<BossProps> = ({
 
   const sections = useMemo(() => data?.sections ?? [], [data?.sections]);
   const selectedSection = sections.find((s) => s.id === selectedSectionId);
+
+  // Auto-select the most recently added section when boss is selected and no section is in the URL
+  useEffect(() => {
+    if (urlSectionId || sections.length === 0) return;
+    const newest = sections.reduce((a, b) =>
+      new Date(a.created_at) > new Date(b.created_at) ? a : b,
+    );
+    navigate(`/prep/${boss?.id}/section/${newest.id}`, { replace: true });
+  }, [sections, urlSectionId, boss?.id, navigate]);
 
   // Scroll to and highlight a linked note
   useEffect(() => {
@@ -923,93 +932,107 @@ const UnauthenticatedPrepView: FC = () => {
 };
 
 const NoSelectedBossDisplay: FC = () => {
+  const { boss, setBoss } = useTeam();
+  const { data: expData } = useCurrentExpansion();
+
+  const raids =
+    expData
+      ?.flatMap((exp) =>
+        exp?.seasons?.flatMap((s) =>
+          s?.raids?.map((raid, i) => ({ raid, index: i })) ?? [],
+        ) ?? [],
+      )
+      ?.sort((a, b) => a.raid.order - b.raid.order) ?? [];
+
   return (
-    <div className="w-full flex flex-col items-center justify-center py-20">
-      <div className="max-w-3xl w-full space-y-8">
+    <div className="w-full flex flex-col items-center justify-center py-16">
+      <div className="max-w-3xl w-full space-y-6">
         <Card variant="elevated" hover={false}>
-          <div className="flex flex-col items-center text-center gap-6 p-12">
-            <div className="relative mb-4">
-              <div className="absolute inset-0 bg-gradient-to-r from-purple-500/20 to-pink-600/20 blur-3xl rounded-full" />
-              <div className="relative bg-slate-800/50 backdrop-blur-sm border border-slate-700/50 rounded-full p-8">
-                <Target className="w-16 h-16 text-purple-400" />
-              </div>
-            </div>
-            <div className="space-y-3">
+          <div className="flex flex-col items-center text-center gap-5 p-10">
+            <div className="space-y-2">
+              <p className="text-xs font-semibold uppercase tracking-widest text-cyan-500">
+                Encounter Guide
+              </p>
               <h2 className="font-montserrat text-3xl font-bold dark:text-white text-black">
                 Select a Boss to Begin
               </h2>
-              <p className="text-lg text-slate-600 dark:text-slate-400 max-w-xl">
-                Choose a raid boss from the sidebar to start creating strategy
-                notes and building your encounter guide.
+              <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                Pick a raid boss to view and edit strategy notes for your team.
               </p>
+            </div>
+            <div className="flex flex-col items-center gap-2 pt-2 w-72">
+              <span className="text-xs text-slate-500 dark:text-slate-500">
+                Choose a boss
+              </span>
+              <BossDropdown raids={raids} boss={boss} setBoss={setBoss} fullWidth />
             </div>
           </div>
         </Card>
 
         <div className="grid md:grid-cols-2 gap-4">
-          <Card variant="bordered" hover={true}>
+          <Card variant="bordered" hover={false}>
             <div className="flex items-start gap-4 p-4">
-              <div className="flex-shrink-0 p-2 bg-indigo-500/20 rounded-lg">
+              <div className="shrink-0 p-2 bg-indigo-500/20 rounded-lg">
                 <Library className="w-6 h-6 text-indigo-400" />
               </div>
               <div className="space-y-1">
                 <h3 className="font-montserrat font-bold dark:text-white text-black">
-                  Organize by Sections
+                  Sections & Phases
                 </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Break down encounters into phases, mechanics, and assignments
-                  for clarity.
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Organize each encounter into phases, mechanics, and
+                  role-specific assignments.
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card variant="bordered" hover={true}>
+          <Card variant="bordered" hover={false}>
             <div className="flex items-start gap-4 p-4">
-              <div className="flex-shrink-0 p-2 bg-orange-500/20 rounded-lg">
+              <div className="shrink-0 p-2 bg-orange-500/20 rounded-lg">
                 <FileText className="w-6 h-6 text-orange-400" />
               </div>
               <div className="space-y-1">
                 <h3 className="font-montserrat font-bold dark:text-white text-black">
-                  Markdown Support
+                  Markdown Notes
                 </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Format your notes with headers, lists, bold, and italics for
-                  readability.
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Write rich notes with headers, lists, bold, and italics — no
+                  special tools needed.
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card variant="bordered" hover={true}>
+          <Card variant="bordered" hover={false}>
             <div className="flex items-start gap-4 p-4">
-              <div className="flex-shrink-0 p-2 bg-cyan-500/20 rounded-lg">
+              <div className="shrink-0 p-2 bg-cyan-500/20 rounded-lg">
                 <Users className="w-6 h-6 text-cyan-400" />
               </div>
               <div className="space-y-1">
                 <h3 className="font-montserrat font-bold dark:text-white text-black">
-                  Team Editing
+                  Team Collaboration
                 </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Admins can create and edit sections while the team reviews the
-                  guide.
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Admins author and update guides while the whole team follows
+                  along in real time.
                 </p>
               </div>
             </div>
           </Card>
 
-          <Card variant="bordered" hover={true}>
+          <Card variant="bordered" hover={false}>
             <div className="flex items-start gap-4 p-4">
-              <div className="flex-shrink-0 p-2 bg-purple-500/20 rounded-lg">
+              <div className="shrink-0 p-2 bg-purple-500/20 rounded-lg">
                 <Lightbulb className="w-6 h-6 text-purple-400" />
               </div>
               <div className="space-y-1">
                 <h3 className="font-montserrat font-bold dark:text-white text-black">
-                  Tag System
+                  Role Tags
                 </h3>
-                <p className="text-sm text-slate-600 dark:text-slate-400">
-                  Label sections with tags like "Tank", "Healer", or "DPS" for
-                  quick reference.
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Tag sections by role — Tank, Healer, DPS — so everyone finds
+                  what's relevant to them.
                 </p>
               </div>
             </div>
@@ -1020,15 +1043,16 @@ const NoSelectedBossDisplay: FC = () => {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-6">
             <div className="text-center md:text-left">
               <h3 className="font-montserrat text-lg font-bold dark:text-white text-black mb-1">
-                Need Visual Planning Too?
+                Need a Visual Layout Too?
               </h3>
-              <p className="text-sm text-slate-600 dark:text-slate-400">
-                Create detailed raid plans with positioning and movement guides
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Create positioning diagrams and movement guides with the Raid
+                Planner.
               </p>
             </div>
             <Link to="/plan/midnight">
               <Button variant="primary" size="sm">
-                Go to Planner
+                Open Planner
                 <ArrowRight className="w-4 h-4" />
               </Button>
             </Link>

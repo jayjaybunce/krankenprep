@@ -114,7 +114,7 @@ export const Card: FC<PropsWithChildren<CardProps>> = ({
     : "transition-all duration-300";
   const glowEffect = glow ? "animate-pulse" : "";
 
-  const activeEffect = isActive ? "scale-[1.02] -translate-y-1" : "";
+  const activeEffect = isActive ? "scale-[1.02] -translate-y-1 ring-2 ring-cyan-400/60 shadow-lg shadow-cyan-500/20" : "";
 
   // Special handling for neon-gradient variant
   if (variant === "neon-gradient") {
