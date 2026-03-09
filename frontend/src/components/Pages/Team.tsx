@@ -185,12 +185,13 @@ const Team: FC = () => {
         return;
       }
       const resData = await res.json();
-      const responseUrlBase = resData.url
-        ?.replace(/\/main$/, "")
-        .replace(/\/$/, "");
-      const enteredUrlBase = wowAuditGuildUrl
-        .replace(/\/main$/, "")
-        .replace(/\/$/, "");
+      const teamName = resData.url?.split("/").pop();
+      const stripTeam = (url: string) =>
+        url
+          .replace(teamName ? new RegExp(`\\/${teamName}$`) : /\/main$/, "")
+          .replace(/\/$/, "");
+      const responseUrlBase = resData.url ? stripTeam(resData.url) : undefined;
+      const enteredUrlBase = stripTeam(wowAuditGuildUrl);
       if (responseUrlBase && responseUrlBase === enteredUrlBase) {
         setWowAuditTestStatus("success");
       } else {
