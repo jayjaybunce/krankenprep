@@ -23,9 +23,10 @@ type BossDropdownProps = {
   raids: { raid: Raid; index: number }[];
   boss: Boss | null;
   setBoss: (b: Boss | null) => void;
+  fullWidth?: boolean;
 };
 
-const BossDropdown: FC<BossDropdownProps> = ({ raids, boss, setBoss }) => {
+export const BossDropdown: FC<BossDropdownProps> = ({ raids, boss, setBoss, fullWidth }) => {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -81,6 +82,7 @@ const BossDropdown: FC<BossDropdownProps> = ({ raids, boss, setBoss }) => {
         onClick={() => { updatePos(); setIsOpen((o) => !o); }}
         className={`flex items-center gap-2.5 pl-2 pr-3 h-10 rounded-xl border font-montserrat
           backdrop-blur-xl transition-all duration-200 cursor-pointer
+          ${fullWidth ? "w-full" : ""}
           ${boss
             ? "bg-slate-900/70 border-cyan-400/50 shadow-[0_0_18px_rgba(34,211,238,0.2)]"
             : "bg-slate-900/50 border-slate-700/60 hover:border-slate-600"
