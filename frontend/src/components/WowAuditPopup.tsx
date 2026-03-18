@@ -2,7 +2,10 @@ import type { FC } from "react";
 import { useState } from "react";
 import { X } from "lucide-react";
 import { useTeam } from "../hooks";
-import { useUploadDroptimizer, DroptimizerUploadError } from "../api/mutationHooks";
+import {
+  useUploadDroptimizer,
+  DroptimizerUploadError,
+} from "../api/mutationHooks";
 
 const DISABLED_STATE = {
   disabled: false,
@@ -18,7 +21,7 @@ export const WowAuditPopup: FC = () => {
   const [selectedConfigId, setSelectedConfigId] = useState<string | null>(null);
   const { team } = useTeam();
 
-  const { mutate } = useUploadDroptimizer(team?.id ?? -1);
+  const { mutate } = useUploadDroptimizer(team?.team_id ?? -1);
 
   if (!team?.team?.wowaudit_integration) return null;
 
@@ -43,7 +46,7 @@ export const WowAuditPopup: FC = () => {
           setInputValue("");
           setSuccessMessage("Droptimizer uploaded successfully!");
         },
-      }
+      },
     );
   };
 
@@ -105,7 +108,10 @@ export const WowAuditPopup: FC = () => {
             type="text"
             disabled={DISABLED_STATE.disabled}
             value={inputValue}
-            onChange={(e) => { setInputValue(e.target.value); setSuccessMessage(null); }}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              setSuccessMessage(null);
+            }}
             placeholder="Paste Droptimizer URL..."
             className={`
               w-full bg-slate-800/80 border border-slate-600 rounded-lg
