@@ -520,12 +520,19 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     ),
 
     // Images
-    img: ({ src, alt }) => (
-      <img
-        src={src}
-        alt={alt || ""}
-        onClick={() => setSelectedImage({ src: src || "", alt: alt || "" })}
-        className={`
+    img: ({ src, alt }) =>
+      alt === "!video!" ? (
+        <>
+          <video className="aspect-video" controls>
+            <source src={src} type="video/mp4" />
+          </video>
+        </>
+      ) : (
+        <img
+          src={src}
+          alt={alt || ""}
+          onClick={() => setSelectedImage({ src: src || "", alt: alt || "" })}
+          className={`
           max-w-full h-auto rounded-lg ${s.img} cursor-pointer
           transition-all duration-200 hover:scale-[1.02]
           ${
@@ -534,16 +541,16 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
               : `border border-slate-300 ${c.imgHoverBorder.light}`
           }
         `}
-        role="button"
-        tabIndex={0}
-        onKeyDown={(e) => {
-          if (e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            setSelectedImage({ src: src || "", alt: alt || "" });
-          }
-        }}
-      />
-    ),
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              setSelectedImage({ src: src || "", alt: alt || "" });
+            }
+          }}
+        />
+      ),
   };
 
   return (
