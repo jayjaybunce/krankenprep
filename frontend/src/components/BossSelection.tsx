@@ -211,8 +211,8 @@ export const BossSelection: FC = () => {
       ?.sort((a, b) => a.raid.order - b.raid.order) ?? [];
 
   return (
-    <div className="sticky top-5 z-10">
-      <BossDropdown raids={raids} boss={boss} setBoss={setBoss} />
+    <div className="sticky top-5 z-10 w-1/2">
+      <BossDropdown raids={raids} boss={boss} setBoss={setBoss} fullWidth />
     </div>
   );
 };

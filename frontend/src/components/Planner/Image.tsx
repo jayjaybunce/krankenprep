@@ -97,7 +97,13 @@ export const Image: FC<ImageProps> = ({
         onClick={(e) => { e.cancelBubble = true; }}
         onTap={(e) => { e.cancelBubble = true; }}
       />
-      {isSelected && !shapeProps.locked && <Transformer ref={trRef} flipEnabled={false} />}
+      {isSelected && !shapeProps.locked && (
+        <Transformer
+          ref={trRef}
+          flipEnabled={false}
+          anchorSize={Math.max(3, Math.min(8, Math.min(shapeProps.width || 40, shapeProps.height || 40) / 10))}
+        />
+      )}
     </>
   );
 };

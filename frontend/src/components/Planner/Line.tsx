@@ -75,7 +75,20 @@ export const Line: FC<LineProps> = ({
           });
         }}
       />
-      {isSelected && !shapeProps.locked && <Transformer ref={trRef} flipEnabled={false} />}
+      {isSelected && !shapeProps.locked && (
+        <Transformer
+          ref={trRef}
+          flipEnabled={false}
+          anchorSize={(() => {
+            const pts = shapeProps.points || [];
+            if (pts.length < 4) return 8;
+            const xs = pts.filter((_, i) => i % 2 === 0);
+            const ys = pts.filter((_, i) => i % 2 === 1);
+            const maxDim = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+            return Math.max(3, Math.min(8, maxDim / 10));
+          })()}
+        />
+      )}
     </>
   );
 };

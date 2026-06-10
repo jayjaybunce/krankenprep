@@ -184,7 +184,11 @@ export const Text: FC<TextProps> = ({
         </Html>
       )}
       {isSelected && !isEditing && (
-        <Transformer ref={trRef} flipEnabled={false} />
+        <Transformer
+          ref={trRef}
+          flipEnabled={false}
+          anchorSize={Math.max(3, Math.min(8, (shapeProps.fontSize || 24) / 3))}
+        />
       )}
     </>
   );
