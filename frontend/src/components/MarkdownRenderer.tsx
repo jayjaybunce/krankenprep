@@ -1,9 +1,10 @@
 import type { FC } from "react";
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import Markdown, { defaultUrlTransform } from "react-markdown";
 import type { Components } from "react-markdown";
 import { useTheme } from "../hooks";
-import { Modal } from "./Modal";
+import { X } from "lucide-react";
 import { Link } from "react-router-dom";
 
 type MarkdownSize = "small" | "medium" | "large";
@@ -180,6 +181,88 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     src: string;
     alt: string;
   } | null>(null);
+
+  // Lightbox pan/zoom state
+  const [lbScale, setLbScale] = useState(1);
+  const [lbOffset, setLbOffset] = useState({ x: 0, y: 0 });
+  const [lbDragging, setLbDragging] = useState(false);
+  const lbScaleRef = useRef(1);
+  const lbOffsetRef = useRef({ x: 0, y: 0 });
+  const lbDragRef = useRef<{
+    startX: number; startY: number;
+    startOx: number; startOy: number;
+    moved: boolean;
+  } | null>(null);
+
+
+  // Close on Escape
+  useEffect(() => {
+    if (!selectedImage) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedImage(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedImage]);
+
+  const lbResetView = () => {
+    lbScaleRef.current = 1;
+    lbOffsetRef.current = { x: 0, y: 0 };
+    setLbScale(1);
+    setLbOffset({ x: 0, y: 0 });
+  };
+
+  const lbZoom = (factor: number, cx = 0, cy = 0) => {
+    const newScale = Math.min(Math.max(lbScaleRef.current * factor, 0.05), 20);
+    const ratio = newScale / lbScaleRef.current;
+    const newX = cx - (cx - lbOffsetRef.current.x) * ratio;
+    const newY = cy - (cy - lbOffsetRef.current.y) * ratio;
+    lbScaleRef.current = newScale;
+    lbOffsetRef.current = { x: newX, y: newY };
+    setLbScale(newScale);
+    setLbOffset({ x: newX, y: newY });
+  };
+
+  const handleLbWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const rect = e.currentTarget.getBoundingClientRect();
+    const cx = e.clientX - rect.left - rect.width / 2;
+    const cy = e.clientY - rect.top - rect.height / 2;
+    lbZoom(e.deltaY < 0 ? 1.15 : 1 / 1.15, cx, cy);
+  };
+
+  const handleLbMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (e.button !== 0) return;
+    e.preventDefault();
+    lbDragRef.current = {
+      startX: e.clientX, startY: e.clientY,
+      startOx: lbOffsetRef.current.x, startOy: lbOffsetRef.current.y,
+      moved: false,
+    };
+    setLbDragging(true);
+
+    const onMove = (ev: MouseEvent) => {
+      if (!lbDragRef.current) return;
+      const dx = ev.clientX - lbDragRef.current.startX;
+      const dy = ev.clientY - lbDragRef.current.startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) lbDragRef.current.moved = true;
+      const next = { x: lbDragRef.current.startOx + dx, y: lbDragRef.current.startOy + dy };
+      lbOffsetRef.current = next;
+      setLbOffset(next);
+    };
+
+    const onUp = () => {
+      const moved = lbDragRef.current?.moved ?? false;
+      lbDragRef.current = null;
+      setLbDragging(false);
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      if (!moved) setSelectedImage(null);
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
 
   const s = sizeConfig[size];
   const c = colorConfig[color];
@@ -531,7 +614,10 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
         <img
           src={src}
           alt={alt || ""}
-          onClick={() => setSelectedImage({ src: src || "", alt: alt || "" })}
+          onClick={() => {
+            lbResetView();
+            setSelectedImage({ src: src || "", alt: alt || "" });
+          }}
           className={`
           max-w-full h-auto rounded-lg ${s.img} cursor-pointer
           transition-all duration-200 hover:scale-[1.02]
@@ -546,6 +632,7 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
           onKeyDown={(e) => {
             if (e.key === "Enter" || e.key === " ") {
               e.preventDefault();
+              lbResetView();
               setSelectedImage({ src: src || "", alt: alt || "" });
             }
           }}
@@ -566,22 +653,75 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
         </Markdown>
       </div>
 
-      {/* Image Modal */}
-      <Modal
-        isOpen={!!selectedImage}
-        onClose={() => setSelectedImage(null)}
-        title={selectedImage?.alt}
-        size="full"
-        centerContent
-      >
-        {selectedImage && (
-          <img
-            src={selectedImage.src}
-            alt={selectedImage.alt}
-            className="max-w-full max-h-[80vh] object-contain rounded-lg"
-          />
+      {/* Image Lightbox Portal */}
+      {selectedImage &&
+        createPortal(
+          <div
+            className="fixed inset-0 z-9999 overflow-hidden bg-black/92 backdrop-blur-sm"
+            style={{ cursor: lbDragging ? "grabbing" : "grab" }}
+            onMouseDown={handleLbMouseDown}
+            onWheel={handleLbWheel}
+          >
+            {/* Image — pointer-events:none so all mouse events go to the backdrop */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <img
+                src={selectedImage.src}
+                alt={selectedImage.alt}
+                draggable={false}
+                style={{
+                  transform: `translate(${lbOffset.x}px, ${lbOffset.y}px) scale(${lbScale})`,
+                  transformOrigin: "center",
+                  maxWidth: "85vw",
+                  maxHeight: "85vh",
+                }}
+                className="object-contain rounded-lg shadow-2xl select-none"
+              />
+            </div>
+
+            {/* Close button */}
+            <button
+              className="absolute top-4 right-4 p-2 rounded-full bg-black/60 text-white hover:bg-white/20 transition-colors"
+              onClick={() => setSelectedImage(null)}
+              onMouseDown={(e) => e.stopPropagation()}
+              aria-label="Close lightbox"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Zoom controls */}
+            <div
+              className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-1 bg-black/70 backdrop-blur-sm rounded-full px-3 py-2 text-white select-none"
+              onMouseDown={(e) => e.stopPropagation()}
+            >
+              <button
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors text-lg leading-none"
+                onClick={() => lbZoom(1 / 1.25)}
+                aria-label="Zoom out"
+              >
+                −
+              </button>
+              <span className="min-w-14 text-center font-mono text-xs tabular-nums">
+                {Math.round(lbScale * 100)}%
+              </span>
+              <button
+                className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-white/20 transition-colors text-lg leading-none"
+                onClick={() => lbZoom(1.25)}
+                aria-label="Zoom in"
+              >
+                +
+              </button>
+              <div className="w-px h-4 bg-white/30 mx-1" />
+              <button
+                className="px-3 py-0.5 rounded-full hover:bg-white/20 transition-colors text-xs"
+                onClick={lbResetView}
+                aria-label="Reset zoom and position"
+              >
+                Reset
+              </button>
+            </div>
+          </div>,
+          document.body,
         )}
-      </Modal>
     </>
   );
 };

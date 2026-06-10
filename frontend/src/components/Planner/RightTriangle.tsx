@@ -39,6 +39,7 @@ export const RightTriangle: FC<RightTriangle> = ({
   const ptMinX = Math.min(...xs);
   const ptMaxX = Math.max(...xs);
   const ptMinY = Math.min(...ys);
+  const ptMaxY = Math.max(...ys);
 
   return (
     <>
@@ -112,7 +113,12 @@ export const RightTriangle: FC<RightTriangle> = ({
         onClick={(e) => { e.cancelBubble = true; }}
         onTap={(e) => { e.cancelBubble = true; }}
       />
-      {isSelected && !shapeProps.locked && <Transformer ref={trRef} />}
+      {isSelected && !shapeProps.locked && (
+        <Transformer
+          ref={trRef}
+          anchorSize={Math.max(3, Math.min(8, Math.min(ptMaxX - ptMinX, ptMaxY - ptMinY) / 10))}
+        />
+      )}
     </>
   );
 };

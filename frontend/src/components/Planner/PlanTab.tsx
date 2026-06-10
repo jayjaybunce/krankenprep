@@ -1,4 +1,4 @@
-import { useRef, type FC, type RefObject, useState, useEffect } from "react";
+import { useRef, type FC, type RefObject, useState, useEffect, useMemo } from "react";
 import { Stage as StageType } from "konva/lib/Stage";
 import { Layer, Stage, Rect, Group, Transformer } from "react-konva";
 import type { KonvaEventObject, NodeConfig, Node } from "konva/lib/Node";
@@ -68,6 +68,23 @@ export const PlanTab: FC<PlanTabProps> = ({
 
   const groupRef = useRef<Konva.Group>(null);
   const trRef = useRef<Konva.Transformer>(null);
+
+  const groupAnchorSize = useMemo(() => {
+    if (selectedIds.length === 0) return 8;
+    const selected = shapes.filter((s) => selectedIds.includes(s.id));
+    if (selected.length === 0) return 8;
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const s of selected) {
+      const halfW = (s.width ?? (s.radiusX != null ? s.radiusX * 2 : 40)) / 2;
+      const halfH = (s.height ?? (s.radiusY != null ? s.radiusY * 2 : halfW * 2)) / 2;
+      minX = Math.min(minX, (s.x ?? 0) - halfW);
+      maxX = Math.max(maxX, (s.x ?? 0) + halfW);
+      minY = Math.min(minY, (s.y ?? 0) - halfH);
+      maxY = Math.max(maxY, (s.y ?? 0) + halfH);
+    }
+    const minDim = Math.min(maxX - minX, maxY - minY);
+    return Math.max(3, Math.min(8, minDim / 10));
+  }, [selectedIds, shapes]);
 
   // Attach transformer to group when selection changes
   useEffect(() => {
@@ -394,7 +411,7 @@ export const PlanTab: FC<PlanTabProps> = ({
                 .filter((shape) => selectedIds.includes(shape.id))
                 .map((shape) => renderShape(shape, false, true))}
             </Group>
-            <Transformer ref={trRef} />
+            <Transformer ref={trRef} anchorSize={groupAnchorSize} />
           </>
         )}
         <Rect
