@@ -8,7 +8,7 @@ import {
   FlaskConical,
   CheckCircle,
 } from "lucide-react";
-import { useTheme, useKpApi, useTeam } from "../../hooks";
+import { useTheme, useKpApi } from "../../hooks";
 import { Dropdown, TextInput, Toggle } from "../form";
 import type { DropdownOption } from "../form/Dropdown";
 import { useRegions, useServers } from "../../api/queryHooks";
