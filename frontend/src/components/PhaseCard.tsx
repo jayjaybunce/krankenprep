@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronUp } from "lucide-react";
+import { ChevronLeft } from "lucide-react";
 import { Card, type CardProps } from "./Card";
 import { useRef, useState } from "react";
 import type { FC } from "react";
@@ -29,7 +29,6 @@ const getPhaseColor = (phaseNumber: number) => {
 };
 
 export const PhaseCard: FC<PhaseCardProps> = ({
-  cardProps,
   phaseNumber,
   title,
   subtitle = null,
@@ -53,7 +52,7 @@ export const PhaseCard: FC<PhaseCardProps> = ({
       if (!ref.current) {
         return;
       }
-      const dragIndex = item.index;
+      const dragIndex = (item as { index: number }).index;
       const hoverIndex = index;
       // Don't replace items with themselves
       if (dragIndex === hoverIndex) {
@@ -67,7 +66,7 @@ export const PhaseCard: FC<PhaseCardProps> = ({
       // Determine mouse position
       const clientOffset = monitor.getClientOffset();
       // Get pixels to the top
-      const hoverClientY = clientOffset.y - hoverBoundingRect.top;
+      const hoverClientY = clientOffset!.y - hoverBoundingRect.top;
       // Only perform the move when the mouse has crossed half of the items height
       // When dragging downwards, only move when the cursor is below 50%
       // When dragging upwards, only move when the cursor is above 50%
@@ -85,10 +84,10 @@ export const PhaseCard: FC<PhaseCardProps> = ({
       // Generally it's better to avoid mutations,
       // but it's good here for the sake of performance
       // to avoid expensive index searches.
-      item.index = hoverIndex;
+      (item as { index: number }).index = hoverIndex;
     },
   });
-  const [{ isDragging }, drag] = useDrag({
+  const [, drag] = useDrag({
     type: "card",
     item: () => {
       return { id, index };

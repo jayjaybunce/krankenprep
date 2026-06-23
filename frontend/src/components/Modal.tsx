@@ -84,7 +84,8 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
     md: "max-w-lg",
     lg: "max-w-2xl",
     xl: "max-w-4xl",
-    full: "max-w-7xl mx-4",
+    // "2xl": "max-w-8xl",
+    full: "max-w-9xl mx-4",
   };
 
   const variants = {
@@ -182,7 +183,7 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
 
         {/* Body */}
         <div
-          className={`p-6 ${centerContent ? "flex items-center justify-center" : ""}`}
+          className={`p-6 overflow-y-auto flex-1 min-h-0 ${centerContent ? "flex items-center justify-center" : ""}`}
         >
           {children}
         </div>
@@ -204,12 +205,12 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
     if (variant === "neon-gradient") {
       return (
         <div
-          className={`${variants[variant]} rounded-2xl transition-all duration-500`}
+          className={`${variants[variant]} rounded-2xl transition-all duration-500 flex flex-col h-full`}
         >
           <div
             className={`${
               colorMode === "dark" ? "bg-slate-950" : "bg-white"
-            } rounded-[14px] w-full h-full transition-colors duration-500`}
+            } rounded-[14px] w-full h-full transition-colors duration-500 flex flex-col`}
           >
             {content}
           </div>
@@ -219,7 +220,7 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
 
     return (
       <div
-        className={`${variants[variant]} border rounded-2xl transition-all duration-500`}
+        className={`${variants[variant]} border rounded-2xl transition-all duration-500 flex flex-col h-full`}
       >
         {content}
       </div>
@@ -228,7 +229,7 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-10 flex items-center justify-center p-4"
       onClick={handleOverlayClick}
     >
       {/* Backdrop */}
@@ -243,7 +244,7 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
 
       {/* Modal */}
       <div
-        className={`relative w-full ${sizeStyles[size]} animate-in fade-in zoom-in-95 duration-300`}
+        className={`relative w-full ${sizeStyles[size]} max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 z-10 duration-300`}
       >
         {renderContent()}
       </div>

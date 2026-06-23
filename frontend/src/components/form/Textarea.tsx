@@ -1,4 +1,4 @@
-import type { FC, TextareaHTMLAttributes } from "react";
+import type { FC, RefObject, TextareaHTMLAttributes } from "react";
 import { useTheme } from "../../hooks";
 
 type TextareaVariant =
@@ -24,6 +24,7 @@ export type TextareaProps = Omit<
   helperText?: string;
   showCharCount?: boolean;
   maxLength?: number;
+  ref?: RefObject<HTMLTextAreaElement | null>;
 };
 
 export const Textarea: FC<TextareaProps> = ({
@@ -36,6 +37,7 @@ export const Textarea: FC<TextareaProps> = ({
   maxLength,
   className = "",
   disabled,
+  ref,
   value,
   ...props
 }) => {
@@ -94,10 +96,10 @@ export const Textarea: FC<TextareaProps> = ({
   const charCount = value ? value.toString().length : 0;
 
   return (
-    <div className="w-full">
+    <div className="w-full h-full flex flex-col">
       {label && (
         <label
-          className={`block text-sm font-semibold mb-2 font-montserrat ${
+          className={`block text-sm font-semibold mb-2 font-montserrat shrink-0 ${
             colorMode === "dark" ? "text-slate-300" : "text-slate-700"
           } ${error ? (colorMode === "dark" ? "text-rose-400" : "text-rose-600") : ""}`}
         >
@@ -105,15 +107,17 @@ export const Textarea: FC<TextareaProps> = ({
         </label>
       )}
 
-      <div className="relative">
+      <div className="flex-1 flex flex-col">
         <textarea
           {...props}
+          ref={ref}
           value={value}
           maxLength={maxLength}
           disabled={disabled}
           className={`
             w-full border rounded-xl font-medium font-montserrat
             transition-all duration-200
+            h-full
             resize-y
             ${currentSize.textarea}
             ${variants[variant]}
@@ -142,7 +146,7 @@ export const Textarea: FC<TextareaProps> = ({
 
       {(helperText || error) && (
         <p
-          className={`mt-2 text-xs font-montserrat ${
+          className={`mt-2 text-xs font-montserrat shrink-0 ${
             error
               ? colorMode === "dark"
                 ? "text-rose-400"

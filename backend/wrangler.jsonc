@@ -1,0 +1,36 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "krankenprep-backend",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-12",
+  "observability": {
+  "enabled": true,
+  },
+  "containers": [
+    {
+      "max_instances": 10,
+      "class_name": "KrankenPrepBackend",
+      "image": "./Dockerfile"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "KRANKENPREP_BACKEND",
+        "class_name": "KrankenPrepBackend"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["KrankenPrepBackend"]
+    }
+  ],
+  "routes": [
+    {
+      "pattern": "api.krankenprep.io",
+      "custom_domain": true
+    }
+  ]
+}

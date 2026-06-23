@@ -1,23 +1,15 @@
 import type { Dispatch, FC, SetStateAction } from "react";
-import { useReducer, useState } from "react";
+import { useState } from "react";
 import { Modal } from "../Modal";
 import {
-  User,
-  Shield,
-  Sword,
-  Heart,
-  Zap,
   Save,
   X as XIcon,
-  LucideChartNoAxesCombined,
-  Signature,
   LoaderCircle,
+  FlaskConical,
+  CheckCircle,
 } from "lucide-react";
-import { useApi, useTheme } from "../../hooks";
-import { Dropdown, TextInput } from "../form";
-import { useQuery } from "@tanstack/react-query";
-import { type Server } from "../../types/api/server";
-import { type Region } from "../../types/api/region";
+import { useTheme, useKpApi, useTeam } from "../../hooks";
+import { Dropdown, TextInput, Toggle } from "../form";
 import type { DropdownOption } from "../form/Dropdown";
 import { useRegions, useServers } from "../../api/queryHooks";
 import { useCreateTeam } from "../../api/mutationHooks";
@@ -39,6 +31,8 @@ type CreateTeamForm = {
   rioUrl: string;
 };
 
+type WowAuditTestStatus = "idle" | "loading" | "success" | "error";
+
 const defaultFormState: CreateTeamForm = {
   teamName: "",
   region: "",
@@ -50,8 +44,15 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { setTeam } = useTeam()
   const { colorMode } = useTheme();
   const [formState, setFormState] = useState<CreateTeamForm>(defaultFormState);
+  const [wowAuditEnabled, setWowAuditEnabled] = useState(false);
+  const [wowAuditGuildUrl, setWowAuditGuildUrl] = useState("");
+  const [wowAuditApiKey, setWowAuditApiKey] = useState("");
+  const [wowAuditTestStatus, setWowAuditTestStatus] =
+    useState<WowAuditTestStatus>("idle");
+
   const handleFormChange = (key: string, value: any) => {
     setFormState((prevState) => {
       return {
@@ -62,21 +63,15 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
   };
 
   // Api Hooks
-  const {
-    isLoading: isServerDataLoading,
-    error: serverError,
-    data: serverData,
-  } = useServers();
-  const {
-    isLoading: isRegionDataLoading,
-    error: regionError,
-    data: regionData,
-  } = useRegions();
+  const { isLoading: isServerDataLoading, data: serverData } = useServers();
+  const { isLoading: isRegionDataLoading, data: regionData } = useRegions();
+  const { url: wowAuditTestUrl, headers: authHeaders } = useKpApi(
+    "/teams/wowaudit/test",
+  );
 
-  const { mutate, isPending, isSuccess } = useCreateTeam();
+  const { mutate, isPending } = useCreateTeam();
 
   const handleSave = () => {
-    console.log("bang");
     mutate(
       {
         name: formState.teamName,
@@ -87,13 +82,73 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
           ? formState.server[0]
           : formState.server,
         rio_url: formState.rioUrl,
+        wowaudit_integration: wowAuditEnabled,
+        ...(wowAuditEnabled && {
+          wowaudit_url: wowAuditGuildUrl,
+          wowaudit_api_key: wowAuditApiKey,
+        }),
       },
-      { onSuccess: () => onClose(false) },
+      { onSuccess: (r) => {
+        r.json().then((data) => {
+          console.log(data)
+          
+        })
+        onClose(false)
+      } },
     );
   };
+
+  const handleWowAuditTest = async () => {
+    setWowAuditTestStatus("loading");
+    try {
+      const res = await fetch(wowAuditTestUrl, {
+        method: "POST",
+        headers: authHeaders,
+        body: JSON.stringify({ api_key: wowAuditApiKey }),
+      });
+      if (!res.ok) {
+        setWowAuditTestStatus("error");
+        return;
+      }
+      const data = await res.json();
+      const responseUrlBase = data.url
+        ?.replace(/\/main$/, "")
+        .replace(/\/$/, "");
+      const enteredUrlBase = wowAuditGuildUrl
+        .replace(/\/main$/, "")
+        .replace(/\/$/, "");
+      if (responseUrlBase && responseUrlBase === enteredUrlBase) {
+        setWowAuditTestStatus("success");
+      } else {
+        setWowAuditTestStatus("error");
+      }
+    } catch {
+      setWowAuditTestStatus("error");
+    }
+  };
+
+  const isValidUrl = (value: string) => {
+    try {
+      const u = new URL(value);
+      return u.protocol !== "" && u.host !== "";
+    } catch {
+      return false;
+    }
+  };
+
+  const rioUrlValid = isValidUrl(formState.rioUrl);
+  const canSave =
+    formState.teamName.trim() !== "" &&
+    rioUrlValid &&
+    (!wowAuditEnabled || wowAuditTestStatus === "success");
+
+  const wowAuditGuildUrlValid = isValidUrl(wowAuditGuildUrl);
+  const wowAuditBothFilled =
+    wowAuditGuildUrlValid && wowAuditApiKey.trim() !== "";
+
   const regionOptions: DropdownOption[] =
-    !isRegionDataLoading && regionData
-      ? regionData.map((region) => {
+    !isRegionDataLoading && Array.isArray(regionData)
+      ? regionData?.map((region) => {
           return {
             label:
               REGION_MAP[region] !== null
@@ -106,7 +161,9 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
       : [];
 
   const serverOptions: DropdownOption[] =
-    !isServerDataLoading && serverData && regionData
+    !isServerDataLoading &&
+    Array.isArray(serverData) &&
+    Array.isArray(regionData)
       ? serverData
           .filter((server) => server.region == formState.region)
           .map((server) => {
@@ -146,7 +203,7 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
           </button>
           <button
             onClick={handleSave}
-            // disabled={!acceptTerms || !teamName}
+            disabled={!canSave}
             className={`
               px-4 py-2 rounded-xl font-medium font-montserrat
               transition-all duration-200
@@ -200,6 +257,98 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
             options={serverOptions}
           />
         </div>
+
+        <div
+          className={`h-px ${colorMode === "dark" ? "bg-slate-700/50" : "bg-slate-200"}`}
+        />
+
+        <Toggle
+          variant="default"
+          label="Enable WowAudit integration"
+          checked={wowAuditEnabled}
+          onChange={(e) => {
+            setWowAuditEnabled(e.target.checked);
+            setWowAuditTestStatus("idle");
+          }}
+        />
+
+        {wowAuditEnabled && (
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-row gap-4">
+              <TextInput
+                value={wowAuditGuildUrl}
+                variant="minimal"
+                className="font-montserrat"
+                label="WowAudit Guild URL"
+                placeholder="https://wowaudit.com/us/area-52/your-guild"
+                disabled={wowAuditTestStatus === "success"}
+                onChange={(e) => {
+                  setWowAuditGuildUrl(e.target.value);
+                  setWowAuditTestStatus("idle");
+                }}
+              />
+              <TextInput
+                value={wowAuditApiKey}
+                variant="minimal"
+                className="font-montserrat"
+                label="WowAudit API Key"
+                placeholder="Your WowAudit API key"
+                type="password"
+                disabled={wowAuditTestStatus === "success"}
+                onChange={(e) => {
+                  setWowAuditApiKey(e.target.value);
+                  setWowAuditTestStatus("idle");
+                }}
+              />
+            </div>
+
+            {wowAuditBothFilled && (
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleWowAuditTest}
+                  disabled={
+                    wowAuditTestStatus === "loading" ||
+                    wowAuditTestStatus === "success"
+                  }
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-xl font-medium font-montserrat text-sm
+                    transition-all duration-200
+                    disabled:opacity-50 disabled:cursor-not-allowed
+                    ${
+                      wowAuditTestStatus === "success"
+                        ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
+                        : wowAuditTestStatus === "error"
+                          ? "bg-rose-600 text-white hover:bg-rose-500"
+                          : colorMode === "dark"
+                            ? "bg-slate-700 text-slate-200 hover:bg-slate-600"
+                            : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+                    }
+                  `}
+                >
+                  {wowAuditTestStatus === "loading" ? (
+                    <LoaderCircle className="w-4 h-4 animate-spin" />
+                  ) : wowAuditTestStatus === "success" ? (
+                    <CheckCircle className="w-4 h-4" />
+                  ) : (
+                    <FlaskConical className="w-4 h-4" />
+                  )}
+                  {wowAuditTestStatus === "success"
+                    ? "Success"
+                    : wowAuditTestStatus === "error"
+                      ? "Retry"
+                      : "Test"}
+                </button>
+                {wowAuditTestStatus === "error" && (
+                  <span
+                    className={`text-xs font-montserrat ${colorMode === "dark" ? "text-rose-400" : "text-rose-600"}`}
+                  >
+                    Could not verify — check the URL and API key.
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </Modal>
   );
