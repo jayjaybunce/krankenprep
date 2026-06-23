@@ -3,7 +3,7 @@ import * as csvtojson from 'csvtojson'
 import * as format from 'pg-format'
 
 
-const BUILD_VERSION = "12.0.1.65893"
+const BUILD_VERSION = "12.1.0.68209"
 const TABLE_FORMAT = "csv"
 const URL_BASE = "https://wago.tools/db2"
 const COMMUNITY_LISTFILE_URL = "https://github.com/wowdev/wow-listfile/releases/latest/download/community-listfile.csv"
@@ -42,11 +42,11 @@ const excludedExtentions = [
 
 async function main (){
     const client = new Client({
-        host: "127.0.0.1",
+        host: "ep-muddy-mountain-ahsvq0cr-pooler.c-3.us-east-1.aws.neon.tech",
         port: 5432,
-        database: "krankenprep",
-        user: "krankenprep",
-        password: "krankenprep",
+        database: "krankenprep-prod",
+        user: "neondb_owner",
+        password: "npg_DqXMu0pN7Rwn",
         ssl: {
             rejectUnauthorized: false
         }

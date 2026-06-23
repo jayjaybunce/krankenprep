@@ -48,6 +48,7 @@ import { MarkdownRenderer } from "../MarkdownRenderer";
 import { BossDropdown, BossSelection } from "../BossSelection";
 import PlanViewer from "./PlanViewer";
 import { NoteDiffView } from "../NoteDiffView";
+import { Assignments } from "../Assignments";
 
 export const Prep: FC = () => {
   const { boss, setBoss } = useTeam();
@@ -93,9 +94,8 @@ export const Prep: FC = () => {
 
   return (
     <PrepPreferencesProvider>
-      <div className="w-full h-full flex flex-col items-center px-4 lg:px-20 py-5">
+      <div className="w-full h-full flex flex-col items-center px-4 py-5">
         <div className="h-full w-full flex flex-col gap-5">
-          {boss && <BossSelection />}
           {boss ? (
             <BossDisplay
               raidplanShareId={raidplanId}
@@ -286,6 +286,7 @@ const BossDisplay: FC<BossProps> = ({
           />
         </div>
       ) : (
+        <>
         <StaticHeroImage
           imageUrl={splash_img_url ?? ""}
           className="aspect-video rounded-lg"
@@ -296,6 +297,13 @@ const BossDisplay: FC<BossProps> = ({
           }
           backgroundPosition="center 10%"
         />
+        <Assignments />
+        {/* <iframe src="https://raidstrats.gg/planner?embed=true&amp;id=c8cbdf70-afc8-4e16-9987-58ee91c87d02&amp;animation=true&amp;hidetrails=true&amp;circleMode=true&amp;maxCharacters=4&amp;players=Wynsloww%7CPriest%2CMagicpally%7CPaladin%2CFunkdrip%7CShaman%2CTettybear%7CDruid%2CZaghunt%7CHunter%2CGruesum%7CDeath+Knight%2CJaemsy%7CWarrior%2CKrankenmight%7CEvoker%2CTatros%7CPaladin%2CMetzinger%7CDemon+Hunter%2CGoomt%7CRogue%2CDeeznutticus%7CWarrior%2CUchai%7CMonk%2CArx%7CDeath+Knight%2CSkellestone%7CWarlock%2CSobiezhunter%7CHunter%2CStridur%7CHunter%2CWipe%7CMage%2CLyconic%7CWarlock%2CPkrz%7CShaman" 
+        title="P2 Galvanize Soaks" 
+        style={{ width: "100%", height: "100%", borderWidth: "medium", borderStyle: "none", borderColor: "currentcolor", borderImage: "initial", opacity: 1, transition: "opacity 200ms 150ms" }}
+        ></iframe> */}
+
+        </>
       )}
     </div>
   );

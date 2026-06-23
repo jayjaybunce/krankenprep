@@ -8,7 +8,7 @@ import {
   FlaskConical,
   CheckCircle,
 } from "lucide-react";
-import { useTheme, useKpApi } from "../../hooks";
+import { useTheme, useKpApi, useTeam } from "../../hooks";
 import { Dropdown, TextInput, Toggle } from "../form";
 import type { DropdownOption } from "../form/Dropdown";
 import { useRegions, useServers } from "../../api/queryHooks";
@@ -44,6 +44,7 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
   isOpen,
   onClose,
 }) => {
+  const { setTeam } = useTeam()
   const { colorMode } = useTheme();
   const [formState, setFormState] = useState<CreateTeamForm>(defaultFormState);
   const [wowAuditEnabled, setWowAuditEnabled] = useState(false);
@@ -87,7 +88,13 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
           wowaudit_api_key: wowAuditApiKey,
         }),
       },
-      { onSuccess: () => onClose(false) },
+      { onSuccess: (r) => {
+        r.json().then((data) => {
+          console.log(data)
+          
+        })
+        onClose(false)
+      } },
     );
   };
 

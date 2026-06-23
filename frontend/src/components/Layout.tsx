@@ -13,6 +13,7 @@ import {
   ShieldHalf,
   Menu,
   X,
+  Home,
 } from "lucide-react";
 import { useTeam, useTheme, useUser } from "../hooks";
 import { Descope, useSession } from "@descope/react-sdk";
@@ -28,6 +29,7 @@ import {
 import type { DropdownOption } from "./form/Dropdown";
 import { preload } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
+import { BossSelectionV2 } from "./BossSelection";
 
 // interface ContentBlock {
 //   type: "text" | "image" | "video";
@@ -230,9 +232,9 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
         <div className="flex flex-col gap-2">
           {(
             [
-              { to: "/", icon: Target, label: "Home" },
-              { to: "/prep", icon: BookOpen, label: "Prep" },
+              { to: "/", icon: Home, label: "Home" },
               { to: "/plans", icon: Calendar, label: "Plan" },
+              { to: "/prep", icon: BookOpen, label: "Prep" },
               ...(team && isUserAdmin ? [{ to: "/team", icon: ShieldHalf, label: "Team" }] : []),
             ] as const
           ).map(({ to, icon: Icon, label }) => (
@@ -402,7 +404,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                   } border`}
                   title="Home"
                 >
-                  <Target
+                  <Home
                     className={`w-4 h-4 ${
                       location.pathname === "/"
                         ? "text-cyan-200"
@@ -418,34 +420,6 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                       }`}
                     >
                       Home
-                    </span>
-                  )}
-                </Link>
-                <Link
-                  to="/prep"
-                  className={`w-full p-2 rounded-md bg-gradient-to-r transition-all duration-200 flex items-center ${isSidebarExpanded ? "justify-center" : "justify-center"} gap-2 group ${
-                    location.pathname === "/prep"
-                      ? "from-cyan-900/80 to-blue-900/80 border-cyan-400/60 scale-[1.02] shadow-lg shadow-cyan-500/20"
-                      : "from-cyan-900/60 to-blue-900/60 border-cyan-500/20 hover:border-cyan-400/40 hover:from-cyan-800/60 hover:to-blue-800/60"
-                  } border`}
-                  title="Prep"
-                >
-                  <BookOpen
-                    className={`w-4 h-4 ${
-                      location.pathname === "/prep"
-                        ? "text-cyan-200"
-                        : "text-cyan-300 group-hover:text-cyan-200"
-                    }`}
-                  />
-                  {isSidebarExpanded && (
-                    <span
-                      className={`text-sm font-montserrat font-semibold ${
-                        location.pathname === "/prep"
-                          ? "text-cyan-200"
-                          : "text-cyan-300 group-hover:text-cyan-200"
-                      }`}
-                    >
-                      Prep
                     </span>
                   )}
                 </Link>
@@ -509,6 +483,35 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                 ) : (
                   <></>
                 )}
+                <Link
+                  to="/prep"
+                  className={`w-full p-2 rounded-md bg-gradient-to-r transition-all duration-200 flex items-center ${isSidebarExpanded ? "justify-center" : "justify-center"} gap-2 group ${
+                    location.pathname === "/prep"
+                      ? "from-cyan-900/80 to-blue-900/80 border-cyan-400/60 scale-[1.02] shadow-lg shadow-cyan-500/20"
+                      : "from-cyan-900/60 to-blue-900/60 border-cyan-500/20 hover:border-cyan-400/40 hover:from-cyan-800/60 hover:to-blue-800/60"
+                  } border`}
+                  title="Prep"
+                >
+                  <BookOpen
+                    className={`w-4 h-4 ${
+                      location.pathname === "/prep"
+                        ? "text-cyan-200"
+                        : "text-cyan-300 group-hover:text-cyan-200"
+                    }`}
+                  />
+                  {isSidebarExpanded && (
+                    <span
+                      className={`text-sm font-montserrat font-semibold ${
+                        location.pathname === "/prep"
+                          ? "text-cyan-200"
+                          : "text-cyan-300 group-hover:text-cyan-200"
+                      }`}
+                    >
+                      Prep
+                    </span>
+                  )}
+                </Link>
+                <BossSelectionV2 />
               </div>
             </div>
           </div>

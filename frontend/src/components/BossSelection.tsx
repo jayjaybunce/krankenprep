@@ -10,7 +10,7 @@ import { ChevronDown, Check, Swords } from "lucide-react";
 import { useCurrentExpansion } from "../api/queryHooks";
 import { type Boss, type Raid } from "../types/api/expansion";
 import { useTeam } from "../hooks";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const raidColors = [
   { accent: "from-cyan-400 to-blue-500",      text: "text-cyan-400/80"    },
@@ -204,9 +204,11 @@ export const BossSelection: FC = () => {
   const raids =
     expData
       ?.flatMap((exp) =>
-        exp?.seasons?.flatMap((s) =>
-          s?.raids?.map((raid, i) => ({ raid, index: i })) ?? [],
-        ) ?? [],
+        exp?.seasons
+          ?.filter((s) => s?.is_current)
+          ?.flatMap((s) =>
+            s?.raids?.map((raid, i) => ({ raid, index: i })) ?? [],
+          ) ?? [],
       )
       ?.sort((a, b) => a.raid.order - b.raid.order) ?? [];
 
@@ -216,3 +218,65 @@ export const BossSelection: FC = () => {
     </div>
   );
 };
+
+export const BossSelectionV2: FC = () => {
+  const { boss, setBoss } = useTeam();
+  const { isLoading: isExpLoading, data: expData, error: expError } =
+    useCurrentExpansion();
+  const location = useLocation()
+
+  const navigate = useNavigate();
+
+
+  const raids =
+    expData
+      ?.flatMap((exp) =>
+        exp?.seasons
+          ?.filter((s) => s?.is_current)
+          ?.flatMap((s) =>
+            s?.raids?.map((raid, i) => ({ raid, index: i })) ?? [],
+          ) ?? [],
+      )
+      ?.sort((a, b) => a.raid.order - b.raid.order) ?? [];
+
+  const handleSelect = (b: Boss) => {
+    if (boss?.id === b.id) {
+      setBoss(null);
+      navigate("/prep", { replace: true });
+    } else {
+      setBoss(b);
+      navigate(`/prep/${b.id}`, { replace: true });
+    }
+  };
+
+  if (!location.pathname.includes("prep")) return null
+
+  return (
+    <div className='flex flex-col gap-1'>
+      {raids.map((r,i) => {
+        return r?.raid?.bosses?.map((b,idx) => {
+          return (
+            <>
+            <div 
+              key={idx + b.name}
+              onClick={() => handleSelect(b)} 
+              className={`p-1 w-10 h-8 border-2 rounded-md object-cover shrink-0 bg-center bg-cover cursor-pointer hover:border-cyan-400 transition-all duration-200 hover:scale-[1.02] ${boss?.id === b.id ? "border-cyan-400" : "border-transparent"}`}
+              style={{
+                backgroundImage: `url(${b.icon_img_url})`,
+                backgroundSize: "125%"
+              }}
+              >
+            {/* <img
+              key={idx + b.name}
+              src={b.icon_img_url}
+              className="w-9 h-9 rounded-md object-cover shrink-0 scale-200"
+            /> */}
+            </div>
+            {i !== raids.length - 1 && r?.raid?.bosses && idx === r?.raid?.bosses?.length - 1 ? <div className="h-px bg-gray-300 my-2"></div> : null}
+            </>
+          )
+        })
+      })}
+    </div>
+  )
+}
