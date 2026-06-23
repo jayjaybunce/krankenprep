@@ -24,6 +24,86 @@ export type RaidData = {
 
 export const midnight: RaidData = [
   {
+      raidName: "Sporefall",
+      bosses: [
+        {
+          name: "Rotmire",
+          backgrounds: [
+            {
+              name: "Platform",
+              src: "/midnight/sporefall/rotmire/platform.png"
+              
+            }
+          ],
+          npcIcons: [
+            gatewayIcon,
+            {
+              name: "Rotmire",
+              iconSrc: "/midnight/sporefall/rotmire/rotmire.png",
+            },
+            {
+              name: "Sporecap",
+              iconSrc: "/midnight/sporefall/rotmire/sporecap.png",
+            },
+            {
+              name: "Shroomling",
+              iconSrc: "/midnight/sporefall/rotmire/shroomling.png",
+            },
+            {
+              name: "Fungling",
+              iconSrc: "/midnight/sporefall/rotmire/fungling.png",
+            },
+          ],
+          spellIcons: [
+            {
+              name: "Awaken Fungi",
+              iconSrc: "/midnight/sporefall/rotmire/awaken-fungi.png"
+            },
+            {
+              name: "Blightshot",
+              iconSrc: "/midnight/sporefall/rotmire/blight-shot.png"
+            },
+            {
+              name: "Bursting Shroom",
+              iconSrc: "/midnight/sporefall/rotmire/bursting-shroom.png"
+            },
+            {
+              name: "Bursting Doom Shroom",
+              iconSrc: "/midnight/sporefall/rotmire/bursting-doom-shroom.png"
+            },
+            {
+              name: "Cross Fertilization",
+              iconSrc: "/midnight/sporefall/rotmire/cross-fertilization.png"
+            },
+            {
+              name: "Festering Vines",
+              iconSrc: "/midnight/sporefall/rotmire/festering-vines.png"
+            },
+            {
+              name: "Fungal Bloom",
+              iconSrc: "/midnight/sporefall/rotmire/fungal-bloom.png"
+            },
+            {
+              name: "Fungal Frenzy",
+              iconSrc: "/midnight/sporefall/rotmire/fungal-frenzy.png"
+            },
+            {
+              name: "Poison Burst",
+              iconSrc: "/midnight/sporefall/rotmire/poison-burst.png"
+            },
+            {
+              name: "Purtid Fist",
+              iconSrc: "/midnight/sporefall/rotmire/putrid-fist.png"
+            },
+            {
+              name: "Writhing Vines",
+              iconSrc: "/midnight/sporefall/rotmire/writhing-vines.png"
+            },
+          ]
+        }
+      ]
+  },
+  {
     raidName: "The Dreamrift",
     bosses: [
       {
