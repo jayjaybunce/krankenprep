@@ -45,7 +45,7 @@ import {
   type Section,
 } from "../../api/queryHooks";
 import { MarkdownRenderer } from "../MarkdownRenderer";
-import { BossDropdown, BossSelection } from "../BossSelection";
+import { BossDropdown } from "../BossSelection";
 import PlanViewer from "./PlanViewer";
 import { NoteDiffView } from "../NoteDiffView";
 import { Assignments } from "../Assignments";

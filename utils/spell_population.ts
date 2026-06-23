@@ -1,6 +1,9 @@
 import { Client } from "pg"
-import * as csvtojson from 'csvtojson'
-import * as format from 'pg-format'
+// import * as csvtojson from 'csvtojson'
+
+import csvtojson from 'csvtojson'
+// import * as format from 'pg-format'
+import format from 'pg-format'
 
 
 const BUILD_VERSION = "12.1.0.68209"
@@ -46,7 +49,7 @@ async function main (){
         port: 5432,
         database: "krankenprep-prod",
         user: "neondb_owner",
-        password: "npg_DqXMu0pN7Rwn",
+        password: "npg_oEWZjw7bL2eR",
         ssl: {
             rejectUnauthorized: false
         }
