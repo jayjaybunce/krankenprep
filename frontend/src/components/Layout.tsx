@@ -2,7 +2,6 @@ import type { FC, PropsWithChildren } from "react";
 import {
   Sun,
   Moon,
-  Target,
   CircleUserRoundIcon,
   Plus,
   Copy,

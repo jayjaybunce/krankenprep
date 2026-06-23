@@ -44,7 +44,6 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { setTeam } = useTeam()
   const { colorMode } = useTheme();
   const [formState, setFormState] = useState<CreateTeamForm>(defaultFormState);
   const [wowAuditEnabled, setWowAuditEnabled] = useState(false);

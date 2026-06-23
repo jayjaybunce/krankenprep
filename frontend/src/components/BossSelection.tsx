@@ -3,6 +3,7 @@ import {
   useRef,
   useEffect,
   useCallback,
+  Fragment,
   type FC,
 } from "react";
 import { createPortal, preload } from "react-dom";
@@ -11,6 +12,7 @@ import { useCurrentExpansion } from "../api/queryHooks";
 import { type Boss, type Raid } from "../types/api/expansion";
 import { useTeam } from "../hooks";
 import { useLocation, useNavigate } from "react-router-dom";
+import Tooltip from "./Tooltip";
 
 const raidColors = [
   { accent: "from-cyan-400 to-blue-500",      text: "text-cyan-400/80"    },
@@ -118,7 +120,7 @@ export const BossDropdown: FC<BossDropdownProps> = ({ raids, boss, setBoss, full
         <div
           ref={menuRef}
           style={{ top: menuPos.top, left: menuPos.left, width: menuPos.width }}
-          className="fixed z-50 rounded-xl border border-slate-700/60
+          className="fixed z-20 rounded-xl border border-slate-700/60
             bg-slate-900/95 backdrop-blur-xl shadow-2xl shadow-slate-950/60
             overflow-hidden animate-in fade-in slide-in-from-top-2 duration-150"
         >
@@ -221,7 +223,7 @@ export const BossSelection: FC = () => {
 
 export const BossSelectionV2: FC = () => {
   const { boss, setBoss } = useTeam();
-  const { isLoading: isExpLoading, data: expData, error: expError } =
+  const { data: expData} =
     useCurrentExpansion();
   const location = useLocation()
 
@@ -256,24 +258,19 @@ export const BossSelectionV2: FC = () => {
       {raids.map((r,i) => {
         return r?.raid?.bosses?.map((b,idx) => {
           return (
-            <>
-            <div 
-              key={idx + b.name}
-              onClick={() => handleSelect(b)} 
-              className={`p-1 w-10 h-8 border-2 rounded-md object-cover shrink-0 bg-center bg-cover cursor-pointer hover:border-cyan-400 transition-all duration-200 hover:scale-[1.02] ${boss?.id === b.id ? "border-cyan-400" : "border-transparent"}`}
-              style={{
-                backgroundImage: `url(${b.icon_img_url})`,
-                backgroundSize: "125%"
-              }}
-              >
-            {/* <img
-              key={idx + b.name}
-              src={b.icon_img_url}
-              className="w-9 h-9 rounded-md object-cover shrink-0 scale-200"
-            /> */}
-            </div>
+            <Fragment key={idx + b.name}>
+            <Tooltip content={b.name} side="right">
+              <div
+                onClick={() => handleSelect(b)}
+                className={`p-1 w-10 h-8 border-2 rounded-md object-cover shrink-0 bg-center bg-cover cursor-pointer hover:border-cyan-400 transition-all duration-200 hover:scale-[1.02] ${boss?.id === b.id ? "border-cyan-400" : "border-transparent"}`}
+                style={{
+                  backgroundImage: `url(${b.icon_img_url})`,
+                  backgroundSize: "125%"
+                }}
+              />
+            </Tooltip>
             {i !== raids.length - 1 && r?.raid?.bosses && idx === r?.raid?.bosses?.length - 1 ? <div className="h-px bg-gray-300 my-2"></div> : null}
-            </>
+            </Fragment>
           )
         })
       })}
