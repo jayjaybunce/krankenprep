@@ -111,7 +111,6 @@ export const AssignmentSubGroup: FC<{
   players: string[];
 }> = ({ heading, available_slots, slotOffset, players }) => {
   const slots = Array.from({ length: available_slots }, (_, i) => slotOffset + i + 1);
-  const filledCount = players.filter(Boolean).length;
 
   return (
     <div className="bg-slate-900/50 border border-slate-800/50 rounded-lg p-3 flex flex-col gap-2">
