@@ -1,0 +1,183 @@
+{
+    "assignments": [
+        {
+            "heading": "Crystals",
+            "information": "Crystals spawn at specific times and must be handled accordingly.",
+            "subheadings": [
+                {
+                    "heading": "Crystal Spawn 1 (0:28)",
+                    "raidplan_index": 1,
+                    "available_slots": 3
+                },
+                {
+                    "heading": "Crystal Spawn 2 (1:32)",
+                    "raidplan_index": 4,
+                    "available_slots": 3
+                }
+            ],
+            "available_slots": 0
+        },
+        {
+            "heading": "P1 Grip Adds",
+            "raidplan_id": "92ec101a-72e5-456d-ad51-581f9c857c3f",
+            "subheadings": [
+                {
+                    "heading": "Grip Adds",
+                    "raidplan_index": 1,
+                    "available_slots": 3
+                },
+                {
+                    "heading": "Grip Crystals",
+                    "raidplan_index": 6,
+                    "available_slots": 3
+                },
+                {
+                    "heading": "Knock Adds",
+                    "raidplan_index": 10,
+                    "available_slots": 4
+                }
+            ],
+            "available_slots": 0
+        },
+        {
+            "heading": "P1 Terminate Kicks Order",
+            "subheadings": [
+                {
+                    "heading": "bossframe2",
+                    "heading_alias": "",
+                    "raidplan_index": 1,
+                    "available_slots": 6
+                },
+                {
+                    "heading": "bossframe3",
+                    "heading_alias": "",
+                    "raidplan_index": 8,
+                    "available_slots": 6
+                },
+                {
+                    "heading": "bossframe4",
+                    "heading_alias": "",
+                    "available_slots": 6
+                }
+            ],
+            "heading_alias": "intstart",
+            "available_slots": 0
+        },
+        {
+            "heading": "Intermission Spreads",
+            "raidplan_id": "c40441b9-18d1-4965-8307-c3bb8a91d28e",
+            "subheadings": [
+                {
+                    "heading": "Tanks",
+                    "available_slots": 2,
+                    "raidplan_index": 1
+                },
+                {
+                    "heading": "Healers",
+                    "available_slots": 4,
+                    "raidplan_index": 3
+                },
+                {
+                    "heading": "DPS",
+                    "available_slots": 14,
+                    "raidplan_index": 7
+                }
+            ],
+            "available_slots": 0
+        },
+        {
+            "heading": "P2 Galvanize Soaks",
+            "raidplan_id": "c8cbdf70-afc8-4e16-9987-58ee91c87d02",
+            "subheadings": [
+                {
+                    "heading": "Healers",
+                    "available_slots": 5,
+                    "raidplan_index": 1
+                },
+                {
+                    "heading": "Tanks",
+                    "available_slots": 5,
+                    "raidplan_index": 6
+                },
+                {
+                    "heading": "Melee",
+                    "available_slots": 5,
+                    "raidplan_index": 11
+                },
+                {
+                    "heading": "Ranged",
+                    "available_slots": 5,
+                    "raidplan_index": 16
+                }
+            ],
+            "available_slots": 0
+        },
+        {
+            "heading": "P2 Spread Positions",
+            "raidplan_id": "345cf2d6-a714-4eac-bcd6-5ad1d77c502b",
+            "subheadings": [
+                {
+                    "heading": "North West",
+                    "available_slots": 4,
+                    "raidplan_index": 1
+                },
+                {
+                    "heading": "North East",
+                    "available_slots": 4,
+                    "raidplan_index": 5
+                },
+                {
+                    "heading": "West",
+                    "available_slots": 3,
+                    "raidplan_index": 9
+                },
+                {
+                    "heading": "East",
+                    "available_slots": 3,
+                    "raidplan_index": 13
+                },
+                {
+                    "heading": "South West",
+                    "available_slots": 17
+                },
+                {
+                    "heading": "South East",
+                    "available_slots": 21
+                }
+            ],
+            "available_slots": 0
+        },
+        {
+            "heading": "P3 Pop Crystal",
+            "subheadings": [
+                {
+                    "heading": "Pop Crystal 1 (6:31)",
+                    "available_slots": 2
+                },
+                {
+                    "heading": "Pop Crystal 2 (7:26)",
+                    "available_slots": 2
+                },
+                {
+                    "heading": "Pop Crystal 3 (8:21)",
+                    "available_slots": 2
+                }
+            ],
+            "available_slots": 0
+        },
+        {
+            "heading": "P3 Sides",
+            "subheadings": [
+                {
+                    "heading": "Left",
+                    "available_slots": 10
+                },
+                {
+                    "heading": "Right",
+                    "available_slots": 10
+                }
+            ],
+            "available_slots": 0
+        }
+    ]
+}

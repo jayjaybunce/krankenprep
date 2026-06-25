@@ -304,6 +304,23 @@ type IconSearchResult = {
     filename: string
 }
 
+export type AssignmentNote = {
+    id: number
+    note: string
+    boss_id: number
+    team_id: number
+}
+
+export const useAssignmentNote = (teamId: string | undefined, bossId: string | undefined) => {
+    const { url, headers, enabled } = useKpApi(`/teams/${teamId}/assignment-note/boss/${bossId}`)
+    return useQuery({
+        queryKey: [`assignment_note_team_${teamId}_boss_${bossId}`],
+        enabled: enabled && !!teamId && !!bossId,
+        queryFn: () => fetch(url, { method: "GET", headers })
+            .then(res => res.json() as Promise<{ assignment_note: AssignmentNote }>)
+    })
+}
+
 export const useSearchIcons = (query: string) => {
     const {url, headers, enabled} = useKpApi(`/spells/search?q=${query}`)
     const debouncedSearchTerm = useDebounce(query, 200)

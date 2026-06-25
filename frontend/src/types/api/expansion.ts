@@ -1,3 +1,23 @@
+export type AssignmentSubheading = {
+  heading: string;
+  heading_alias?: string;
+  available_slots: number;
+  raidplan_index?: number;
+};
+
+export type AssignmentEntry = {
+  heading: string;
+  heading_alias?: string;
+  information?: string;
+  raidplan_id?: string;
+  available_slots: number;
+  subheadings: AssignmentSubheading[];
+};
+
+export type AssignmentMap = {
+  assignments: AssignmentEntry[];
+};
+
 export type Boss = {
   id: number;
   name: string;
@@ -7,8 +27,9 @@ export type Boss = {
   phases: null | any[];
   raid_id: number;
   raid: Raid;
-  splash_img_url: string
-  icon_img_url: string
+  splash_img_url: string;
+  icon_img_url: string;
+  assignment_map: AssignmentMap | null;
 };
 
 export type Raid = {

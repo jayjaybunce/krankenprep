@@ -11,6 +11,7 @@ import { useTheme } from "../hooks";
 
 type ModalVariant =
   | "default"
+  | "dark"
   | "elevated"
   | "neon"
   | "neon-gradient"
@@ -18,7 +19,7 @@ type ModalVariant =
   | "warning"
   | "danger";
 
-type ModalSize = "sm" | "md" | "lg" | "xl" | "full";
+type ModalSize = "sm" | "md" | "lg" | "xl" | "full" | "screen";
 
 export type ModalProps = {
   isOpen: boolean;
@@ -86,6 +87,7 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
     xl: "max-w-4xl",
     // "2xl": "max-w-8xl",
     full: "max-w-9xl mx-4",
+    screen: "w-full h-full",
   };
 
   const variants = {
@@ -93,6 +95,11 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
       colorMode === "dark"
         ? "bg-slate-900/95 backdrop-blur-xl border-slate-700 shadow-2xl shadow-black/50"
         : "bg-white/95 backdrop-blur-xl border-slate-200 shadow-2xl shadow-slate-300/50",
+
+    dark:
+      colorMode === "dark"
+        ? "bg-slate-950 border-slate-800/60 shadow-2xl shadow-black/80"
+        : "bg-slate-100 border-slate-300 shadow-2xl shadow-slate-400/30",
 
     elevated:
       colorMode === "dark"
@@ -227,9 +234,11 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
     );
   };
 
+  const isScreen = size === "screen";
+
   return (
     <div
-      className="fixed inset-0 z-10 flex items-center justify-center p-4"
+      className={`fixed inset-0 z-10 flex items-center justify-center ${isScreen ? "p-0" : "p-4"}`}
       onClick={handleOverlayClick}
     >
       {/* Backdrop */}
@@ -244,7 +253,7 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
 
       {/* Modal */}
       <div
-        className={`relative w-full ${sizeStyles[size]} max-h-[90vh] flex flex-col animate-in fade-in zoom-in-95 z-10 duration-300`}
+        className={`relative ${sizeStyles[size]} ${isScreen ? "h-screen max-h-screen" : "max-h-[90vh]"} flex flex-col animate-in fade-in zoom-in-95 z-10 duration-300`}
       >
         {renderContent()}
       </div>

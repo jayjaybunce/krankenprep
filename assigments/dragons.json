@@ -1,0 +1,63 @@
+{
+    "assignments": [
+        {
+            "heading": "Gloom Soak Groups",
+            "available_slots": 0,
+            "subheadings": [
+                {
+                    "heading": "Gloom Soak Group 1",
+                    "available_slots": 8
+                },
+                {
+                    "heading": "Gloom Soak Group 2",
+                    "available_slots": 8
+                }
+            ]
+        },
+        {
+            "heading": "Knocks odds/evens",
+            "available_slots": 0,
+            "subheadings": [
+                {
+                    "heading": "Knock Odd Sets",
+                    "available_slots": 8
+                },
+                {
+                    "heading": "Knock Even Sets",
+                    "available_slots": 8
+                }
+            ]
+        },
+        {
+            "heading": "Blood DK Grips",
+            "available_slots": 0,
+            "subheadings": [
+                {
+                    "heading": "Grip",
+                    "available_slots": 3
+                },
+                {
+                    "heading": "2x DK - Grip 1",
+                    "available_slots": 8
+                },
+                {
+                    "heading": "2x DK - Grip 2",
+                    "available_slots": 8
+                }
+            ]
+        },
+        {
+            "heading": "Add Spread Positions",
+            "available_slots": 0,
+            "raidplan_id": "cbac386f-2e00-4e09-ab69-a48827e2bc46",
+            "subheadings": [
+                {
+                    "heading": "Positions",
+                    "available_slots": 18,
+                    "raidplan_index": 1
+                }
+            ]
+        }
+    ]
+}
+
