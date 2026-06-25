@@ -246,7 +246,6 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
   isAdmin,
 }) => {
   const parsed = note ? cleanAndSeparate(note) : [];
-  console.log("Parsed Note", parsed);
 
   const [showEditor, setShowEditor] = useState(false);
   const [noteContent, setNoteContent] = useState(note ?? "");
@@ -264,8 +263,6 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
   const handleSave = () => {
     upsertNote(noteContent, { onSuccess: () => setShowEditor(false) });
   };
-
-  console.log("Assignments", assignments);
 
   const actions = showEditor ? (
     <>
@@ -328,13 +325,24 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
         )}
 
         <div className="flex flex-col gap-6">
-          {assignments.map((assignment, i) => (
-            <AssignmentGroup
-              key={i}
-              assignment={assignment}
-              parsedSection={findParsedSection(parsed, assignment)}
-            />
-          ))}
+          {assignments.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 gap-3">
+              <p className="font-montserrat text-sm font-medium text-slate-400">
+                No assignments configured
+              </p>
+              <p className="font-montserrat text-xs text-slate-600 text-center max-w-sm">
+                Assignment configurations for this boss haven't been set up yet.
+              </p>
+            </div>
+          ) : (
+            assignments.map((assignment, i) => (
+              <AssignmentGroup
+                key={i}
+                assignment={assignment}
+                parsedSection={findParsedSection(parsed, assignment)}
+              />
+            ))
+          )}
         </div>
       </div>
     </Modal>
