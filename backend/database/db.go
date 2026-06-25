@@ -39,6 +39,7 @@ func Connect() {
 		&models.Spell{},
 		&models.FileData{},
 		&models.Wishlist{},
+		&models.AssignmentNote{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}

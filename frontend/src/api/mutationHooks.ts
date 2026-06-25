@@ -340,6 +340,21 @@ export class DroptimizerUploadError extends Error {
     }
 }
 
+export const useUpsertAssignmentNote = (teamId: string | undefined, bossId: string | undefined) => {
+    const { url, headers } = useKpApi(`/teams/${teamId}/assignment-note/boss/${bossId}`)
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationFn: (note: string) => fetch(url, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify({ note })
+        }).then(res => res.json()),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`assignment_note_team_${teamId}_boss_${bossId}`] })
+        }
+    })
+}
+
 export const useUploadDroptimizer = (teamId: number) => {
     const { headers, url } = useKpApi(`/teams/${teamId}/wowaudit/upload`)
     return useMutation({

@@ -23,6 +23,7 @@ import {
   History,
   Pencil,
   Trash2,
+  ClipboardList,
 } from "lucide-react";
 import { Card } from "../Card";
 import { AddSectionModal } from "../modals/AddSectionModal";
@@ -39,6 +40,7 @@ import {
   useUpdateSection,
 } from "../../api/mutationHooks";
 import {
+  useAssignmentNote,
   useCurrentExpansion,
   useGetRaidplanById,
   useTeamAndBossSections,
@@ -48,7 +50,7 @@ import { MarkdownRenderer } from "../MarkdownRenderer";
 import { BossDropdown } from "../BossSelection";
 import PlanViewer from "./PlanViewer";
 import { NoteDiffView } from "../NoteDiffView";
-import { Assignments } from "../Assignments";
+import { AssignmentsModal } from "../modals/AssignmentsModal";
 
 export const Prep: FC = () => {
   const { boss, setBoss } = useTeam();
@@ -153,6 +155,7 @@ const BossDisplay: FC<BossProps> = ({
     null,
   );
 
+  const [showAssignments, setShowAssignments] = useState(false);
   const [hiddenDiffIds, setHiddenDiffIds] = useState<Set<number>>(new Set());
   const toggleDiff = (id: number) =>
     setHiddenDiffIds((prev) => {
@@ -188,6 +191,11 @@ const BossDisplay: FC<BossProps> = ({
   );
 
   const isUserAdmin = ["owner", "admin"].includes(team?.name ?? "");
+
+  const { data: assignmentNoteData } = useAssignmentNote(
+    team?.team_id?.toString(),
+    boss?.id?.toString(),
+  );
 
   const { mutate: createSection } = useCreateSection(
     boss?.id?.toString(),
@@ -297,7 +305,16 @@ const BossDisplay: FC<BossProps> = ({
           }
           backgroundPosition="center 10%"
         />
-        <Assignments />
+        <button
+          onClick={() => setShowAssignments(true)}
+          className="mt-2 flex items-center gap-2 px-4 py-2 rounded-lg font-semibold font-montserrat text-sm bg-slate-800/70 hover:bg-slate-700/80 border border-slate-700 text-slate-300 hover:text-white transition-all duration-200"
+        >
+          <ClipboardList className="w-4 h-4" />
+          Assignments
+          <span className="text-[9px] font-bold font-montserrat px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 uppercase tracking-wider leading-none">
+            Beta
+          </span>
+        </button>
         {/* <iframe src="https://raidstrats.gg/planner?embed=true&amp;id=c8cbdf70-afc8-4e16-9987-58ee91c87d02&amp;animation=true&amp;hidetrails=true&amp;circleMode=true&amp;maxCharacters=4&amp;players=Wynsloww%7CPriest%2CMagicpally%7CPaladin%2CFunkdrip%7CShaman%2CTettybear%7CDruid%2CZaghunt%7CHunter%2CGruesum%7CDeath+Knight%2CJaemsy%7CWarrior%2CKrankenmight%7CEvoker%2CTatros%7CPaladin%2CMetzinger%7CDemon+Hunter%2CGoomt%7CRogue%2CDeeznutticus%7CWarrior%2CUchai%7CMonk%2CArx%7CDeath+Knight%2CSkellestone%7CWarlock%2CSobiezhunter%7CHunter%2CStridur%7CHunter%2CWipe%7CMage%2CLyconic%7CWarlock%2CPkrz%7CShaman" 
         title="P2 Galvanize Soaks" 
         style={{ width: "100%", height: "100%", borderWidth: "medium", borderStyle: "none", borderColor: "currentcolor", borderImage: "initial", opacity: 1, transition: "opacity 200ms 150ms" }}
@@ -764,6 +781,16 @@ const BossDisplay: FC<BossProps> = ({
       <MarkdownGuideModal
         isOpen={showMarkdownGuide}
         onClose={() => setShowMarkdownGuide(false)}
+      />
+
+      <AssignmentsModal
+        isOpen={showAssignments}
+        onClose={() => setShowAssignments(false)}
+        assignments={boss?.assignment_map?.assignments ?? []}
+        note={assignmentNoteData?.assignment_note?.note}
+        teamId={team?.team_id?.toString()}
+        bossId={boss?.id?.toString()}
+        isAdmin={isUserAdmin}
       />
     </>
   );

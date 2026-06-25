@@ -32,6 +32,7 @@ func main() {
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
 			"http://localhost:3000",
+			"https://localhost:3000",
 			"https://krankenprep.io",
 		},
 		AllowMethods: []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
@@ -93,6 +94,10 @@ func main() {
 		protected.POST("/teams/invite", handlers.CreateInviteLink)
 		protected.POST("/teams/invite/redeem", handlers.RedeemInviteLink)
 		protected.DELETE("/teams/invite", handlers.RevokeInviteLink)
+
+		// Assignment note endpoints
+		protected.GET("/teams/:teamId/assignment-note/boss/:bossId", handlers.GetAssignmentNote)
+		protected.PUT("/teams/:teamId/assignment-note/boss/:bossId", handlers.UpsertAssignmentNote)
 
 		// Spell endpoints
 		protected.GET("/spells/search", handlers.SearchSpells)

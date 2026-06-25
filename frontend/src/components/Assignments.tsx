@@ -135,7 +135,23 @@ Right: Gruesum Tatros Arx Uchai Metzinger Stridur Wipe Lyconic Tettybear Magicpa
 invitelist:Tettybear-Area52 Funkdrip-Area52 Uchai-Area52 Tatros-BleedingHollow Goomt-Area52 Pkrz-Sargeras Metzinger-Area52 Sobiezhunter-Area52 Stridur-Area52 Zaghunt-Sargeras Wynsloww-WyrmrestAccord Skellestone-Area52 Wipe-Sargeras Arx-Stormrage Lyconic-Mal'Ganis Magicpally-Area52 Jaemsy-Stormrage Gruesum-Tichondrius Krankenmight-Area52 Deeznutticus-Anvilmar;   `
 
 
-const cleanAndSeparate = (input: string) => {
+
+type Assignment = {
+    boss: "boss_relation"
+    assignment_section: [
+        {
+            heading: string,
+            information: string,
+            raidplan_id: string,
+            subheadings: { heading: string, players: string[] }[]
+        }
+    ]
+}
+
+export type ParsedSubheading = { heading: string; players: string[], heading_alias?: string }
+export type ParsedSection = { heading: string; indexed_players: string[]; subheadings: ParsedSubheading[] }
+
+export const cleanAndSeparate = (input: string): ParsedSection[] => {
     const x = input.split("\n")
     const filtered = x.filter((line) => !line.includes("time:") && !line.includes("EncounterID"))
     const structured: { heading: string, indexed_players: string[], subheadings: { heading: string, players: string[] }[] }[] = []
