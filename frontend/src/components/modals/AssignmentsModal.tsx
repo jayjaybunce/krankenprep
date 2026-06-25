@@ -155,6 +155,7 @@ export const AssignmentGroup: FC<{
     const win = iframeRef.current?.contentWindow;
     if (!win) return;
     const players = buildPostMessagePlayers(assignment, parsedSection);
+    console.log("Players:", players);
     if (Object.keys(players).length === 0) return;
     win.postMessage({ type: "updatePlayers", players }, "https://raidstrats.gg");
     win.postMessage({ type: "toggleIndexNumbers", show: true }, "*");
@@ -208,6 +209,8 @@ export const AssignmentGroup: FC<{
 
   const iframeSrc = buildRaidplanUrl(assignment.raidplan_id);
 
+  console.log("Assignment", assignment.heading)
+
   return (
     <div className="flex gap-5 items-start border-b border-slate-800/40 pb-6 last:border-b-0 last:pb-0">
       <div className="w-[60%] shrink-0 aspect-video rounded-xl overflow-hidden border border-slate-800/50 bg-slate-900/40">
@@ -217,7 +220,7 @@ export const AssignmentGroup: FC<{
           title={assignment.heading}
           className="w-full h-full"
           style={{ border: "none" }}
-          onLoad={() => setTimeout(sendPlayers, 800)}
+          onLoad={() => setTimeout(sendPlayers, 500)}
         />
       </div>
       <div className="flex-1 min-w-0">{details}</div>
