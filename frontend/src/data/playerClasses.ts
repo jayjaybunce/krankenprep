@@ -19,7 +19,9 @@ const PLAYER_CLASSES: Record<string, string> = {
   sobiezhunter: "Hunter",
   zaghunt: "Hunter",
   stridur: "Hunter",
-  uchai: "Monk"
+  uchai: "Monk",
+  paperbonk: "Paladin",
+  beatsi: "Evoker"
 };
 
 export const getPlayerClass = (name: string): string | undefined =>
