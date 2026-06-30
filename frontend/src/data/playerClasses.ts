@@ -21,7 +21,8 @@ const PLAYER_CLASSES: Record<string, string> = {
   stridur: "Hunter",
   uchai: "Monk",
   paperbonk: "Paladin",
-  beatsi: "Evoker"
+  beatsi: "Evoker",
+  lindarr: "Druid"
 };
 
 export const getPlayerClass = (name: string): string | undefined =>
