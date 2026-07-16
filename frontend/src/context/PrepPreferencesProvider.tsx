@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { PrepPreferencesContext } from "./PrepPreferencesContext";
-import type { MarkdownSize, MarkdownColor } from "./PrepPreferencesContext";
+import type { MarkdownSize, MarkdownColor, LayoutMode } from "./PrepPreferencesContext";
 import type { FC, PropsWithChildren } from "react";
 
 const LS_PREFIX = "kp-prep-";
@@ -26,11 +26,8 @@ export const PrepPreferencesProvider: FC<PropsWithChildren> = ({ children }) => 
   const [markdownColor, setMarkdownColorState] = useState<MarkdownColor>(
     () => readLS<MarkdownColor>("markdownColor", "cyan"),
   );
-  const [layoutOption1, setLayoutOption1State] = useState<boolean>(
-    () => readLS<boolean>("layoutOption1", false),
-  );
-  const [layoutOption2, setLayoutOption2State] = useState<boolean>(
-    () => readLS<boolean>("layoutOption2", false),
+  const [layoutMode, setLayoutModeState] = useState<LayoutMode>(
+    () => readLS<LayoutMode>("layoutMode", "split"),
   );
 
   const setMarkdownSize = (size: MarkdownSize) => {
@@ -43,14 +40,9 @@ export const PrepPreferencesProvider: FC<PropsWithChildren> = ({ children }) => 
     writeLS("markdownColor", color);
   };
 
-  const setLayoutOption1 = (value: boolean) => {
-    setLayoutOption1State(value);
-    writeLS("layoutOption1", value);
-  };
-
-  const setLayoutOption2 = (value: boolean) => {
-    setLayoutOption2State(value);
-    writeLS("layoutOption2", value);
+  const setLayoutMode = (mode: LayoutMode) => {
+    setLayoutModeState(mode);
+    writeLS("layoutMode", mode);
   };
 
   return (
@@ -60,10 +52,8 @@ export const PrepPreferencesProvider: FC<PropsWithChildren> = ({ children }) => 
         setMarkdownSize,
         markdownColor,
         setMarkdownColor,
-        layoutOption1,
-        setLayoutOption1,
-        layoutOption2,
-        setLayoutOption2,
+        layoutMode,
+        setLayoutMode,
       }}
     >
       {children}

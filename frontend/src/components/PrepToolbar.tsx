@@ -1,9 +1,16 @@
 import type { FC } from "react";
+import { Columns2, FileText } from "lucide-react";
 import { usePrepPreferences } from "../hooks";
 import type {
   MarkdownSize,
   MarkdownColor,
+  LayoutMode,
 } from "../context/PrepPreferencesContext";
+
+const layoutOptions: { value: LayoutMode; label: string; icon: FC<{ className?: string }> }[] = [
+  { value: "split", label: "Split Screen", icon: Columns2 },
+  { value: "notes", label: "Notes Fullscreen", icon: FileText },
+];
 
 const sizeOptions: { value: MarkdownSize; label: string }[] = [
   { value: "small", label: "S" },
@@ -28,10 +35,8 @@ export const PrepToolbar: FC = () => {
     setMarkdownSize,
     markdownColor,
     setMarkdownColor,
-    // layoutOption1,
-    // setLayoutOption1,
-    // layoutOption2,
-    // setLayoutOption2,
+    layoutMode,
+    setLayoutMode,
   } = usePrepPreferences();
 
   return (
@@ -102,44 +107,36 @@ export const PrepToolbar: FC = () => {
       </div>
 
       {/* Layout Section */}
-      {/* <div className="flex flex-col items-center gap-1.5">
+      <div className="flex flex-col items-center gap-1.5">
         <h3 className="text-[8px] font-semibold text-slate-400 uppercase tracking-widest">
           Layout
         </h3>
         <div className="w-full h-px bg-gradient-to-r from-transparent via-cyan-500/50 to-transparent" />
 
-        <button
-          onClick={() => setLayoutOption1(!layoutOption1)}
-          title="Layout Option 1"
-          className={`
-            w-7 h-7 rounded-md flex items-center justify-center
-            border transition-all duration-200
-            ${
-              layoutOption1
-                ? "bg-cyan-500/20 border-cyan-500 text-cyan-400"
-                : "bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-700/50 hover:border-slate-600 hover:text-slate-400"
-            }
-          `}
-        >
-          <LayoutGrid className="w-3.5 h-3.5" />
-        </button>
-
-        <button
-          onClick={() => setLayoutOption2(!layoutOption2)}
-          title="Layout Option 2"
-          className={`
-            w-7 h-7 rounded-md flex items-center justify-center
-            border transition-all duration-200
-            ${
-              layoutOption2
-                ? "bg-cyan-500/20 border-cyan-500 text-cyan-400"
-                : "bg-slate-800/50 border-slate-700 text-slate-500 hover:bg-slate-700/50 hover:border-slate-600 hover:text-slate-400"
-            }
-          `}
-        >
-          <Columns className="w-3.5 h-3.5" />
-        </button>
-      </div> */}
+        <div className="flex flex-col gap-1">
+          {layoutOptions.map((opt) => {
+            const Icon = opt.icon;
+            return (
+              <button
+                key={opt.value}
+                onClick={() => setLayoutMode(opt.value)}
+                title={opt.label}
+                className={`
+                  w-7 h-7 rounded-md flex items-center justify-center
+                  border transition-all duration-200
+                  ${
+                    layoutMode === opt.value
+                      ? "bg-cyan-500/20 border-cyan-500 text-cyan-400 shadow-[0_0_8px_rgba(6,182,212,0.3)]"
+                      : "bg-slate-800/50 border-slate-700 text-slate-400 hover:bg-slate-700/50 hover:border-slate-600 hover:text-slate-300"
+                  }
+                `}
+              >
+                <Icon className="w-3.5 h-3.5" />
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 };

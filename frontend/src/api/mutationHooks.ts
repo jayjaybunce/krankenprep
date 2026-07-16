@@ -312,6 +312,131 @@ export const useSyncWowAuditWishlists = (teamId: number) => {
     })
 }
 
+type CreatePlayerPayload = {
+    name: string
+    battletag: string
+    user_id?: number | null
+}
+
+export const useCreatePlayer = (teamId: number) => {
+    const { url, headers } = useKpApi(`/teams/${teamId}/players`)
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationKey: ["createPlayer"],
+        mutationFn: (payload: CreatePlayerPayload) => fetch(url, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(payload)
+        }).then(res => res.json()),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
+        }
+    })
+}
+
+type UpdatePlayerPayload = {
+    playerId: number
+    name: string
+    battletag: string
+    user_id?: number | null
+}
+
+export const useUpdatePlayer = (teamId: number) => {
+    const { headers, url } = useKpApi("/players")
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationKey: ["updatePlayer"],
+        mutationFn: ({ playerId, ...payload }: UpdatePlayerPayload) => fetch(`${url}/${playerId}`, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify(payload)
+        }).then(res => res.json()),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
+        }
+    })
+}
+
+export const useDeletePlayer = (teamId: number) => {
+    const { headers, url } = useKpApi("/players")
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationKey: ["deletePlayer"],
+        mutationFn: (playerId: number) => fetch(`${url}/${playerId}`, {
+            method: "DELETE",
+            headers
+        }).then(res => res.json()),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
+        }
+    })
+}
+
+type CreateCharacterPayload = {
+    playerId: number
+    name: string
+    class: string
+    realm: string
+    region: string
+    is_main: boolean
+}
+
+export const useCreateCharacter = (teamId: number) => {
+    const { headers, url } = useKpApi("/players")
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationKey: ["createCharacter"],
+        mutationFn: ({ playerId, ...payload }: CreateCharacterPayload) => fetch(`${url}/${playerId}/characters`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify(payload)
+        }).then(res => res.json()),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
+        }
+    })
+}
+
+type UpdateCharacterPayload = {
+    characterId: number
+    name: string
+    class: string
+    realm: string
+    region: string
+    is_main: boolean
+}
+
+export const useUpdateCharacter = (teamId: number) => {
+    const { headers, url } = useKpApi("/characters")
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationKey: ["updateCharacter"],
+        mutationFn: ({ characterId, ...payload }: UpdateCharacterPayload) => fetch(`${url}/${characterId}`, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify(payload)
+        }).then(res => res.json()),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
+        }
+    })
+}
+
+export const useDeleteCharacter = (teamId: number) => {
+    const { headers, url } = useKpApi("/characters")
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationKey: ["deleteCharacter"],
+        mutationFn: (characterId: number) => fetch(`${url}/${characterId}`, {
+            method: "DELETE",
+            headers
+        }).then(res => res.json()),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
+        }
+    })
+}
+
 export const useDeleteMemberFromTeam = (teamId: number) => {
     const { headers, url } = useKpApi(`/teams/${teamId}/member`)
     const queryClient = useQueryClient()

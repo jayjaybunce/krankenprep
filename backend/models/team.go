@@ -13,6 +13,7 @@ type Team struct {
 	WowAuditUrl          string           `json:"wowaudit_url"`
 	WowAuditApiKey       string           `json:"wowaudit_api_key"`
 	Roles                []Role           `json:"roles" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
+	Players              []Player         `json:"players" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Sections             []Section        `json:"sections" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	InviteLinks          []InviteLink     `json:"invite_links" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	WishlistConfigs      []Wishlist       `json:"wishlist_configs" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`

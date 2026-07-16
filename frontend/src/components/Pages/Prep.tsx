@@ -136,7 +136,7 @@ const BossDisplay: FC<BossProps> = ({
 }) => {
   const { team, boss } = useTeam();
   const { name, splash_img_url } = boss ?? {};
-  const { markdownSize, markdownColor } = usePrepPreferences();
+  const { markdownSize, markdownColor, layoutMode } = usePrepPreferences();
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showMarkdownGuide, setShowMarkdownGuide] = useState(false);
@@ -370,7 +370,9 @@ const BossDisplay: FC<BossProps> = ({
 
           {/* Panel 1: Sections */}
           <div
-            className="lg:w-1/2 flex flex-col h-full overflow-y-auto"
+            className={`flex flex-col h-full overflow-y-auto ${
+              layoutMode === "notes" ? "lg:hidden" : "lg:w-1/2"
+            }`}
             style={isMobile ? { width: "33.333%" } : undefined}
           >
             {/* Desktop only: sticky raidplan above sections */}
@@ -507,13 +509,46 @@ const BossDisplay: FC<BossProps> = ({
             </div>
           </div>
 
-          <div className="hidden lg:block w-px bg-slate-300 dark:bg-slate-700 mx-4 shrink-0" />
+          <div
+            className={
+              layoutMode === "split"
+                ? "hidden lg:block w-px bg-slate-300 dark:bg-slate-700 mx-4 shrink-0"
+                : "hidden"
+            }
+          />
 
           {/* Panel 2: Notes */}
           <div
-            className="lg:w-1/2 flex flex-col h-full overflow-y-auto"
+            className={`flex flex-col h-full overflow-y-auto ${
+              layoutMode === "notes" ? "lg:w-full" : "lg:w-1/2"
+            }`}
             style={isMobile ? { width: "33.333%" } : undefined}
           >
+            {layoutMode === "notes" && sections.length > 0 && (
+              <div className="hidden lg:flex flex-row gap-2 overflow-x-auto pb-3 mb-4 border-b border-slate-300 dark:border-slate-700 shrink-0">
+                {sections.map((section) => {
+                  const isSelected = selectedSection?.id === section?.id;
+                  return (
+                    <button
+                      key={section.id}
+                      onClick={() => {
+                        if (isSelected) return;
+                        navigate(`/prep/${boss?.id}/section/${section.id}`, {
+                          replace: true,
+                        });
+                      }}
+                      className={`shrink-0 px-3 py-1.5 rounded-lg text-sm font-montserrat font-medium whitespace-nowrap transition-colors duration-150 border ${
+                        isSelected
+                          ? "bg-cyan-500/20 border-cyan-500 text-cyan-400"
+                          : "bg-slate-200/50 dark:bg-slate-800/50 border-transparent text-slate-600 dark:text-slate-400 hover:bg-slate-300/50 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-200"
+                      }`}
+                    >
+                      {section?.name || "Section"}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             <div className="flex flex-row gap-2 items-center justify-between">
               <div className="flex flex-row gap-2 items-center">
                 <div className="w-1 h-5 bg-gradient-to-b from-orange-500 to-red-600 rounded-full" />

@@ -31,6 +31,8 @@ func Connect() {
 		&models.Note{},
 		&models.NoteVersion{},
 		&models.Role{},
+		&models.Player{},
+		&models.Character{},
 		&models.Expansion{},
 		&models.Season{},
 		&models.Raid{},

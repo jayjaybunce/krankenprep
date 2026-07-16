@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import Button from "../Button";
 import { CreateInviteLinkModal } from "../modals/CreateInviteLinkModal";
+import { RosterTab } from "../Roster/RosterTab";
 import {
   useRevokeInviteLink,
   useSyncWowAuditWishlists,
@@ -286,7 +287,7 @@ const Team: FC = () => {
         <div
           className={`flex gap-1 border-b ${colorMode === "dark" ? "border-slate-800" : "border-slate-200"}`}
         >
-          {(["members", "settings"] as const).map((tab) => (
+          {(["members", "settings", "roster"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => navigator(`/team/${tab}`, { replace: true })}
@@ -900,6 +901,14 @@ const Team: FC = () => {
               </div>
             </div>
           </>
+        )}
+
+        {activeTab === "roster" && (
+          <RosterTab
+            team={data}
+            teamId={team?.team_id ?? -1}
+            roles={data.roles}
+          />
         )}
       </div>
 

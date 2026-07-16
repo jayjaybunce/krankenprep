@@ -65,6 +65,30 @@ export type Wishlist = {
     upgrade_level_raid_finder: number 
 }
 
+export type Character = {
+    id: number
+    player_id: number
+    name: string
+    class: string
+    realm: string
+    region: string
+    is_main: boolean
+    created_at: string
+    updated_at: string
+}
+
+export type Player = {
+    id: number
+    team_id: number
+    user_id: number | null
+    user: User | null
+    name: string
+    battletag: string
+    characters: Character[] | null
+    created_at: string
+    updated_at: string
+}
+
 export type Team = {
         id: number,
         name: string,
@@ -77,6 +101,7 @@ export type Team = {
         wowaudit_api_key: string,
         wishlist_configs: Wishlist[] | null
         roles: MyRole[]
+        players: Player[] | null
         invite_links: InviteLink[]
         phases: []
     }
