@@ -2,7 +2,18 @@
   "permissions": {
     "allow": [
       "Bash(find:*)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(go build *)",
+      "Bash(echo \"go exit: $?\")",
+      "Bash(npx tsc *)",
+      "Bash(echo \"tsc exit: $?\")",
+      "Bash(./node_modules/.bin/tsc -b)",
+      "Bash(echo \"exit: $?\")",
+      "Bash(npx eslint *)",
+      "Bash(go vet *)",
+      "Bash(timeout 12 npx vite build)",
+      "Bash(npx vite *)",
+      "Bash(echo \"build exit: $?\")"
     ]
   }
 }

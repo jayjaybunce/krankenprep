@@ -233,7 +233,7 @@ func GetTeamById(c *gin.Context) {
 		return
 	}
 	team := models.Team{}
-	if err := database.DB.Preload("WishlistConfigs").Preload("InviteLinks").Preload("Roles").Preload("Roles.User").Where("id = ?", teamId).Find(&team).Error; err != nil {
+	if err := database.DB.Preload("WishlistConfigs").Preload("InviteLinks").Preload("Roles").Preload("Roles.User").Preload("Players").Preload("Players.User").Preload("Players.Characters").Where("id = ?", teamId).Find(&team).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "team not found"})
 		return
 	}

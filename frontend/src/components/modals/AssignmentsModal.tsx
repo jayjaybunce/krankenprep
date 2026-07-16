@@ -1,12 +1,33 @@
-import { useCallback, useEffect, useRef, useState, type FC } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "react";
 import { Info, Pencil, Save, X } from "lucide-react";
 import { Modal } from "../Modal";
 import { cleanAndSeparate, type ParsedSection } from "../Assignments";
 import { useUpsertAssignmentNote } from "../../api/mutationHooks";
+import { useGetTeamById } from "../../api/queryHooks";
 import type { AssignmentEntry as AssignmentDef } from "../../types/api/expansion";
-import { getPlayerClass } from "../../data/playerClasses";
+import { getClassColor } from "../../data/classes";
 
 const normalize = (s: string) => s.trim().toLowerCase();
+
+const hexToRgba = (hex: string, alpha: number): string => {
+  const parsed = hex.replace("#", "");
+  const r = parseInt(parsed.substring(0, 2), 16);
+  const g = parseInt(parsed.substring(2, 4), 16);
+  const b = parseInt(parsed.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+// Picks black or white text so it stays readable against a solid class-color fill.
+const getContrastTextColor = (hex: string): string => {
+  const parsed = hex.replace("#", "");
+  const r = parseInt(parsed.substring(0, 2), 16);
+  const g = parseInt(parsed.substring(2, 4), 16);
+  const b = parseInt(parsed.substring(4, 6), 16);
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.6 ? "#0f172a" : "#ffffff";
+};
+
+type CharacterClassLookup = (name: string) => string | undefined;
 
 const findParsedSection = (
   parsed: ParsedSection[],
@@ -58,6 +79,7 @@ const findParsedPlayers = (
 const buildPostMessagePlayers = (
   assignment: AssignmentDef,
   parsedSection: ParsedSection | undefined,
+  getCharacterClass: CharacterClassLookup,
 ): Record<string, { name: string; class: string | null }> => {
   const result: Record<string, { name: string; class: string | null }> = {};
   let emptyIdx = 0;
@@ -71,7 +93,7 @@ const buildPostMessagePlayers = (
       const pos = sub.raidplan_index + s;
       const player = players[s];
       if (player) {
-        const cls = getPlayerClass(player);
+        const cls = getCharacterClass(player);
         result[`index${pos}`] = { name: player, class: cls ?? null };
       }
     }
@@ -80,36 +102,58 @@ const buildPostMessagePlayers = (
   return result;
 };
 
-const PlayerSlot: FC<{ index: number; player?: string }> = ({ index, player }) => (
-  <div
-    className={`flex items-center gap-1.5 border rounded px-2 py-1.5 min-w-24 transition-colors duration-150 ${
-      player
-        ? "bg-slate-700/60 border-slate-600/50"
-        : "bg-slate-800/70 border-slate-700/40"
-    }`}
-  >
-    <span className="text-[14px] font-bold text-slate-600 font-montserrat w-3.5 shrink-0 tabular-nums">
-      {index}
-    </span>
-    <div className="w-px h-3 bg-slate-700/60 shrink-0" />
-    {player ? (
-      <span className="text-[13px] text-slate-200 font-montserrat font-medium truncate">
-        {player}
+const PlayerSlot: FC<{ index: number; player?: string; characterClass?: string }> = ({
+  index,
+  player,
+  characterClass,
+}) => {
+  const classColor = characterClass ? getClassColor(characterClass) : undefined;
+  const textColor = classColor ? getContrastTextColor(classColor) : undefined;
+
+  return (
+    <div
+      className={`flex items-center gap-1.5 border rounded px-2 py-1.5 min-w-24 transition-colors duration-150 ${
+        player
+          ? classColor
+            ? "border-transparent shadow-sm"
+            : "bg-slate-700/60 border-slate-600/50"
+          : "bg-slate-800/70 border-slate-700/40"
+      }`}
+      style={classColor ? { backgroundColor: classColor } : undefined}
+    >
+      <span
+        className={`text-[14px] font-bold font-montserrat w-3.5 shrink-0 tabular-nums ${classColor ? "" : "text-slate-600"}`}
+        style={classColor ? { color: hexToRgba(textColor!, 0.65) } : undefined}
+      >
+        {index}
       </span>
-    ) : (
-      <span className="text-[11px] text-slate-700 font-montserrat italic truncate select-none">
-        empty
-      </span>
-    )}
-  </div>
-);
+      <div
+        className={`w-px h-3 shrink-0 ${classColor ? "" : "bg-slate-700/60"}`}
+        style={classColor ? { backgroundColor: hexToRgba(textColor!, 0.3) } : undefined}
+      />
+      {player ? (
+        <span
+          className={`text-[13px] font-montserrat font-semibold truncate ${classColor ? "" : "text-slate-200"}`}
+          style={classColor ? { color: textColor } : undefined}
+        >
+          {player}
+        </span>
+      ) : (
+        <span className="text-[11px] text-slate-700 font-montserrat italic truncate select-none">
+          empty
+        </span>
+      )}
+    </div>
+  );
+};
 
 export const AssignmentSubGroup: FC<{
   heading: string;
   available_slots: number;
   slotOffset: number;
   players: string[];
-}> = ({ heading, available_slots, slotOffset, players }) => {
+  getCharacterClass: CharacterClassLookup;
+}> = ({ heading, available_slots, slotOffset, players, getCharacterClass }) => {
   const slots = Array.from({ length: available_slots }, (_, i) => slotOffset + i + 1);
 
   return (
@@ -135,9 +179,17 @@ export const AssignmentSubGroup: FC<{
         </div> */}
       </div>
       <div className="flex flex-wrap gap-1.5">
-        {slots.map((slotNum, i) => (
-          <PlayerSlot key={slotNum} index={slotNum} player={players[i]} />
-        ))}
+        {slots.map((slotNum, i) => {
+          const player = players[i];
+          return (
+            <PlayerSlot
+              key={slotNum}
+              index={slotNum}
+              player={player}
+              characterClass={player ? getCharacterClass(player) : undefined}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -146,7 +198,8 @@ export const AssignmentSubGroup: FC<{
 export const AssignmentGroup: FC<{
   assignment: AssignmentDef;
   parsedSection: ParsedSection | undefined;
-}> = ({ assignment, parsedSection }) => {
+  getCharacterClass: CharacterClassLookup;
+}> = ({ assignment, parsedSection, getCharacterClass }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
   let slotOffset = 0;
   let emptyHeadingCount = 0;
@@ -154,12 +207,12 @@ export const AssignmentGroup: FC<{
   const sendPlayers = useCallback(() => {
     const win = iframeRef.current?.contentWindow;
     if (!win) return;
-    const players = buildPostMessagePlayers(assignment, parsedSection);
+    const players = buildPostMessagePlayers(assignment, parsedSection, getCharacterClass);
     console.log("Players:", players);
     if (Object.keys(players).length === 0) return;
     win.postMessage({ type: "updatePlayers", players }, "https://raidstrats.gg");
     win.postMessage({ type: "toggleIndexNumbers", show: true }, "*");
-  }, [assignment, parsedSection]);
+  }, [assignment, parsedSection, getCharacterClass]);
 
   const details = (
     <div className="flex flex-col gap-3">
@@ -192,6 +245,7 @@ export const AssignmentGroup: FC<{
               available_slots={sub.available_slots}
               slotOffset={offset}
               players={players}
+              getCharacterClass={getCharacterClass}
             />
           );
         })}
@@ -248,6 +302,23 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
   isAdmin,
 }) => {
   const parsed = note ? cleanAndSeparate(note) : [];
+
+  const { data: teamData } = useGetTeamById(teamId ? Number(teamId) : -1);
+
+  const characterClassMap = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const player of teamData?.players ?? []) {
+      for (const character of player.characters ?? []) {
+        map.set(character.name.trim().toLowerCase(), character.class);
+      }
+    }
+    return map;
+  }, [teamData]);
+
+  const getCharacterClass = useCallback<CharacterClassLookup>(
+    (name) => characterClassMap.get(name.trim().toLowerCase()),
+    [characterClassMap],
+  );
 
   const [showEditor, setShowEditor] = useState(false);
   const [noteContent, setNoteContent] = useState(note ?? "");
@@ -342,6 +413,7 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
                 key={i}
                 assignment={assignment}
                 parsedSection={findParsedSection(parsed, assignment)}
+                getCharacterClass={getCharacterClass}
               />
             ))
           )}

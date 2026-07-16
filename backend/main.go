@@ -78,6 +78,14 @@ func main() {
 		protected.GET("/teams/:teamId", handlers.GetTeamById)
 		protected.DELETE("/teams/:teamId/member/:roleId", handlers.DeleteMemberFromTeam)
 
+		// Player/Character (roster) endpoints
+		protected.POST("/teams/:teamId/players", handlers.CreatePlayer)
+		protected.PUT("/players/:playerId", handlers.UpdatePlayer)
+		protected.DELETE("/players/:playerId", handlers.DeletePlayer)
+		protected.POST("/players/:playerId/characters", handlers.CreateCharacter)
+		protected.PUT("/characters/:characterId", handlers.UpdateCharacter)
+		protected.DELETE("/characters/:characterId", handlers.DeleteCharacter)
+
 		// Section endpoints
 		protected.POST("/sections", handlers.CreateSection)
 		protected.PUT("/sections/:sectionId", handlers.UpdateSection)
