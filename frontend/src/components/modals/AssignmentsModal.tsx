@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "react";
-import { Info, Pencil, Save, X } from "lucide-react";
+import { Info, Pencil, RefreshCw, Save, X } from "lucide-react";
 import { Modal } from "../Modal";
 import { cleanAndSeparate, type ParsedSection } from "../Assignments";
 import { useUpsertAssignmentNote } from "../../api/mutationHooks";
@@ -149,34 +149,27 @@ const PlayerSlot: FC<{ index: number; player?: string; characterClass?: string }
 
 export const AssignmentSubGroup: FC<{
   heading: string;
+  description?: string;
   available_slots: number;
   slotOffset: number;
   players: string[];
   getCharacterClass: CharacterClassLookup;
-}> = ({ heading, available_slots, slotOffset, players, getCharacterClass }) => {
+}> = ({ heading, description, available_slots, slotOffset, players, getCharacterClass }) => {
   const slots = Array.from({ length: available_slots }, (_, i) => slotOffset + i + 1);
 
   return (
     <div className="bg-slate-900/50 border border-slate-800/50 rounded-lg p-3 flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-sm font-semibold font-montserrat text-slate-400 uppercase tracking-wider">
-          {heading}
-        </span>
-        {/* <div className="flex items-center gap-1.5 shrink-0">
-          <span
-            className={`text-[10px] font-montserrat tabular-nums ${
-              filledCount === available_slots ? "text-emerald-500" : "text-slate-600"
-            }`}
-          >
-            {filledCount}/{available_slots}
+      <div className="flex flex-col gap-1">
+        <div className="flex items-center justify-between gap-2">
+          <span className="text-sm font-semibold font-montserrat text-slate-400 uppercase tracking-wider">
+            {heading}
           </span>
-          <button className="text-[9px] font-montserrat text-slate-600 hover:text-slate-300 border border-slate-800 hover:border-slate-600 rounded px-1.5 py-0.5 transition-colors duration-150">
-            Clear
-          </button>
-          <button className="text-[9px] font-montserrat text-slate-600 hover:text-slate-300 border border-slate-800 hover:border-slate-600 rounded px-1.5 py-0.5 transition-colors duration-150">
-            Config
-          </button>
-        </div> */}
+        </div>
+        {description && (
+          <p className="text-[11px] font-montserrat text-slate-500 leading-relaxed">
+            {description}
+          </p>
+        )}
       </div>
       <div className="flex flex-wrap gap-1.5">
         {slots.map((slotNum, i) => {
@@ -231,6 +224,11 @@ export const AssignmentGroup: FC<{
             </p>
           </div>
         )}
+        {assignment.description && (
+          <p className="text-[11px] font-montserrat text-slate-500 leading-relaxed pl-2.5">
+            {assignment.description}
+          </p>
+        )}
       </div>
       <div className="flex flex-col gap-2">
         {assignment.subheadings.map((sub, i) => {
@@ -242,6 +240,7 @@ export const AssignmentGroup: FC<{
             <AssignmentSubGroup
               key={i}
               heading={sub.heading}
+              description={sub.description}
               available_slots={sub.available_slots}
               slotOffset={offset}
               players={players}
@@ -263,11 +262,9 @@ export const AssignmentGroup: FC<{
 
   const iframeSrc = buildRaidplanUrl(assignment.raidplan_id);
 
-  console.log("Assignment", assignment.heading)
-
   return (
     <div className="flex gap-5 items-start border-b border-slate-800/40 pb-6 last:border-b-0 last:pb-0">
-      <div className="w-[60%] shrink-0 aspect-video rounded-xl overflow-hidden border border-slate-800/50 bg-slate-900/40">
+      <div className="relative w-[60%] shrink-0 aspect-video rounded-xl overflow-hidden border border-slate-800/50 bg-slate-900/40">
         <iframe
           ref={iframeRef}
           src={iframeSrc}
@@ -276,6 +273,13 @@ export const AssignmentGroup: FC<{
           style={{ border: "none" }}
           onLoad={() => setTimeout(sendPlayers, 500)}
         />
+        <button
+          onClick={sendPlayers}
+          title="Resync players"
+          className="absolute top-2 right-2 p-1.5 rounded-lg bg-slate-900/70 border border-slate-700/60 text-slate-300 hover:text-cyan-400 hover:border-cyan-500/40 backdrop-blur-sm transition-colors"
+        >
+          <RefreshCw className="w-3.5 h-3.5" />
+        </button>
       </div>
       <div className="flex-1 min-w-0">{details}</div>
     </div>

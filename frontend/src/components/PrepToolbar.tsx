@@ -122,7 +122,7 @@ export const PrepToolbar: FC = () => {
                 onClick={() => setLayoutMode(opt.value)}
                 title={opt.label}
                 className={`
-                  w-7 h-7 rounded-md flex items-center justify-center
+                  relative w-7 h-7 rounded-md flex items-center justify-center
                   border transition-all duration-200
                   ${
                     layoutMode === opt.value
@@ -132,6 +132,10 @@ export const PrepToolbar: FC = () => {
                 `}
               >
                 <Icon className="w-3.5 h-3.5" />
+                <span className="absolute -top-1 -right-1 flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-cyan-500" />
+                </span>
               </button>
             );
           })}
