@@ -1,6 +1,7 @@
 export type AssignmentSubheading = {
   heading: string;
   heading_alias?: string;
+  description?: string;
   available_slots: number;
   raidplan_index?: number;
 };
@@ -9,6 +10,7 @@ export type AssignmentEntry = {
   heading: string;
   heading_alias?: string;
   information?: string;
+  description?: string;
   raidplan_id?: string;
   available_slots: number;
   subheadings: AssignmentSubheading[];
