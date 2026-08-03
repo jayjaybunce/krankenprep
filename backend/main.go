@@ -112,6 +112,9 @@ func main() {
 
 		// Raidplan protected endpoints
 		protected.GET("/me/raidplans", handlers.GetUserRaidplans)
+
+		// News endpoints
+		protected.GET("/news", handlers.GetNews)
 	}
 
 	log.Println("Server started on :8080")

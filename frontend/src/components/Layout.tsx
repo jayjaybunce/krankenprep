@@ -22,6 +22,7 @@ import { CreateTeamModal } from "./modals/CreateTeamModal";
 import { WowAuditPopup } from "./WowAuditPopup";
 import {
   useCurrentExpansion,
+  useGetNews,
   useMyTeams,
   type MyRole,
 } from "../api/queryHooks";
@@ -73,6 +74,8 @@ import { BossSelectionV2 } from "./BossSelection";
 //   phases: Phase[];
 // }
 
+const LAST_SEEN_NEWS_KEY = "krankenprep_last_seen_news_at";
+
 const Layout: FC<PropsWithChildren> = ({ children }) => {
   // Layout component thats rendered with every Secure Route
   // const [activeExpansion, setActiveExpansion] = useState("Manaforge Omega");
@@ -93,6 +96,27 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
   const { data: myTeamsData, error: myTeamsError } = useMyTeams();
 
   const { data: expData } = useCurrentExpansion();
+
+  const { data: newsItems } = useGetNews();
+  const latestNewsAt = newsItems?.[0]?.published_at;
+  const [lastSeenNewsAt, setLastSeenNewsAt] = useState<string | null>(() =>
+    localStorage.getItem(LAST_SEEN_NEWS_KEY),
+  );
+
+  useEffect(() => {
+    if (
+      location.pathname === "/" &&
+      latestNewsAt &&
+      (!lastSeenNewsAt || new Date(latestNewsAt) > new Date(lastSeenNewsAt))
+    ) {
+      localStorage.setItem(LAST_SEEN_NEWS_KEY, latestNewsAt);
+      setLastSeenNewsAt(latestNewsAt);
+    }
+  }, [location.pathname, latestNewsAt, lastSeenNewsAt]);
+
+  const hasUnreadNews =
+    !!latestNewsAt &&
+    (!lastSeenNewsAt || new Date(latestNewsAt) > new Date(lastSeenNewsAt));
 
   useEffect(() => {
     // Preload all boss splash images ezpz lol
@@ -246,7 +270,12 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                   : "from-cyan-900/60 to-blue-900/60 border-cyan-500/20"
               }`}
             >
-              <Icon className={`w-4 h-4 ${location.pathname === to ? "text-cyan-200" : "text-cyan-300"}`} />
+              <span className="relative inline-flex">
+                <Icon className={`w-4 h-4 ${location.pathname === to ? "text-cyan-200" : "text-cyan-300"}`} />
+                {to === "/" && hasUnreadNews && (
+                  <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-black" />
+                )}
+              </span>
               <span className={`text-sm font-montserrat font-semibold ${location.pathname === to ? "text-cyan-200" : "text-cyan-300"}`}>
                 {label}
               </span>
@@ -403,13 +432,18 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                   } border`}
                   title="Home"
                 >
-                  <Home
-                    className={`w-4 h-4 ${
-                      location.pathname === "/"
-                        ? "text-cyan-200"
-                        : "text-cyan-300 group-hover:text-cyan-200"
-                    }`}
-                  />
+                  <span className="relative inline-flex">
+                    <Home
+                      className={`w-4 h-4 ${
+                        location.pathname === "/"
+                          ? "text-cyan-200"
+                          : "text-cyan-300 group-hover:text-cyan-200"
+                      }`}
+                    />
+                    {hasUnreadNews && (
+                      <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-rose-500 ring-2 ring-black" />
+                    )}
+                  </span>
                   {isSidebarExpanded && (
                     <span
                       className={`text-sm font-montserrat font-semibold ${

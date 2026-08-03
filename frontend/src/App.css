@@ -4,6 +4,10 @@
 @theme {
   --font-montserrat: "Montserrat", sans-serif;
 
+  /* Extend the container/max-w scale past Tailwind default 7xl (80rem) */
+  --container-8xl: 88rem;
+  --container-9xl: 96rem;
+
   /* Shimmer animation for skeleton components */
   --animate-shimmer: shimmer 2s ease-in-out infinite;
 

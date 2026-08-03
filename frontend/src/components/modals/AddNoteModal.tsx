@@ -1,13 +1,40 @@
 import type { Dispatch, FC, SetStateAction } from "react";
 import { useEffect, useRef, useState } from "react";
 import { Modal } from "../Modal";
-import { Save, X as XIcon } from "lucide-react";
+import {
+  Save,
+  X as XIcon,
+  Wand2,
+  Link2,
+  Image as ImageIcon,
+  HelpCircle,
+} from "lucide-react";
 import { useTheme } from "../../hooks";
 import { Textarea } from "../form";
+import Button from "../Button";
 import { MarkdownRenderer } from "../MarkdownRenderer";
+import { MarkdownGuideModal } from "./MarkdownGuideModal";
 import { getCaretCoordinates } from "../../utils/caretPosition";
 import SpellSearchAndSelection from "../SpellSearchAndSelection";
 import RaidplanSearchAndSelection from "../RaidplanSearchAndSelection";
+
+// Simulates real typing on the textarea so the existing onChange handler
+// (which computes caret coordinates and $/@ query state) runs unmodified.
+const insertAtCursor = (
+  textarea: HTMLTextAreaElement,
+  text: string,
+  selectionOffsets?: [number, number],
+) => {
+  const start = textarea.selectionStart ?? textarea.value.length;
+  const end = textarea.selectionEnd ?? textarea.value.length;
+  textarea.focus();
+  textarea.setRangeText(text, start, end, "end");
+  textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  if (selectionOffsets) {
+    const [relStart, relEnd] = selectionOffsets;
+    textarea.setSelectionRange(start + relStart, start + relEnd);
+  }
+};
 
 export type AddNoteForm = {
   content: string;
@@ -38,6 +65,7 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
 }) => {
   const { colorMode } = useTheme();
   const [formState, setFormState] = useState<AddNoteForm>(defaultFormState);
+  const [showMarkdownGuide, setShowMarkdownGuide] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -144,6 +172,27 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
     setRaidplanQuery("");
   };
 
+  const handleInsertSpellTrigger = () => {
+    const textarea = contentRef.current;
+    if (!textarea) return;
+    insertAtCursor(textarea, "$");
+  };
+
+  const handleInsertRaidplanTrigger = () => {
+    const textarea = contentRef.current;
+    if (!textarea) return;
+    insertAtCursor(textarea, "@");
+  };
+
+  const handleInsertImageTemplate = () => {
+    const textarea = contentRef.current;
+    if (!textarea) return;
+    const placeholder = "image-or-gif-url";
+    const template = `![alt text](${placeholder})`;
+    const start = template.indexOf(placeholder);
+    insertAtCursor(textarea, template, [start, start + placeholder.length]);
+  };
+
   const handleSave = () => {
     onSave(formState);
   };
@@ -202,6 +251,40 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
         }}
       >
         <div className="flex flex-col gap-2 w-full">
+          <div className="flex flex-row gap-2 items-center flex-wrap">
+            <Button
+              variant="ghost"
+              size="xs"
+              icon={<Wand2 className="w-4 h-4" />}
+              onClick={handleInsertSpellTrigger}
+            >
+              Spell
+            </Button>
+            <Button
+              variant="ghost"
+              size="xs"
+              icon={<Link2 className="w-4 h-4" />}
+              onClick={handleInsertRaidplanTrigger}
+            >
+              Raid Plan
+            </Button>
+            <Button
+              variant="ghost"
+              size="xs"
+              icon={<ImageIcon className="w-4 h-4" />}
+              onClick={handleInsertImageTemplate}
+            >
+              Image/GIF
+            </Button>
+            <Button
+              variant="ghost"
+              size="xs"
+              icon={<HelpCircle className="w-4 h-4" />}
+              onClick={() => setShowMarkdownGuide(true)}
+            >
+              Guide
+            </Button>
+          </div>
           <Textarea
             ref={contentRef}
             label="Add a brief content"
@@ -270,11 +353,10 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
             }}
           />
           <p className="text-xs text-slate-500 font-montserrat">
-            Type{" "}
-            <span className="text-cyan-400 font-semibold">$</span> to insert a
-            spell ·{" "}
-            <span className="text-cyan-400 font-semibold">@</span> to link a
-            raid plan
+            Or type <span className="text-cyan-400 font-semibold">$</span> for
+            a spell ·{" "}
+            <span className="text-cyan-400 font-semibold">@</span> for a raid
+            plan
           </p>
         </div>
         <div className="flex flex-col w-full h-full">
@@ -314,6 +396,10 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
         show={showRaidplanBox}
         query={raidplanQuery}
         onClick={handleRaidplanResultClick}
+      />
+      <MarkdownGuideModal
+        isOpen={showMarkdownGuide}
+        onClose={() => setShowMarkdownGuide(false)}
       />
     </Modal>
   );

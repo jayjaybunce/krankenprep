@@ -86,7 +86,7 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
     lg: "max-w-2xl",
     xl: "max-w-4xl",
     // "2xl": "max-w-8xl",
-    full: "max-w-9xl mx-4",
+    full: "w-full max-w-9xl mx-4",
     screen: "w-full h-full",
   };
 

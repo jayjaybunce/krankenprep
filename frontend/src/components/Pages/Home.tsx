@@ -3,6 +3,8 @@ import { useSession } from "@descope/react-sdk";
 import { Card } from "../Card";
 import Button from "../Button";
 import { useRecentlyViewedPlans, useTheme, useUser, useDocumentTitle } from "../../hooks";
+import { useGetNews } from "../../api/queryHooks";
+import { MarkdownRenderer } from "../MarkdownRenderer";
 import {
   Calendar,
   BookOpen,
@@ -176,6 +178,7 @@ const AuthenticatedHome: FC = () => {
   const { colorMode } = useTheme();
   const { user } = useUser();
   const plans = useRecentlyViewedPlans(user);
+  const { data: newsItems } = useGetNews();
 
   // Mock data for raid plans - replace with actual data from your API
   const recentPlans = [
@@ -363,14 +366,36 @@ const AuthenticatedHome: FC = () => {
               </h2>
             </div>
 
-            <Card variant="outlined" hover={false}>
-              <div className="text-center py-6">
-                <Bell className="w-10 h-10 text-slate-400 mx-auto mb-2" />
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  Coming soon
-                </p>
+            {!newsItems || newsItems.length === 0 ? (
+              <Card variant="outlined" hover={false}>
+                <div className="text-center py-6">
+                  <Bell className="w-10 h-10 text-slate-400 mx-auto mb-2" />
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    No updates yet
+                  </p>
+                </div>
+              </Card>
+            ) : (
+              <div className="space-y-3 max-h-128 overflow-y-auto pr-1">
+                {newsItems.map((item) => (
+                  <Card key={item.id} variant="outlined" hover={false}>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <h3 className="font-montserrat text-sm font-bold dark:text-white text-black">
+                          {item.title}
+                        </h3>
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 shrink-0">
+                          {getRelativeTime(item.published_at)}
+                        </span>
+                      </div>
+                      <div className="text-xs text-slate-600 dark:text-slate-300">
+                        <MarkdownRenderer>{item.body}</MarkdownRenderer>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
               </div>
-            </Card>
+            )}
           </div>
         </div>
 

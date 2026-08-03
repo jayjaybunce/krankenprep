@@ -107,9 +107,23 @@ func SeedExpansions(db *gorm.DB) error {
 	return nil
 }
 
+func SeedNews(db *gorm.DB) error {
+	for _, n := range NewsEntries {
+		if err := db.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "title"}},
+			DoNothing: true,
+		}).Create(&n).Error; err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 var seeders = []SeedFunc{
 	SeedServers,
 	SeedExpansions,
+	SeedNews,
 }
 
 // RunSeeders runs all registered seed functions in order.
