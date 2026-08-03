@@ -32,6 +32,25 @@ export const useRegions = () => {
     })
 }
 
+export type NewsItem = {
+    id: number
+    title: string
+    body: string
+    published_at: string
+}
+
+export const useGetNews = () => {
+    const { url, headers, enabled } = useKpApi("/news")
+    return useQuery({
+        queryKey: ["news"],
+        enabled,
+        queryFn: () => fetch(url, {
+            method: "GET",
+            headers
+        }).then((res) => res.json() as Promise<NewsItem[]>)
+    })
+}
+
 export const useServers = (region_filter?: string) => {
     const filter = region_filter ?? ''
     const { url, headers, enabled } = useKpApi('/servers', ["region", filter])

@@ -62,6 +62,22 @@ Use \`[Link text](URL)\`
 
 ---
 
+## Spell Links
+
+Type \`$\` followed by a spell name to search and insert a spell icon + link:
+
+\`$fire\` → opens a search popup, click a result to insert a spell link. The spell's icon and a link to Wowhead render automatically in the preview.
+
+---
+
+## Raid Plan Links
+
+Type \`@\` followed by a raid plan name to search and link directly to a specific raid plan (and slide, if applicable):
+
+\`@progress\` → opens a search popup, click a result to insert the link.
+
+---
+
 ## Code
 
 Inline code: \`const x = 10\`
@@ -106,6 +122,8 @@ Use pipes \`|\` and hyphens \`-\` to create tables.
 ![Alt text](image-url.jpg)
 
 Use \`![Alt text](URL)\` to embed images. Click images to view full size.
+
+GIFs work too — just use a direct link to a \`.gif\` file the same way.
 
 ---
 

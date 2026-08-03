@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "react";
+import { useNavigate } from "react-router-dom";
 import { Info, Pencil, RefreshCw, Save, X } from "lucide-react";
 import { Modal } from "../Modal";
+import Alert from "../Alert";
 import { cleanAndSeparate, type ParsedSection } from "../Assignments";
 import { useUpsertAssignmentNote } from "../../api/mutationHooks";
 import { useGetTeamById } from "../../api/queryHooks";
@@ -305,7 +307,9 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
   bossId,
   isAdmin,
 }) => {
-  const parsed = note ? cleanAndSeparate(note) : [];
+  const navigate = useNavigate();
+
+  const parsed = useMemo(() => (note ? cleanAndSeparate(note) : []), [note]);
 
   const { data: teamData } = useGetTeamById(teamId ? Number(teamId) : -1);
 
@@ -323,6 +327,34 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
     (name) => characterClassMap.get(name.trim().toLowerCase()),
     [characterClassMap],
   );
+
+  const uniqueParsedPlayerNames = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const section of parsed) {
+      for (const raw of section.indexed_players) {
+        const trimmed = raw.trim();
+        if (!trimmed) continue;
+        const key = trimmed.toLowerCase();
+        if (!seen.has(key)) seen.set(key, trimmed);
+      }
+    }
+    return Array.from(seen.values());
+  }, [parsed]);
+
+  const unmatchedPlayers = useMemo(
+    () =>
+      uniqueParsedPlayerNames.filter(
+        (name) => !characterClassMap.has(name.toLowerCase()),
+      ),
+    [uniqueParsedPlayerNames, characterClassMap],
+  );
+
+  const rosterIsEmpty = (teamData?.players?.length ?? 0) === 0;
+
+  const goToRoster = () => {
+    navigate("/team/roster");
+    onClose();
+  };
 
   const [showEditor, setShowEditor] = useState(false);
   const [noteContent, setNoteContent] = useState(note ?? "");
@@ -370,6 +402,41 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
       actions={actions}
     >
       <div className="flex flex-col gap-4 pb-4">
+        {isAdmin && rosterIsEmpty && (
+          <Alert type="info" title="Set up your roster first">
+            Add your team's players and characters in the Roster tab so
+            assignments can show each player's class color.
+            <br />
+            <button
+              onClick={goToRoster}
+              className="mt-2 text-xs font-semibold text-cyan-400 hover:text-cyan-300 underline underline-offset-2"
+            >
+              Go to Roster →
+            </button>
+          </Alert>
+        )}
+        {isAdmin && !rosterIsEmpty && unmatchedPlayers.length > 0 && (
+          <Alert
+            type="warning"
+            title={`${unmatchedPlayers.length} player${unmatchedPlayers.length === 1 ? "" : "s"} not found in your roster`}
+          >
+            {unmatchedPlayers.join(", ")} — add them in the Roster tab to show
+            their class color here.
+            <br />
+            <button
+              onClick={goToRoster}
+              className="mt-2 text-xs font-semibold text-cyan-400 hover:text-cyan-300 underline underline-offset-2"
+            >
+              Go to Roster →
+            </button>
+          </Alert>
+        )}
+        {!isAdmin && unmatchedPlayers.length > 0 && (
+          <p className="text-xs text-slate-500 font-montserrat">
+            Some players in this note aren't in the team roster yet, so their
+            class colors may be missing.
+          </p>
+        )}
         {isAdmin && (
           <div className="flex justify-end">
             <button
@@ -389,7 +456,8 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
         {showEditor && (
           <div className="flex flex-col gap-2 p-4 bg-slate-900/60 border border-slate-800/60 rounded-xl">
             <p className="text-[11px] font-montserrat text-slate-500">
-              Paste the NSRT note string below. Assignments will update on save.
+              Paste the NSRT string from WoWutils below (WoWutils → Setups
+              view → copy the string). Assignments will update on save.
             </p>
             <textarea
               value={noteContent}

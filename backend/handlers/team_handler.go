@@ -228,7 +228,7 @@ func GetTeamById(c *gin.Context) {
 	}
 	user, _ := val.(*models.User)
 	role := models.Role{}
-	if err := database.DB.Where("team_id = ? AND user_id = ? AND name IN ?", teamId, user.ID, []string{"owner", "admin"}).First(&role).Error; err != nil {
+	if err := database.DB.Where("team_id = ? AND user_id = ?", teamId, user.ID).First(&role).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user unauthorized for team"})
 		return
 	}
