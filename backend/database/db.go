@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -20,6 +21,25 @@ func Connect() {
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
+
+	// Without this, database/sql's default of 2 idle connections meant most
+	// requests paid a fresh TCP+TLS+pooler handshake to Neon instead of
+	// reusing a warm connection — a single request like GetTeamById issues
+	// ~9 sequential queries (one per Preload path), so that default alone
+	// could account for several seconds of latency per request. MaxIdleConns
+	// matches MaxOpenConns so connections opened during a request's burst of
+	// queries stay pooled for the next request rather than being closed.
+	// ConnMaxIdleTime is kept well under Neon's pooler-side idle timeout so
+	// the app proactively recycles a connection instead of discovering a
+	// half-dead one returned from the pool.
+	sqlDB, err := db.DB()
+	if err != nil {
+		log.Fatalf("Failed to get underlying sql.DB: %v", err)
+	}
+	sqlDB.SetMaxOpenConns(10)
+	sqlDB.SetMaxIdleConns(10)
+	sqlDB.SetConnMaxIdleTime(5 * time.Minute)
+	sqlDB.SetConnMaxLifetime(30 * time.Minute)
 
 	// Auto-migrate all models
 	if err := db.AutoMigrate(
