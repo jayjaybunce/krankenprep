@@ -226,9 +226,11 @@ var MidnightData = models.Expansion{
 	IsCurrent: true,
 	Seasons: []models.Season{
 		{
-			Name:      "Season 1",
-			Order:     1,
-			IsCurrent: true,
+			Name:           "Season 1",
+			Order:          1,
+			IsCurrent:      true,
+			HeroicBonusIds: "13334:12841",
+			MythicBonusIds: "13335:12849",
 			Raids: []models.Raid{
 				{
 					Name:         "The Dreamrift",

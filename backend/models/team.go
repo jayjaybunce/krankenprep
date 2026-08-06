@@ -45,10 +45,11 @@ type Wishlist struct {
 }
 
 type AssignmentNote struct {
-	ID     uint   `json:"id" gorm:"primaryKey"`
-	Note   string `json:"note"`
-	Boss   Boss   `json:"boss"`
-	BossID uint   `json:"boss_id"`
-	Team   Team   `json:"team"`
-	TeamID uint   `json:"team_id"`
+	ID        uint      `json:"id" gorm:"primaryKey"`
+	Note      string    `json:"note"`
+	Boss      Boss      `json:"boss"`
+	BossID    uint      `json:"boss_id"`
+	Team      Team      `json:"team"`
+	TeamID    uint      `json:"team_id"`
+	UpdatedAt time.Time `json:"updated_at"`
 }

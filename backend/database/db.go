@@ -43,6 +43,20 @@ func Connect() {
 		&models.Wishlist{},
 		&models.AssignmentNote{},
 		&models.News{},
+		&models.Class{},
+		&models.ArmorType{},
+		&models.WeaponType{},
+		&models.Specialization{},
+		&models.Item{},
+		&models.ItemPrimaryStat{},
+		&models.ItemEligibleRole{},
+		&models.CharacterItemWish{},
+		&models.CharacterBossPriority{},
+		&models.CharacterBossBonusRolls{},
+		&models.LootAuditLog{},
+		&models.CharacterTierSlot{},
+		&models.TierSimEntry{},
+		&models.BoeSale{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
 	}
@@ -51,8 +65,40 @@ func Connect() {
 	db.Exec("CREATE EXTENSION IF NOT EXISTS pg_trgm")
 	db.Exec("CREATE INDEX IF NOT EXISTS idx_spell_name_trgm ON spells USING gin (spell_name gin_trgm_ops)")
 
+	fixDifficultyUniqueIndexes(db)
+
 	DB = db
 	log.Println("Connected to Postgres and ran migrations")
+}
+
+// fixDifficultyUniqueIndexes re-creates the composite unique indexes on
+// CharacterItemWish/CharacterBossPriority/CharacterBossBonusRolls with their
+// current column set. AutoMigrate adds new columns (e.g. the Difficulty
+// field added after these indexes already existed) but never redefines an
+// already-existing index to include them, so the old 2-column index sticks
+// around and rejects the 3-column ON CONFLICT clauses/uniqueness these
+// models now rely on. Safe to run on every boot.
+func fixDifficultyUniqueIndexes(db *gorm.DB) {
+	indexes := []struct {
+		name    string
+		table   string
+		columns string
+	}{
+		{"idx_char_item", "character_item_wishes", "character_id, item_id, difficulty"},
+		{"idx_char_boss_priority", "character_boss_priorities", "character_id, boss_id, difficulty"},
+		{"idx_char_boss_rolls", "character_boss_bonus_rolls", "character_id, boss_id, difficulty"},
+	}
+	for _, idx := range indexes {
+		if err := db.Exec(fmt.Sprintf("DROP INDEX IF EXISTS %s", idx.name)).Error; err != nil {
+			log.Printf("failed to drop index %s: %v", idx.name, err)
+			continue
+		}
+		if err := db.Exec(fmt.Sprintf(
+			"CREATE UNIQUE INDEX IF NOT EXISTS %s ON %s (%s)", idx.name, idx.table, idx.columns,
+		)).Error; err != nil {
+			log.Printf("failed to create index %s: %v", idx.name, err)
+		}
+	}
 }
 
 func buildDSN() string {

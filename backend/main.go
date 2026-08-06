@@ -66,6 +66,7 @@ func main() {
 	{
 		protected.GET("/servers", handlers.GetServers)
 		protected.GET("/regions", handlers.GetRegions)
+		protected.GET("/classes", handlers.GetClasses)
 		protected.POST("/team", handlers.CreateTeam)
 		protected.PUT("/teams/:teamId", handlers.UpdateTeam)
 		protected.POST("/teams/wowaudit/test", handlers.TestWowAuditIntegration)
@@ -77,11 +78,14 @@ func main() {
 		protected.GET("/teams/bosses", handlers.GetTeamBosses)
 		protected.GET("/teams/:teamId", handlers.GetTeamById)
 		protected.DELETE("/teams/:teamId/member/:roleId", handlers.DeleteMemberFromTeam)
+		protected.PUT("/teams/:teamId/member/:roleId", handlers.UpdateMemberRole)
 
 		// Player/Character (roster) endpoints
 		protected.POST("/teams/:teamId/players", handlers.CreatePlayer)
 		protected.PUT("/players/:playerId", handlers.UpdatePlayer)
 		protected.DELETE("/players/:playerId", handlers.DeletePlayer)
+		protected.POST("/players/:playerId/claim", handlers.ClaimPlayer)
+		protected.DELETE("/players/:playerId/claim", handlers.UnclaimPlayer)
 		protected.POST("/players/:playerId/characters", handlers.CreateCharacter)
 		protected.PUT("/characters/:characterId", handlers.UpdateCharacter)
 		protected.DELETE("/characters/:characterId", handlers.DeleteCharacter)
@@ -106,6 +110,27 @@ func main() {
 		// Assignment note endpoints
 		protected.GET("/teams/:teamId/assignment-note/boss/:bossId", handlers.GetAssignmentNote)
 		protected.PUT("/teams/:teamId/assignment-note/boss/:bossId", handlers.UpsertAssignmentNote)
+
+		// Loot wishlist endpoints
+		protected.GET("/teams/:teamId/loot/boss/:bossId", handlers.GetBossLoot)
+		protected.PUT("/teams/:teamId/loot/boss/:bossId/wish", handlers.UpsertItemWish)
+		protected.PUT("/teams/:teamId/loot/boss/:bossId/obtained", handlers.UpdateItemObtained)
+		protected.PUT("/teams/:teamId/loot/boss/:bossId/priority", handlers.UpsertBossPriority)
+		protected.PUT("/teams/:teamId/loot/boss/:bossId/bonus-rolls", handlers.UpsertBonusRolls)
+		protected.GET("/teams/:teamId/loot/boss/:bossId/overview", handlers.GetBossRollOverview)
+		protected.GET("/teams/:teamId/loot/raid-overview", handlers.GetRaidRollOverview)
+		protected.GET("/teams/:teamId/loot/items/search", handlers.SearchLootItems)
+		protected.GET("/teams/:teamId/loot/items/:itemId/overview", handlers.GetItemRollOverview)
+		protected.GET("/teams/:teamId/loot/audit-log", handlers.GetLootAuditLog)
+		protected.GET("/teams/:teamId/loot/characters/:characterId/priorities", handlers.GetCharacterBossPriorities)
+		protected.PUT("/teams/:teamId/loot/characters/:characterId/priorities", handlers.ReorderBossPriorities)
+		protected.GET("/teams/:teamId/loot/tier-tracker", handlers.GetTeamTierSlots)
+		protected.PUT("/teams/:teamId/loot/tier-tracker/characters/:characterId", handlers.UpsertCharacterTierSlot)
+		protected.GET("/teams/:teamId/loot/tier-sim", handlers.GetTierSimData)
+		protected.GET("/teams/:teamId/boe", handlers.GetBoeSales)
+		protected.POST("/teams/:teamId/boe", handlers.CreateBoeSale)
+		protected.PUT("/teams/:teamId/boe/:boeSaleId", handlers.UpdateBoeSale)
+		protected.DELETE("/teams/:teamId/boe/:boeSaleId", handlers.DeleteBoeSale)
 
 		// Spell endpoints
 		protected.GET("/spells/search", handlers.SearchSpells)

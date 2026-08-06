@@ -1,7 +1,8 @@
 import { type FC, useState, useEffect, useRef } from "react";
 import { useGetTeamById, type Wishlist } from "../../api/queryHooks";
 import { useTeam, useTheme, useDocumentTitle, useKpApi } from "../../hooks";
-import { TextInput, Toggle } from "../form";
+import { Dropdown, TextInput, Toggle } from "../form";
+import type { DropdownOption } from "../form/Dropdown";
 import { formatDistanceToNow } from "date-fns";
 import {
   Users,
@@ -26,6 +27,7 @@ import {
   useSyncWowAuditWishlists,
   useUpdateTeam,
   useDeleteMemberFromTeam,
+  useUpdateMemberRole,
 } from "../../api/mutationHooks";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -136,7 +138,15 @@ const Team: FC = () => {
     team?.team_id ?? -1,
   );
   const { mutate: deleteMember } = useDeleteMemberFromTeam(team?.team_id ?? -1);
+  const { mutate: updateMemberRole, isPending: isUpdatingRole } =
+    useUpdateMemberRole(team?.team_id ?? -1);
   const [deletingRoleId, setDeletingRoleId] = useState<number | null>(null);
+
+  const ROLE_OPTIONS: DropdownOption[] = [
+    { label: "Member", value: "member" },
+    { label: "Admin", value: "admin" },
+    { label: "Loot Council", value: "loot_council" },
+  ];
 
   // WowAudit integration settings state
   const [wowAuditEnabled, setWowAuditEnabled] = useState(false);
@@ -618,7 +628,27 @@ const Team: FC = () => {
                                 : "text-cyan-600"
                             }`}
                           >
-                            {role.name}
+                            {isUserAdmin && role.name !== "owner" ? (
+                              <Dropdown
+                                size="sm"
+                                variant="minimal"
+                                value={role.name}
+                                disabled={isUpdatingRole}
+                                onChange={(value) => {
+                                  const name = Array.isArray(value)
+                                    ? value[0]
+                                    : value;
+                                  if (!name) return;
+                                  updateMemberRole({
+                                    roleId: role.id,
+                                    name: name as "member" | "admin" | "loot_council",
+                                  });
+                                }}
+                                options={ROLE_OPTIONS}
+                              />
+                            ) : (
+                              role.name
+                            )}
                           </td>
                           <td
                             className={`px-6 py-4 text-sm ${

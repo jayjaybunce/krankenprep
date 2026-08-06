@@ -64,6 +64,16 @@ func SeedExpansions(db *gorm.DB) error {
 			} else {
 				return fmt.Errorf("failed to query season: %w", result.Error)
 			}
+		} else {
+			// Keep bonus-ID fields in sync on every boot, same self-healing
+			// pattern used for Classes/Specializations — these are curated
+			// values that may get corrected after the season row already exists.
+			if err := db.Model(&dbSeason).Updates(map[string]any{
+				"heroic_bonus_ids": season.HeroicBonusIds,
+				"mythic_bonus_ids": season.MythicBonusIds,
+			}).Error; err != nil {
+				return fmt.Errorf("failed to update season %s bonus ids: %w", season.Name, err)
+			}
 		}
 
 		// Seed each raid
@@ -120,10 +130,128 @@ func SeedNews(db *gorm.DB) error {
 	return nil
 }
 
+func SeedArmorTypes(db *gorm.DB) error {
+	for name, id := range armorTypeIDs {
+		at := models.ArmorType{ID: id, Name: name}
+		if err := db.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "id"}},
+			DoNothing: true,
+		}).Create(&at).Error; err != nil {
+			return fmt.Errorf("seeding armor type %s: %w", name, err)
+		}
+	}
+
+	return nil
+}
+
+func SeedWeaponTypes(db *gorm.DB) error {
+	for name, id := range weaponTypeIDs {
+		wt := models.WeaponType{ID: id, Name: name}
+		if err := db.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "id"}},
+			DoNothing: true,
+		}).Create(&wt).Error; err != nil {
+			return fmt.Errorf("seeding weapon type %s: %w", name, err)
+		}
+	}
+
+	return nil
+}
+
+func SeedClasses(db *gorm.DB) error {
+	for _, s := range classSeeds {
+		var class models.Class
+		result := db.Where("name = ?", s.Name).First(&class)
+		if result.Error != nil {
+			if result.Error != gorm.ErrRecordNotFound {
+				return fmt.Errorf("querying class %s: %w", s.Name, result.Error)
+			}
+			class = models.Class{Name: s.Name, Color: s.Color, IconUrl: s.IconUrl}
+			if err := db.Create(&class).Error; err != nil {
+				return fmt.Errorf("seeding class %s: %w", s.Name, err)
+			}
+			continue
+		}
+
+		// Keep scalar fields in sync on every boot, same as SeedSpecializations.
+		if err := db.Model(&class).Updates(map[string]any{
+			"color":    s.Color,
+			"icon_url": s.IconUrl,
+		}).Error; err != nil {
+			return fmt.Errorf("updating class %s: %w", s.Name, err)
+		}
+	}
+
+	return nil
+}
+
+func SeedSpecializations(db *gorm.DB) error {
+	for _, s := range specSeeds {
+		var class models.Class
+		if err := db.Where("name = ?", s.ClassName).First(&class).Error; err != nil {
+			return fmt.Errorf("finding class %s for spec %s: %w", s.ClassName, s.Name, err)
+		}
+
+		var armorType models.ArmorType
+		if err := db.Where("name = ?", s.ArmorType).First(&armorType).Error; err != nil {
+			return fmt.Errorf("finding armor type %s for spec %s: %w", s.ArmorType, s.Name, err)
+		}
+
+		var spec models.Specialization
+		result := db.Where("class_id = ? AND name = ?", class.ID, s.Name).First(&spec)
+		if result.Error != nil {
+			if result.Error != gorm.ErrRecordNotFound {
+				return fmt.Errorf("querying spec %s: %w", s.Name, result.Error)
+			}
+			spec = models.Specialization{
+				ClassID:     class.ID,
+				Name:        s.Name,
+				ArmorTypeID: armorType.ID,
+				PrimaryStat: s.PrimaryStat,
+				Role:        s.Role,
+				IconUrl:     s.IconUrl,
+			}
+			if err := db.Create(&spec).Error; err != nil {
+				return fmt.Errorf("creating spec %s: %w", s.Name, err)
+			}
+		} else {
+			// Keep scalar fields in sync on every boot — this data is still
+			// being actively corrected, and re-seeding shouldn't require
+			// wiping the table by hand.
+			spec.ArmorTypeID = armorType.ID
+			spec.PrimaryStat = s.PrimaryStat
+			spec.Role = s.Role
+			spec.IconUrl = s.IconUrl
+			if err := db.Model(&spec).Updates(map[string]any{
+				"armor_type_id": spec.ArmorTypeID,
+				"primary_stat":  spec.PrimaryStat,
+				"role":          spec.Role,
+				"icon_url":      spec.IconUrl,
+			}).Error; err != nil {
+				return fmt.Errorf("updating spec %s: %w", s.Name, err)
+			}
+		}
+
+		var weaponTypes []models.WeaponType
+		if err := db.Where("name IN ?", s.WeaponTypes).Find(&weaponTypes).Error; err != nil {
+			return fmt.Errorf("finding weapon types for spec %s: %w", s.Name, err)
+		}
+		if err := db.Model(&spec).Association("WeaponTypes").Replace(weaponTypes); err != nil {
+			return fmt.Errorf("associating weapon types for spec %s: %w", s.Name, err)
+		}
+	}
+
+	return nil
+}
+
 var seeders = []SeedFunc{
 	SeedServers,
 	SeedExpansions,
 	SeedNews,
+	SeedClasses,
+	SeedArmorTypes,
+	SeedWeaponTypes,
+	SeedSpecializations,
 }
 
 // RunSeeders runs all registered seed functions in order.

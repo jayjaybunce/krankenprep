@@ -36,6 +36,13 @@ type Season struct {
 	IsCurrent   bool      `json:"is_current"`
 	ExpansionId uint      `json:"expansion_id"`
 	Expansion   Expansion `json:"expansion"`
+	// HeroicBonusIds/MythicBonusIds are Wowhead "bonus=" query param values
+	// (tier-specific datamined values, same category as item IDs — not
+	// computed) used to link an item's tooltip at a sensible default
+	// upgrade rank for that difficulty. Empty for seasons that don't have
+	// these curated yet.
+	HeroicBonusIds string `json:"heroic_bonus_ids"`
+	MythicBonusIds string `json:"mythic_bonus_ids"`
 }
 
 type Boss struct {

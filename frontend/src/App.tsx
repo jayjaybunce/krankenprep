@@ -15,6 +15,8 @@ import Plans from "./components/Pages/Plans";
 import Plan from "./components/Pages/Plan";
 import RedeemInvite from "./components/Pages/RedeemInvite";
 import Team from "./components/Pages/Team";
+import { Loot } from "./components/Pages/Loot";
+import Profile from "./components/Pages/Profile";
 
 function App() {
   const queryClient = new QueryClient();
@@ -45,6 +47,8 @@ function App() {
                         /> */}
                         <Route path="/invite" element={<RedeemInvite />} />
                         <Route path="/team/*" element={<Team />} />
+                        <Route path="/loot/*" element={<Loot />} />
+                        <Route path="/profile" element={<Profile />} />
                       </Routes>
                     </Layout>
                   </Router>
