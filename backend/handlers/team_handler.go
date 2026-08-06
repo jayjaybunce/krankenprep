@@ -233,7 +233,7 @@ func GetTeamById(c *gin.Context) {
 		return
 	}
 	team := models.Team{}
-	if err := database.DB.Preload("WishlistConfigs").Preload("InviteLinks").Preload("Roles").Preload("Roles.User").Preload("Players").Preload("Players.User").Preload("Players.Characters").Where("id = ?", teamId).Find(&team).Error; err != nil {
+	if err := database.DB.Preload("WishlistConfigs").Preload("InviteLinks").Preload("Roles").Preload("Roles.User").Preload("Players").Preload("Players.User").Preload("Players.Characters").Preload("Players.Characters.Specialization").Where("id = ?", teamId).Find(&team).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "team not found"})
 		return
 	}
@@ -298,6 +298,85 @@ func DeleteMemberFromTeam(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{"message": "member removed from team"})
 
+}
+
+type UpdateMemberRolePayload struct {
+	Name string `json:"name"`
+}
+
+var assignableRoles = []string{models.RoleMember, models.RoleAdmin, models.RoleLootCouncil}
+
+// UpdateMemberRole lets an owner/admin reassign a team member's role among
+// member/admin/loot_council. The owner role itself is protected — not
+// assignable, and not changeable once held — there's no transfer-ownership
+// flow yet, owner is only ever set at team creation.
+func UpdateMemberRole(c *gin.Context) {
+	val, exists := c.Get("user")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "User context is broken"})
+		return
+	}
+	user, ok := val.(*models.User)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "requesting user not found"})
+		return
+	}
+
+	teamIdParam := c.Param("teamId")
+	teamId, err := strconv.ParseUint(teamIdParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid team id"})
+		return
+	}
+
+	roleIdParam := c.Param("roleId")
+	roleId, err := strconv.ParseUint(roleIdParam, 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid member id"})
+		return
+	}
+
+	if !isTeamAdmin(uint(teamId), user.ID) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "unauthorized"})
+		return
+	}
+
+	var payload UpdateMemberRolePayload
+	if err := c.BindJSON(&payload); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
+		return
+	}
+
+	assignable := false
+	for _, r := range assignableRoles {
+		if payload.Name == r {
+			assignable = true
+			break
+		}
+	}
+	if !assignable {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "name must be one of member, admin, loot_council"})
+		return
+	}
+
+	memberRole := models.Role{}
+	if err := database.DB.Where("team_id = ? AND id = ?", teamId, roleId).First(&memberRole).Error; err != nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "member not found"})
+		return
+	}
+
+	if memberRole.Name == models.RoleOwner {
+		c.JSON(http.StatusForbidden, gin.H{"error": "the owner role cannot be changed"})
+		return
+	}
+
+	memberRole.Name = payload.Name
+	if err := database.DB.Save(&memberRole).Error; err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update member role"})
+		return
+	}
+
+	c.JSON(http.StatusOK, memberRole)
 }
 
 // WoWAudit JSON shapes

@@ -5,7 +5,7 @@ import { Save, X as XIcon } from "lucide-react";
 import { Dropdown, TextInput, Checkbox } from "../form";
 import type { DropdownOption } from "../form/Dropdown";
 import Button from "../Button";
-import { useRegions, useServers } from "../../api/queryHooks";
+import { useGetClasses, useRegions, useServers } from "../../api/queryHooks";
 import type { Character } from "../../api/queryHooks";
 import { useCreateCharacter, useUpdateCharacter } from "../../api/mutationHooks";
 import { CLASS_NAMES } from "../../data/classes";
@@ -38,6 +38,9 @@ export const CharacterModal: FC<CharacterModalProps> = ({
   const [region, setRegion] = useState<string | string[] | null>("");
   const [realm, setRealm] = useState<string | string[] | null>("");
   const [isMain, setIsMain] = useState(false);
+  const [specializationId, setSpecializationId] = useState<
+    string | string[] | null
+  >("");
 
   useEffect(() => {
     if (isOpen) {
@@ -47,11 +50,17 @@ export const CharacterModal: FC<CharacterModalProps> = ({
       setRegion(character?.region ?? "");
       setRealm(character?.realm ?? "");
       setIsMain(character?.is_main ?? false);
+      setSpecializationId(
+        character?.specialization_id != null
+          ? String(character.specialization_id)
+          : "",
+      );
     }
   }, [isOpen, character]);
 
   const { isLoading: isServerDataLoading, data: serverData } = useServers();
   const { isLoading: isRegionDataLoading, data: regionData } = useRegions();
+  const { data: classData } = useGetClasses();
 
   const { mutate: createCharacter, isPending: isCreating } =
     useCreateCharacter(teamId);
@@ -65,12 +74,14 @@ export const CharacterModal: FC<CharacterModalProps> = ({
     (Array.isArray(value) ? value[0] : value) ?? "";
 
   const handleSave = () => {
+    const specId = singleValue(specializationId);
     const payload = {
       name: name.trim(),
       class: singleValue(characterClass),
       region: singleValue(region),
       realm: singleValue(realm),
       is_main: isMain,
+      specialization_id: specId ? Number(specId) : null,
     };
     if (isEditing && character) {
       updateCharacter(
@@ -86,6 +97,20 @@ export const CharacterModal: FC<CharacterModalProps> = ({
     label: className,
     value: className,
   }));
+
+  const specOptions: DropdownOption[] =
+    classData?.find((c) => c.name === singleValue(characterClass))
+      ?.specializations.map((spec) => ({
+        label: spec.name,
+        value: String(spec.id),
+        icon: (
+          <img
+            src={spec.icon_url}
+            alt=""
+            className="w-4 h-4 rounded shrink-0"
+          />
+        ),
+      })) ?? [];
 
   const regionOptions: DropdownOption[] =
     !isRegionDataLoading && Array.isArray(regionData)
@@ -146,9 +171,20 @@ export const CharacterModal: FC<CharacterModalProps> = ({
         <Dropdown
           label="Class"
           value={characterClass}
-          onChange={setCharacterClass}
+          onChange={(value) => {
+            setCharacterClass(value);
+            setSpecializationId("");
+          }}
           searchable
           options={classOptions}
+        />
+        <Dropdown
+          label="Specialization"
+          value={specializationId}
+          disabled={singleValue(characterClass) === ""}
+          onChange={setSpecializationId}
+          searchable
+          options={specOptions}
         />
         <div className="flex flex-row gap-4">
           <Dropdown

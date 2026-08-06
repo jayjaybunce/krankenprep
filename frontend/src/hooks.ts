@@ -31,18 +31,16 @@ export const useKpApi = (
   // Build URL object (allows safe param appending)
   const urlObj = new URL(endpoint, apiUrl);
 
-  // Add query params if provided
+  // Add the query param if provided. params is a single [key, value] tuple
+  // (not a record of multiple params) — this used to run it through
+  // Object.entries(), which iterates an array's own indices ("0", "1") as
+  // keys rather than destructuring the tuple, producing "?0=key&1=value"
+  // instead of "?key=value".
   if (params) {
-    Object.entries(params).forEach(([key, value]) => {
-      if (value === undefined || value === null) return;
-
-      // handle array params: ?tag=a&tag=b
-      if (Array.isArray(value)) {
-        value.forEach((v) => urlObj.searchParams.append(key, String(v)));
-      } else {
-        urlObj.searchParams.append(key, String(value));
-      }
-    });
+    const [key, value] = params;
+    if (value !== undefined && value !== null) {
+      urlObj.searchParams.append(key, String(value));
+    }
   }
 
   return {

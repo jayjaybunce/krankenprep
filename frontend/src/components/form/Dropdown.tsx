@@ -16,6 +16,7 @@ export interface DropdownOption<T = string> {
   icon?: React.ReactNode;
   disabled?: boolean;
   description?: string;
+  labelColor?: string;
 }
 
 interface DropdownAction {
@@ -365,7 +366,12 @@ export const Dropdown = <T = string,>({
                     {selectedOptions[0].icon}
                   </span>
                 )}
-                <span className="truncate">{selectedOptions[0].label}</span>
+                <span
+                  className="truncate"
+                  style={{ color: selectedOptions[0].labelColor }}
+                >
+                  {selectedOptions[0].label}
+                </span>
               </>
             )
           ) : (
@@ -498,7 +504,12 @@ export const Dropdown = <T = string,>({
                     )}
 
                     <div className="flex-1 text-left min-w-0">
-                      <div className="truncate">{option.label}</div>
+                      <div
+                        className="truncate"
+                        style={{ color: option.labelColor }}
+                      >
+                        {option.label}
+                      </div>
                       {option.description && (
                         <div
                           className={`text-xs truncate ${

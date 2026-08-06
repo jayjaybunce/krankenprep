@@ -12,11 +12,12 @@ import (
 )
 
 type CreateCharacterPayload struct {
-	Name   string `json:"name"`
-	Class  string `json:"class"`
-	Realm  string `json:"realm"`
-	Region string `json:"region"`
-	IsMain bool   `json:"is_main"`
+	Name             string `json:"name"`
+	Class            string `json:"class"`
+	Realm            string `json:"realm"`
+	Region           string `json:"region"`
+	IsMain           bool   `json:"is_main"`
+	SpecializationID *uint  `json:"specialization_id"`
 }
 
 func CreateCharacter(c *gin.Context) {
@@ -56,12 +57,13 @@ func CreateCharacter(c *gin.Context) {
 	}
 
 	character := models.Character{
-		PlayerID: uint(playerId),
-		Name:     payload.Name,
-		Class:    payload.Class,
-		Realm:    payload.Realm,
-		Region:   payload.Region,
-		IsMain:   payload.IsMain,
+		PlayerID:         uint(playerId),
+		Name:             payload.Name,
+		Class:            payload.Class,
+		Realm:            payload.Realm,
+		Region:           payload.Region,
+		IsMain:           payload.IsMain,
+		SpecializationID: payload.SpecializationID,
 	}
 
 	err = database.DB.Transaction(func(tx *gorm.DB) error {
@@ -86,11 +88,12 @@ func CreateCharacter(c *gin.Context) {
 }
 
 type UpdateCharacterPayload struct {
-	Name   string `json:"name"`
-	Class  string `json:"class"`
-	Realm  string `json:"realm"`
-	Region string `json:"region"`
-	IsMain bool   `json:"is_main"`
+	Name             string `json:"name"`
+	Class            string `json:"class"`
+	Realm            string `json:"realm"`
+	Region           string `json:"region"`
+	IsMain           bool   `json:"is_main"`
+	SpecializationID *uint  `json:"specialization_id"`
 }
 
 func UpdateCharacter(c *gin.Context) {
@@ -140,6 +143,7 @@ func UpdateCharacter(c *gin.Context) {
 	character.Realm = payload.Realm
 	character.Region = payload.Region
 	character.IsMain = payload.IsMain
+	character.SpecializationID = payload.SpecializationID
 
 	err = database.DB.Transaction(func(tx *gorm.DB) error {
 		if character.IsMain {

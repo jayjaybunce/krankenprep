@@ -1,6 +1,7 @@
-import { useState, type FC } from "react";
+import { useMemo, useState, type FC } from "react";
 import type { Shape } from "./Planner";
 import { CLASS_COLORS } from "../../data/classes";
+import { useGetClasses } from "../../api/queryHooks";
 
 // ── Color swatch data ──────────────────────────────────────────────────────────
 
@@ -168,102 +169,29 @@ type PropertiesPanelProps = {
   onUpdate: (changes: Partial<Shape>) => void;
 };
 
-// Mapping of base class icons to their specializations
-const classSpecializations: Record<string, { name: string; src: string }[]> = {
-  "/deathknight.png": [
-    { name: "Death Knight", src: "/deathknight.png" },
-    { name: "Blood", src: "/icons/classes/deathknight_blood.png" },
-    { name: "Frost", src: "/icons/classes/deathknight_frost.png" },
-    { name: "Unholy", src: "/icons/classes/deathknight_unholy.png" },
-  ],
-  "/demonhunter.png": [
-    { name: "Demon Hunter", src: "/demonhunter.png" },
-    { name: "Havoc", src: "/icons/classes/demonhunter_havoc.png" },
-    { name: "Vengeance", src: "/icons/classes/demonhunter_vengeance.png" },
-  ],
-  "/druid.png": [
-    { name: "Druid", src: "/druid.png" },
-    { name: "Balance", src: "/icons/classes/druid_balance.png" },
-    { name: "Feral", src: "/icons/classes/druid_feral.png" },
-    { name: "Guardian", src: "/icons/classes/druid_guardian.png" },
-    { name: "Restoration", src: "/icons/classes/druid_restoration.png" },
-  ],
-  "/evoker.png": [
-    { name: "Evoker", src: "/evoker.png" },
-    { name: "Augmentation", src: "/icons/classes/evoker_augmentation.png" },
-    { name: "Devastation", src: "/icons/classes/evoker_devastation.png" },
-    { name: "Preservation", src: "/icons/classes/evoker_preservation.png" },
-  ],
-  "/hunter.png": [
-    { name: "Hunter", src: "/hunter.png" },
-    { name: "Beast Mastery", src: "/icons/classes/hunter_beastmastery.png" },
-    { name: "Marksmanship", src: "/icons/classes/hunter_marksmenship.png" },
-    { name: "Survival", src: "/icons/classes/hunter_survival.png" },
-  ],
-  "/mage.png": [
-    { name: "Mage", src: "/mage.png" },
-    { name: "Arcane", src: "/icons/classes/mage_arcane.png" },
-    { name: "Fire", src: "/icons/classes/mage_fire.png" },
-    { name: "Frost", src: "/icons/classes/mage_frost.png" },
-  ],
-  "/monk.png": [
-    { name: "Monk", src: "/monk.png" },
-    { name: "Brewmaster", src: "/icons/classes/monk_brewmaster.png" },
-    { name: "Mistweaver", src: "/icons/classes/monk_mistweaver.png" },
-    { name: "Windwalker", src: "/icons/classes/monk_windwalker.png" },
-  ],
-  "/paladin.png": [
-    { name: "Paladin", src: "/paladin.png" },
-    { name: "Holy", src: "/icons/classes/paladin_holy.png" },
-    { name: "Protection", src: "/icons/classes/paladin_protection.png" },
-    { name: "Retribution", src: "/icons/classes/paladin_retribution.png" },
-  ],
-  "/priest.png": [
-    { name: "Priest", src: "/priest.png" },
-    { name: "Discipline", src: "/icons/classes/priest_discipline.png" },
-    { name: "Holy", src: "/icons/classes/priest_holy.png" },
-    { name: "Shadow", src: "/icons/classes/priest_shadow.png" },
-  ],
-  "/rogue.png": [
-    { name: "Rogue", src: "/rogue.png" },
-    { name: "Assassination", src: "/icons/classes/rogue_assassination.png" },
-    { name: "Outlaw", src: "/icons/classes/rogue_outlaw.png" },
-    { name: "Subtlety", src: "/icons/classes/rogue_subtlety.png" },
-  ],
-  "/shaman.png": [
-    { name: "Shaman", src: "/shaman.png" },
-    { name: "Elemental", src: "/icons/classes/shaman_elemental.png" },
-    { name: "Enhancement", src: "/icons/classes/shaman_enhancement.png" },
-    { name: "Restoration", src: "/icons/classes/shaman_restoration.png" },
-  ],
-  "/warlock.png": [
-    { name: "Warlock", src: "/warlock.png" },
-    { name: "Affliction", src: "/icons/classes/warlock_affliction.png" },
-    { name: "Demonology", src: "/icons/classes/warlock_demonology.png" },
-    { name: "Destruction", src: "/icons/classes/warlock_destruction.png" },
-  ],
-  "/warrior.png": [
-    { name: "Warrior", src: "/warrior.png" },
-    { name: "Arms", src: "/icons/classes/warrior_arms.png" },
-    { name: "Fury", src: "/icons/classes/warrior_fury.png" },
-    { name: "Protection", src: "/icons/classes/warrior_protection.png" },
-  ],
-};
+// Mapping of base class icons to their specializations, sourced from the
+// backend Class/Specialization tables (see useGetClasses in the component
+// below) rather than hardcoded here.
+type ClassIconMap = Record<string, { name: string; src: string }[]>;
 
-const findClassForIcon = (src: string): string | null => {
-  if (classSpecializations[src]) return src;
-  for (const [baseClass, specs] of Object.entries(classSpecializations)) {
+const findClassForIcon = (
+  specsByClassIcon: ClassIconMap,
+  src: string,
+): string | null => {
+  if (specsByClassIcon[src]) return src;
+  for (const [baseClass, specs] of Object.entries(specsByClassIcon)) {
     if (specs.some((spec) => spec.src === src)) return baseClass;
   }
   return null;
 };
 
-const isClassIcon = (shape: Shape): boolean => {
+const isClassIcon = (specsByClassIcon: ClassIconMap, shape: Shape): boolean => {
   if (shape.type !== "img" || !shape.src) return false;
-  return findClassForIcon(shape.src) !== null;
+  return findClassForIcon(specsByClassIcon, shape.src) !== null;
 };
 
 const getShapeCategory = (
+  specsByClassIcon: ClassIconMap,
   shape: Shape,
 ): "shape" | "class" | "image" | "line" | "text" => {
   if (shape.type === "line") return "line";
@@ -276,7 +204,7 @@ const getShapeCategory = (
     shape.type === "ring"
   )
     return "shape";
-  if (isClassIcon(shape)) return "class";
+  if (isClassIcon(specsByClassIcon, shape)) return "class";
   return "image";
 };
 
@@ -286,12 +214,30 @@ export const PropertiesPanel: FC<PropertiesPanelProps> = ({
   selectedShape,
   onUpdate,
 }) => {
-  const category = selectedShape ? getShapeCategory(selectedShape) : null;
+  const { data: classesData } = useGetClasses();
+
+  const specsByClassIcon: ClassIconMap = useMemo(() => {
+    const map: ClassIconMap = {};
+    for (const cls of classesData ?? []) {
+      map[cls.icon_url] = [
+        { name: cls.name, src: cls.icon_url },
+        ...cls.specializations.map((spec) => ({
+          name: spec.name,
+          src: spec.icon_url,
+        })),
+      ];
+    }
+    return map;
+  }, [classesData]);
+
+  const category = selectedShape
+    ? getShapeCategory(specsByClassIcon, selectedShape)
+    : null;
 
   const baseClassSrc = selectedShape?.src
-    ? findClassForIcon(selectedShape.src)
+    ? findClassForIcon(specsByClassIcon, selectedShape.src)
     : null;
-  const specs = baseClassSrc ? classSpecializations[baseClassSrc] : undefined;
+  const specs = baseClassSrc ? specsByClassIcon[baseClassSrc] : undefined;
 
   return (
     <div className="flex flex-col gap-2.5 p-2.5 bg-linear-to-b from-slate-900 to-slate-800 rounded-lg shadow-xl border border-slate-700 w-56">

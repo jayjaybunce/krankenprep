@@ -1,106 +1,137 @@
 import { type FC, useState } from "react";
-import { UserPlus, Plus, Pencil, Trash2, Star, Users } from "lucide-react";
-import { useTheme } from "../../hooks";
+import { UserPlus, Plus, Pencil, Trash2, Star, Users, Link2, Link2Off } from "lucide-react";
+import { useTheme, useUser } from "../../hooks";
 import Button from "../Button";
 import type { Character, MyRole, Player, Team } from "../../api/queryHooks";
 import {
+  useClaimPlayer,
   useDeleteCharacter,
   useDeletePlayer,
+  useUnclaimPlayer,
   useUpdateCharacter,
 } from "../../api/mutationHooks";
 import { PlayerModal } from "../modals/PlayerModal";
 import { CharacterModal } from "../modals/CharacterModal";
 import { getClassColor } from "../../data/classes";
 
-type CharacterRowProps = {
+type CharacterChipProps = {
   character: Character;
   teamId: number;
   colorMode: string;
   onEdit: () => void;
 };
 
-const CharacterRow: FC<CharacterRowProps> = ({
+const CharacterChip: FC<CharacterChipProps> = ({
   character,
   teamId,
   colorMode,
   onEdit,
 }) => {
+  const [expanded, setExpanded] = useState(false);
   const { mutate: updateCharacter, isPending: isSettingMain } =
     useUpdateCharacter(teamId);
   const { mutate: deleteCharacter, isPending: isDeleting } =
     useDeleteCharacter(teamId);
 
   const classColor = getClassColor(character.class) ?? "#94a3b8";
+  const detailsClass = expanded
+    ? "flex"
+    : "hidden group-hover:flex group-focus-within:flex";
 
   return (
     <div
-      className={`flex items-center justify-between gap-3 px-3 py-2 rounded-lg ${
-        colorMode === "dark" ? "hover:bg-slate-800/50" : "hover:bg-slate-50"
-      } transition-colors`}
+      role="button"
+      tabIndex={0}
+      onClick={() => setExpanded((e) => !e)}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          setExpanded((v) => !v);
+        }
+      }}
+      className={`group flex items-center gap-2 pl-2.5 pr-1.5 h-8 rounded-full border cursor-pointer transition-colors ${
+        colorMode === "dark"
+          ? "bg-slate-800/50 border-slate-700 hover:bg-slate-800"
+          : "bg-slate-50 border-slate-200 hover:bg-slate-100"
+      }`}
     >
-      <div className="flex items-center gap-2 min-w-0">
-        <span
-          className="w-2.5 h-2.5 rounded-full shrink-0"
-          style={{ backgroundColor: classColor }}
+      <span
+        className="w-2.5 h-2.5 rounded-full shrink-0"
+        style={{ backgroundColor: classColor }}
+      />
+      {character.specialization && (
+        <img
+          src={character.specialization.icon_url}
+          alt={character.specialization.name}
+          title={character.specialization.name}
+          className="w-4 h-4 rounded shrink-0"
         />
+      )}
+      <span
+        className={`text-sm font-medium whitespace-nowrap ${
+          colorMode === "dark" ? "text-slate-200" : "text-slate-800"
+        }`}
+      >
+        {character.name}
+      </span>
+      {character.is_main && (
         <span
-          className={`text-sm font-medium truncate ${
-            colorMode === "dark" ? "text-slate-200" : "text-slate-800"
+          className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
+            colorMode === "dark"
+              ? "bg-amber-500/20 text-amber-400"
+              : "bg-amber-100 text-amber-700"
           }`}
         >
-          {character.name}
+          <Star className="w-2.5 h-2.5 fill-current" />
+          Main
         </span>
+      )}
+
+      <div className={`items-center gap-1 ${detailsClass}`}>
         <span
-          className={`text-xs ${colorMode === "dark" ? "text-slate-500" : "text-slate-400"}`}
+          className={`text-xs whitespace-nowrap ${colorMode === "dark" ? "text-slate-500" : "text-slate-400"}`}
         >
           {character.class} &middot; {character.realm} &middot;{" "}
           {character.region.toUpperCase()}
         </span>
-        {character.is_main && (
-          <span
-            className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[10px] font-semibold ${
-              colorMode === "dark"
-                ? "bg-amber-500/20 text-amber-400"
-                : "bg-amber-100 text-amber-700"
-            }`}
-          >
-            <Star className="w-2.5 h-2.5 fill-current" />
-            Main
+        {!character.is_main && (
+          <span onClick={(e) => e.stopPropagation()}>
+            <Button
+              variant="ghost"
+              size="xs"
+              disabled={isSettingMain}
+              onClick={() =>
+                updateCharacter({
+                  characterId: character.id,
+                  name: character.name,
+                  class: character.class,
+                  realm: character.realm,
+                  region: character.region,
+                  is_main: true,
+                  specialization_id: character.specialization_id,
+                })
+              }
+            >
+              <Star className="w-3 h-3" />
+              Set Main
+            </Button>
           </span>
         )}
-      </div>
-      <div className="flex items-center gap-1 shrink-0">
-        {!character.is_main && (
-          <Button
-            variant="ghost"
-            size="xs"
-            disabled={isSettingMain}
-            onClick={() =>
-              updateCharacter({
-                characterId: character.id,
-                name: character.name,
-                class: character.class,
-                realm: character.realm,
-                region: character.region,
-                is_main: true,
-              })
-            }
-          >
-            <Star className="w-3 h-3" />
-            Set Main
+        <span onClick={(e) => e.stopPropagation()}>
+          <Button variant="ghost" size="xs" onClick={onEdit}>
+            <Pencil className="w-3 h-3" />
           </Button>
-        )}
-        <Button variant="ghost" size="xs" onClick={onEdit}>
-          <Pencil className="w-3 h-3" />
-        </Button>
-        <Button
-          variant="danger"
-          size="xs"
-          disabled={isDeleting}
-          onClick={() => deleteCharacter(character.id)}
-        >
-          <Trash2 className="w-3 h-3" />
-        </Button>
+        </span>
+        <span onClick={(e) => e.stopPropagation()}>
+          <Button
+            variant="danger"
+            size="xs"
+            disabled={isDeleting}
+            onClick={() => deleteCharacter(character.id)}
+          >
+            <Trash2 className="w-3 h-3" />
+          </Button>
+        </span>
       </div>
     </div>
   );
@@ -110,6 +141,8 @@ type PlayerCardProps = {
   player: Player;
   teamId: number;
   colorMode: string;
+  isMine: boolean;
+  canClaim: boolean;
   onEditPlayer: () => void;
   onAddCharacter: () => void;
   onEditCharacter: (character: Character) => void;
@@ -119,12 +152,18 @@ const PlayerCard: FC<PlayerCardProps> = ({
   player,
   teamId,
   colorMode,
+  isMine,
+  canClaim,
   onEditPlayer,
   onAddCharacter,
   onEditCharacter,
 }) => {
   const { mutate: deletePlayer, isPending: isDeleting } =
     useDeletePlayer(teamId);
+  const { mutate: claimPlayer, isPending: isClaiming } =
+    useClaimPlayer(teamId);
+  const { mutate: unclaimPlayer, isPending: isUnclaiming } =
+    useUnclaimPlayer(teamId);
   const characters = player.characters ?? [];
 
   return (
@@ -153,7 +192,7 @@ const PlayerCard: FC<PlayerCardProps> = ({
                     : "bg-cyan-100 text-cyan-700"
                 }`}
               >
-                Linked
+                {isMine ? "Claimed by you" : `Claimed by ${player.user.name}`}
               </span>
             )}
           </div>
@@ -164,6 +203,28 @@ const PlayerCard: FC<PlayerCardProps> = ({
           </p>
         </div>
         <div className="flex items-center gap-1.5">
+          {isMine && (
+            <Button
+              variant="ghost"
+              size="xs"
+              disabled={isUnclaiming}
+              onClick={() => unclaimPlayer(player.id)}
+            >
+              <Link2Off className="w-3 h-3" />
+              Unclaim
+            </Button>
+          )}
+          {canClaim && (
+            <Button
+              variant="secondary"
+              size="xs"
+              disabled={isClaiming}
+              onClick={() => claimPlayer(player.id)}
+            >
+              <Link2 className="w-3 h-3" />
+              Claim
+            </Button>
+          )}
           <Button variant="ghost" size="xs" onClick={onAddCharacter}>
             <Plus className="w-3 h-3" />
             Character
@@ -182,10 +243,10 @@ const PlayerCard: FC<PlayerCardProps> = ({
         </div>
       </div>
 
-      <div className="p-2 flex flex-col gap-0.5">
+      <div className="p-3 flex flex-wrap gap-2">
         {characters.length > 0 ? (
           characters.map((c) => (
-            <CharacterRow
+            <CharacterChip
               key={c.id}
               character={c}
               teamId={teamId}
@@ -213,6 +274,7 @@ type RosterTabProps = {
 
 export const RosterTab: FC<RosterTabProps> = ({ team, teamId, roles }) => {
   const { colorMode } = useTheme();
+  const { user } = useUser();
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
   const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
   const [isCharacterModalOpen, setIsCharacterModalOpen] = useState(false);
@@ -222,6 +284,9 @@ export const RosterTab: FC<RosterTabProps> = ({ team, teamId, roles }) => {
   );
 
   const players = team.players ?? [];
+  const myClaimedPlayerId = players.find(
+    (p) => p.user && user && String(p.user.id) === String(user.id),
+  )?.id;
 
   const openAddPlayer = () => {
     setEditingPlayer(null);
@@ -273,13 +338,15 @@ export const RosterTab: FC<RosterTabProps> = ({ team, teamId, roles }) => {
 
         <div className="p-4">
           {players.length > 0 ? (
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <div className="flex flex-col gap-3">
               {players.map((player) => (
                 <PlayerCard
                   key={player.id}
                   player={player}
                   teamId={teamId}
                   colorMode={colorMode}
+                  isMine={myClaimedPlayerId === player.id}
+                  canClaim={!player.user && myClaimedPlayerId === undefined}
                   onEditPlayer={() => openEditPlayer(player)}
                   onAddCharacter={() => openAddCharacter(player.id)}
                   onEditCharacter={(character) =>

@@ -20,3 +20,28 @@ export const CLASS_NAMES = CLASS_COLORS.map((c) => c.name);
 
 export const getClassColor = (className: string): string | undefined =>
   CLASS_COLORS.find((c) => c.name === className)?.color;
+
+// Armor type is fixed per class in WoW (every spec of a class shares one),
+// unlike role/primary stat which vary by spec — so this is a flat
+// class-name lookup, matching the ArmorType strings seeded on the backend
+// (backend/seed/classData.go).
+export type ClassArmorType = { name: string; armorType: "Cloth" | "Leather" | "Mail" | "Plate" };
+
+export const CLASS_ARMOR_TYPES: ClassArmorType[] = [
+  { name: "Death Knight", armorType: "Plate" },
+  { name: "Demon Hunter", armorType: "Leather" },
+  { name: "Druid", armorType: "Leather" },
+  { name: "Evoker", armorType: "Mail" },
+  { name: "Hunter", armorType: "Mail" },
+  { name: "Mage", armorType: "Cloth" },
+  { name: "Monk", armorType: "Leather" },
+  { name: "Paladin", armorType: "Plate" },
+  { name: "Priest", armorType: "Cloth" },
+  { name: "Rogue", armorType: "Leather" },
+  { name: "Shaman", armorType: "Mail" },
+  { name: "Warlock", armorType: "Cloth" },
+  { name: "Warrior", armorType: "Plate" },
+];
+
+export const getArmorType = (className: string): string | undefined =>
+  CLASS_ARMOR_TYPES.find((c) => c.name === className)?.armorType;

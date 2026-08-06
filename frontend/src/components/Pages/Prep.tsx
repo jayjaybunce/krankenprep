@@ -192,9 +192,13 @@ const BossDisplay: FC<BossProps> = ({
 
   const isUserAdmin = ["owner", "admin"].includes(team?.name ?? "");
 
+  // Poll while the assignments modal is open so the 20-30 people who might
+  // be looking at it during raid get told a newer note exists, instead of
+  // everyone needing to refresh the page whenever assignments change.
   const { data: assignmentNoteData } = useAssignmentNote(
     team?.team_id?.toString(),
     boss?.id?.toString(),
+    showAssignments ? 20000 : false,
   );
 
   const { mutate: createSection } = useCreateSection(
@@ -823,6 +827,7 @@ const BossDisplay: FC<BossProps> = ({
         onClose={() => setShowAssignments(false)}
         assignments={boss?.assignment_map?.assignments ?? []}
         note={assignmentNoteData?.assignment_note?.note}
+        noteUpdatedAt={assignmentNoteData?.assignment_note?.updated_at}
         teamId={team?.team_id?.toString()}
         bossId={boss?.id?.toString()}
         isAdmin={isUserAdmin}

@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "react";
 import { useNavigate } from "react-router-dom";
-import { Info, Pencil, RefreshCw, Save, X } from "lucide-react";
+import { Info, Pencil, RefreshCw, Save, UserCheck, X } from "lucide-react";
 import { Modal } from "../Modal";
 import Alert from "../Alert";
 import { cleanAndSeparate, type ParsedSection } from "../Assignments";
 import { useUpsertAssignmentNote } from "../../api/mutationHooks";
 import { useGetTeamById } from "../../api/queryHooks";
+import { useUser } from "../../hooks";
 import type { AssignmentEntry as AssignmentDef } from "../../types/api/expansion";
 import { getClassColor } from "../../data/classes";
 
@@ -78,12 +79,14 @@ const findParsedPlayers = (
   return found?.players ?? [];
 };
 
-const buildPostMessagePlayers = (
+// Shared by buildPostMessagePlayers (needs every filled slot) and
+// findRaidplanIndicesForNames (needs just the slots matching a name set) —
+// same subheading/empty-heading-occurrence walk either way.
+const walkAssignmentSlots = (
   assignment: AssignmentDef,
   parsedSection: ParsedSection | undefined,
-  getCharacterClass: CharacterClassLookup,
-): Record<string, { name: string; class: string | null }> => {
-  const result: Record<string, { name: string; class: string | null }> = {};
+): { pos: number; player: string }[] => {
+  const result: { pos: number; player: string }[] = [];
   let emptyIdx = 0;
 
   for (const sub of assignment.subheadings) {
@@ -94,20 +97,62 @@ const buildPostMessagePlayers = (
     for (let s = 0; s < sub.available_slots; s++) {
       const pos = sub.raidplan_index + s;
       const player = players[s];
-      if (player) {
-        const cls = getCharacterClass(player);
-        result[`index${pos}`] = { name: player, class: cls ?? null };
-      }
+      if (player) result.push({ pos, player });
     }
   }
 
   return result;
 };
 
-const PlayerSlot: FC<{ index: number; player?: string; characterClass?: string }> = ({
+const buildPostMessagePlayers = (
+  assignment: AssignmentDef,
+  parsedSection: ParsedSection | undefined,
+  getCharacterClass: CharacterClassLookup,
+): Record<string, { name: string; class: string | null }> => {
+  const result: Record<string, { name: string; class: string | null }> = {};
+  for (const { pos, player } of walkAssignmentSlots(assignment, parsedSection)) {
+    const cls = getCharacterClass(player);
+    result[`index${pos}`] = { name: player, class: cls ?? null };
+  }
+  return result;
+};
+
+// Raidplan slot indices (the same "pos" values sent as "index<N>" keys in
+// buildPostMessagePlayers) whose assigned player matches one of the given
+// (lowercased) character names — used to drive the "Highlight me" button.
+const findRaidplanIndicesForNames = (
+  assignment: AssignmentDef,
+  parsedSection: ParsedSection | undefined,
+  names: Set<string>,
+): number[] =>
+  walkAssignmentSlots(assignment, parsedSection)
+    .filter(({ player }) => names.has(normalize(player)))
+    .map(({ pos }) => pos);
+
+// Whether any of the given names appears anywhere in this assignment's
+// parsed player lists — unlike findRaidplanIndicesForNames, this doesn't
+// require a raidplan_index, so it also covers assignments with no iframe at
+// all (the blurb-only path), matching what AssignmentSubGroup actually
+// renders below.
+const assignmentIncludesNames = (
+  assignment: AssignmentDef,
+  parsedSection: ParsedSection | undefined,
+  names: Set<string>,
+): boolean => {
+  let emptyIdx = 0;
+  for (const sub of assignment.subheadings) {
+    const eIdx = usesPositionalMatch(sub) ? emptyIdx++ : 0;
+    const players = findParsedPlayers(parsedSection, sub, eIdx);
+    if (players.some((p) => names.has(normalize(p)))) return true;
+  }
+  return false;
+};
+
+const PlayerSlot: FC<{ index: number; player?: string; characterClass?: string; isMe?: boolean }> = ({
   index,
   player,
   characterClass,
+  isMe,
 }) => {
   const classColor = characterClass ? getClassColor(characterClass) : undefined;
   const textColor = classColor ? getContrastTextColor(classColor) : undefined;
@@ -120,7 +165,7 @@ const PlayerSlot: FC<{ index: number; player?: string; characterClass?: string }
             ? "border-transparent shadow-sm"
             : "bg-slate-700/60 border-slate-600/50"
           : "bg-slate-800/70 border-slate-700/40"
-      }`}
+      } ${isMe ? "ring-2 ring-cyan-400 ring-offset-1 ring-offset-slate-950" : ""}`}
       style={classColor ? { backgroundColor: classColor } : undefined}
     >
       <span
@@ -156,7 +201,8 @@ export const AssignmentSubGroup: FC<{
   slotOffset: number;
   players: string[];
   getCharacterClass: CharacterClassLookup;
-}> = ({ heading, description, available_slots, slotOffset, players, getCharacterClass }) => {
+  myCharacterNames?: Set<string>;
+}> = ({ heading, description, available_slots, slotOffset, players, getCharacterClass, myCharacterNames }) => {
   const slots = Array.from({ length: available_slots }, (_, i) => slotOffset + i + 1);
 
   return (
@@ -182,6 +228,7 @@ export const AssignmentSubGroup: FC<{
               index={slotNum}
               player={player}
               characterClass={player ? getCharacterClass(player) : undefined}
+              isMe={player ? myCharacterNames?.has(normalize(player)) : false}
             />
           );
         })}
@@ -194,8 +241,11 @@ export const AssignmentGroup: FC<{
   assignment: AssignmentDef;
   parsedSection: ParsedSection | undefined;
   getCharacterClass: CharacterClassLookup;
-}> = ({ assignment, parsedSection, getCharacterClass }) => {
+  myCharacterNames: Set<string>;
+  isHighlighted: boolean;
+}> = ({ assignment, parsedSection, getCharacterClass, myCharacterNames, isHighlighted }) => {
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
   let slotOffset = 0;
   let emptyHeadingCount = 0;
 
@@ -203,11 +253,46 @@ export const AssignmentGroup: FC<{
     const win = iframeRef.current?.contentWindow;
     if (!win) return;
     const players = buildPostMessagePlayers(assignment, parsedSection, getCharacterClass);
-    console.log("Players:", players);
     if (Object.keys(players).length === 0) return;
     win.postMessage({ type: "updatePlayers", players }, "https://raidstrats.gg");
     win.postMessage({ type: "toggleIndexNumbers", show: true }, "*");
   }, [assignment, parsedSection, getCharacterClass]);
+
+  const myIndices = useMemo(
+    () => findRaidplanIndicesForNames(assignment, parsedSection, myCharacterNames),
+    [assignment, parsedSection, myCharacterNames],
+  );
+
+  // The assignment note and roster fetches (parsedSection/getCharacterClass)
+  // are independent of the iframe's own onLoad timing — either can still be
+  // in flight when the iframe finishes loading. sendPlayers gets a new
+  // identity every time either of them resolves with real data, so this
+  // effect re-sends automatically once they do, instead of leaving whatever
+  // (possibly empty) postMessage went out on the first onLoad as the last
+  // word until someone manually hits "Resync players."
+  useEffect(() => {
+    if (!iframeLoaded) return;
+    sendPlayers();
+  }, [iframeLoaded, sendPlayers]);
+
+  // Driven by the modal-wide "Highlight me" toggle rather than a per-
+  // assignment button, so every assignment the user appears in lights up
+  // (or clears) together. raidstrats.gg dims everyone else and glows the
+  // given indices salmon, persisting across scene switches until cleared
+  // with an empty array — that empty-array clear is what runs when the
+  // toggle turns off, not a different message type.
+  useEffect(() => {
+    if (!iframeLoaded || myIndices.length === 0) return;
+    const win = iframeRef.current?.contentWindow;
+    if (!win) return;
+    win.postMessage(
+      {
+        type: "highlightPlayers",
+        indices: isHighlighted ? (myIndices.length === 1 ? myIndices[0] : myIndices) : [],
+      },
+      "*",
+    );
+  }, [isHighlighted, myIndices, iframeLoaded]);
 
   const details = (
     <div className="flex flex-col gap-3">
@@ -247,6 +332,7 @@ export const AssignmentGroup: FC<{
               slotOffset={offset}
               players={players}
               getCharacterClass={getCharacterClass}
+              myCharacterNames={isHighlighted ? myCharacterNames : undefined}
             />
           );
         })}
@@ -273,7 +359,7 @@ export const AssignmentGroup: FC<{
           title={assignment.heading}
           className="w-full h-full"
           style={{ border: "none" }}
-          onLoad={() => setTimeout(sendPlayers, 500)}
+          onLoad={() => setTimeout(() => setIframeLoaded(true), 500)}
         />
         <button
           onClick={sendPlayers}
@@ -293,6 +379,7 @@ type AssignmentsModalProps = {
   onClose: () => void;
   assignments: AssignmentDef[];
   note?: string;
+  noteUpdatedAt?: string;
   teamId?: string;
   bossId?: string;
   isAdmin?: boolean;
@@ -303,15 +390,76 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
   onClose,
   assignments,
   note,
+  noteUpdatedAt,
   teamId,
   bossId,
   isAdmin,
 }) => {
   const navigate = useNavigate();
+  const { user } = useUser();
 
-  const parsed = useMemo(() => (note ? cleanAndSeparate(note) : []), [note]);
+  // The note actually being parsed/displayed/sent to raidplan iframes —
+  // deliberately buffered separately from the live `note` prop (which keeps
+  // polling in the background while the modal is open, see Prep.tsx) so a
+  // background update never silently swaps assignments out from under
+  // someone mid-read. Only re-synced when the modal is freshly opened, or
+  // when the user explicitly hits Refresh on the "updated" banner below.
+  const [displayedNote, setDisplayedNote] = useState(note);
+  const [displayedNoteUpdatedAt, setDisplayedNoteUpdatedAt] = useState(noteUpdatedAt);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setDisplayedNote(note);
+    setDisplayedNoteUpdatedAt(noteUpdatedAt);
+    // Deliberately keyed on isOpen only — re-syncing whenever note/
+    // noteUpdatedAt change while already open would defeat the whole point
+    // of buffering them.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
+  const hasNewerNote = !!noteUpdatedAt && noteUpdatedAt !== displayedNoteUpdatedAt;
+
+  const handleRefreshNote = () => {
+    setDisplayedNote(note);
+    setDisplayedNoteUpdatedAt(noteUpdatedAt);
+  };
+
+  const parsed = useMemo(
+    () => (displayedNote ? cleanAndSeparate(displayedNote) : []),
+    [displayedNote],
+  );
 
   const { data: teamData } = useGetTeamById(teamId ? Number(teamId) : -1);
+
+  // Every character name the logged-in user owns on this team — not just
+  // their "main" — so "Highlight me" and the local ring highlight both
+  // catch whichever of their characters actually got assigned this raid.
+  const myCharacterNames = useMemo(() => {
+    const set = new Set<string>();
+    if (!user) return set;
+    for (const player of teamData?.players ?? []) {
+      if (!player.user || String(player.user.id) !== String(user.id)) continue;
+      for (const character of player.characters ?? []) {
+        set.add(character.name.trim().toLowerCase());
+      }
+    }
+    return set;
+  }, [teamData, user]);
+
+  const isUserAssignedAnywhere = useMemo(
+    () =>
+      myCharacterNames.size > 0 &&
+      assignments.some((assignment) =>
+        assignmentIncludesNames(assignment, findParsedSection(parsed, assignment), myCharacterNames),
+      ),
+    [assignments, parsed, myCharacterNames],
+  );
+
+  const [isHighlighted, setIsHighlighted] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen) setIsHighlighted(false);
+  }, [isOpen]);
 
   const characterClassMap = useMemo(() => {
     const map = new Map<string, string>();
@@ -373,23 +521,41 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
     upsertNote(noteContent, { onSuccess: () => setShowEditor(false) });
   };
 
-  const actions = showEditor ? (
+  const actions = !isUserAssignedAnywhere && !showEditor ? undefined : (
     <>
-      <button
-        onClick={() => { setNoteContent(note ?? ""); setShowEditor(false); }}
-        className="px-4 py-2 rounded-lg font-montserrat text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
-      >
-        <div className="flex items-center gap-2"><X className="w-4 h-4" /> Cancel</div>
-      </button>
-      <button
-        onClick={handleSave}
-        disabled={isPending}
-        className="px-4 py-2 rounded-lg font-montserrat text-sm font-medium bg-linear-to-r from-cyan-500 to-blue-600 text-white hover:shadow-lg hover:shadow-cyan-500/30 disabled:opacity-50 transition-all"
-      >
-        <div className="flex items-center gap-2"><Save className="w-4 h-4" /> Save Note</div>
-      </button>
+      {isUserAssignedAnywhere && (
+        <button
+          onClick={() => setIsHighlighted((v) => !v)}
+          title="Highlight every assignment you're in — in the raidplan and below"
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg font-montserrat text-sm font-medium border transition-colors ${
+            isHighlighted
+              ? "bg-cyan-500/10 border-cyan-500/40 text-cyan-400"
+              : "bg-slate-800 border-slate-700 text-slate-300 hover:bg-slate-700"
+          }`}
+        >
+          <UserCheck className="w-4 h-4" />
+          {isHighlighted ? "Highlighting me" : "Highlight me"}
+        </button>
+      )}
+      {showEditor && (
+        <>
+          <button
+            onClick={() => { setNoteContent(note ?? ""); setShowEditor(false); }}
+            className="px-4 py-2 rounded-lg font-montserrat text-sm font-medium bg-slate-800 text-slate-300 hover:bg-slate-700 transition-colors"
+          >
+            <div className="flex items-center gap-2"><X className="w-4 h-4" /> Cancel</div>
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isPending}
+            className="px-4 py-2 rounded-lg font-montserrat text-sm font-medium bg-linear-to-r from-cyan-500 to-blue-600 text-white hover:shadow-lg hover:shadow-cyan-500/30 disabled:opacity-50 transition-all"
+          >
+            <div className="flex items-center gap-2"><Save className="w-4 h-4" /> Save Note</div>
+          </button>
+        </>
+      )}
     </>
-  ) : undefined;
+  );
 
   return (
     <Modal
@@ -402,6 +568,18 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
       actions={actions}
     >
       <div className="flex flex-col gap-4 pb-4">
+        {hasNewerNote && (
+          <Alert type="info" title="Assignments have been updated">
+            Someone changed this note since you opened it.
+            <br />
+            <button
+              onClick={handleRefreshNote}
+              className="mt-2 text-xs font-semibold text-cyan-400 hover:text-cyan-300 underline underline-offset-2"
+            >
+              Refresh
+            </button>
+          </Alert>
+        )}
         {isAdmin && rosterIsEmpty && (
           <Alert type="info" title="Set up your roster first">
             Add your team's players and characters in the Roster tab so
@@ -486,6 +664,8 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
                 assignment={assignment}
                 parsedSection={findParsedSection(parsed, assignment)}
                 getCharacterClass={getCharacterClass}
+                myCharacterNames={myCharacterNames}
+                isHighlighted={isHighlighted}
               />
             ))
           )}
