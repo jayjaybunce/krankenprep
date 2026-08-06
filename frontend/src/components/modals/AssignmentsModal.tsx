@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type FC } from "react";
+import { createPortal } from "react-dom";
 import { useNavigate } from "react-router-dom";
 import { Info, Pencil, RefreshCw, Save, UserCheck, X } from "lucide-react";
 import { Modal } from "../Modal";
@@ -567,19 +568,26 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
       size="screen"
       actions={actions}
     >
-      <div className="flex flex-col gap-4 pb-4">
-        {hasNewerNote && (
-          <Alert type="info" title="Assignments have been updated">
-            Someone changed this note since you opened it.
-            <br />
+      {isOpen &&
+        hasNewerNote &&
+        createPortal(
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-60 flex items-center gap-3 px-4 py-3 rounded-xl border shadow-2xl backdrop-blur-sm bg-slate-900/95 border-cyan-500/40 animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <Info className="w-4 h-4 text-cyan-400 shrink-0" />
+            <span className="text-sm font-montserrat text-slate-200">
+              Assignments have been updated.
+            </span>
             <button
               onClick={handleRefreshNote}
-              className="mt-2 text-xs font-semibold text-cyan-400 hover:text-cyan-300 underline underline-offset-2"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold font-montserrat bg-cyan-500 text-white hover:bg-cyan-400 transition-colors"
             >
+              <RefreshCw className="w-3.5 h-3.5" />
               Refresh
             </button>
-          </Alert>
+          </div>,
+          document.body,
         )}
+
+      <div className="flex flex-col gap-4 pb-4">
         {isAdmin && rosterIsEmpty && (
           <Alert type="info" title="Set up your roster first">
             Add your team's players and characters in the Roster tab so
