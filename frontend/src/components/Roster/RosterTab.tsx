@@ -18,6 +18,7 @@ type CharacterChipProps = {
   character: Character;
   teamId: number;
   colorMode: string;
+  isAdmin: boolean;
   onEdit: () => void;
 };
 
@@ -25,6 +26,7 @@ const CharacterChip: FC<CharacterChipProps> = ({
   character,
   teamId,
   colorMode,
+  isAdmin,
   onEdit,
 }) => {
   const [expanded, setExpanded] = useState(false);
@@ -94,7 +96,7 @@ const CharacterChip: FC<CharacterChipProps> = ({
           {character.class} &middot; {character.realm} &middot;{" "}
           {character.region.toUpperCase()}
         </span>
-        {!character.is_main && (
+        {isAdmin && !character.is_main && (
           <span onClick={(e) => e.stopPropagation()}>
             <Button
               variant="ghost"
@@ -117,21 +119,25 @@ const CharacterChip: FC<CharacterChipProps> = ({
             </Button>
           </span>
         )}
-        <span onClick={(e) => e.stopPropagation()}>
-          <Button variant="ghost" size="xs" onClick={onEdit}>
-            <Pencil className="w-3 h-3" />
-          </Button>
-        </span>
-        <span onClick={(e) => e.stopPropagation()}>
-          <Button
-            variant="danger"
-            size="xs"
-            disabled={isDeleting}
-            onClick={() => deleteCharacter(character.id)}
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
-        </span>
+        {isAdmin && (
+          <>
+            <span onClick={(e) => e.stopPropagation()}>
+              <Button variant="ghost" size="xs" onClick={onEdit}>
+                <Pencil className="w-3 h-3" />
+              </Button>
+            </span>
+            <span onClick={(e) => e.stopPropagation()}>
+              <Button
+                variant="danger"
+                size="xs"
+                disabled={isDeleting}
+                onClick={() => deleteCharacter(character.id)}
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </span>
+          </>
+        )}
       </div>
     </div>
   );
@@ -143,6 +149,7 @@ type PlayerCardProps = {
   colorMode: string;
   isMine: boolean;
   canClaim: boolean;
+  isAdmin: boolean;
   onEditPlayer: () => void;
   onAddCharacter: () => void;
   onEditCharacter: (character: Character) => void;
@@ -154,6 +161,7 @@ const PlayerCard: FC<PlayerCardProps> = ({
   colorMode,
   isMine,
   canClaim,
+  isAdmin,
   onEditPlayer,
   onAddCharacter,
   onEditCharacter,
@@ -225,21 +233,25 @@ const PlayerCard: FC<PlayerCardProps> = ({
               Claim
             </Button>
           )}
-          <Button variant="ghost" size="xs" onClick={onAddCharacter}>
-            <Plus className="w-3 h-3" />
-            Character
-          </Button>
-          <Button variant="ghost" size="xs" onClick={onEditPlayer}>
-            <Pencil className="w-3 h-3" />
-          </Button>
-          <Button
-            variant="danger"
-            size="xs"
-            disabled={isDeleting}
-            onClick={() => deletePlayer(player.id)}
-          >
-            <Trash2 className="w-3 h-3" />
-          </Button>
+          {isAdmin && (
+            <>
+              <Button variant="ghost" size="xs" onClick={onAddCharacter}>
+                <Plus className="w-3 h-3" />
+                Character
+              </Button>
+              <Button variant="ghost" size="xs" onClick={onEditPlayer}>
+                <Pencil className="w-3 h-3" />
+              </Button>
+              <Button
+                variant="danger"
+                size="xs"
+                disabled={isDeleting}
+                onClick={() => deletePlayer(player.id)}
+              >
+                <Trash2 className="w-3 h-3" />
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
@@ -251,6 +263,7 @@ const PlayerCard: FC<PlayerCardProps> = ({
               character={c}
               teamId={teamId}
               colorMode={colorMode}
+              isAdmin={isAdmin}
               onEdit={() => onEditCharacter(c)}
             />
           ))
@@ -270,9 +283,13 @@ type RosterTabProps = {
   team: Team;
   teamId: number;
   roles: MyRole[];
+  // Roster CRUD (add/edit/delete players and characters, set main) is
+  // admin-only on the backend — claim/unclaim stays available to any team
+  // member regardless of this flag, matching isTeamMember-gated endpoints.
+  isAdmin: boolean;
 };
 
-export const RosterTab: FC<RosterTabProps> = ({ team, teamId, roles }) => {
+export const RosterTab: FC<RosterTabProps> = ({ team, teamId, roles, isAdmin }) => {
   const { colorMode } = useTheme();
   const { user } = useUser();
   const [isPlayerModalOpen, setIsPlayerModalOpen] = useState(false);
@@ -330,10 +347,12 @@ export const RosterTab: FC<RosterTabProps> = ({ team, teamId, roles }) => {
               Roster
             </h2>
           </div>
-          <Button variant="primary" size="sm" onClick={openAddPlayer}>
-            <UserPlus className="w-4 h-4" />
-            Add Player
-          </Button>
+          {isAdmin && (
+            <Button variant="primary" size="sm" onClick={openAddPlayer}>
+              <UserPlus className="w-4 h-4" />
+              Add Player
+            </Button>
+          )}
         </div>
 
         <div className="p-4">
@@ -347,6 +366,7 @@ export const RosterTab: FC<RosterTabProps> = ({ team, teamId, roles }) => {
                   colorMode={colorMode}
                   isMine={myClaimedPlayerId === player.id}
                   canClaim={!player.user && myClaimedPlayerId === undefined}
+                  isAdmin={isAdmin}
                   onEditPlayer={() => openEditPlayer(player)}
                   onAddCharacter={() => openAddCharacter(player.id)}
                   onEditCharacter={(character) =>

@@ -234,9 +234,22 @@ const Team: FC = () => {
         (credentialsUnchanged && data?.wowaudit_integration)));
 
   const isUserAdmin = ["owner", "admin"].includes(team?.name ?? "");
-  if (!isUserAdmin) {
-    navigator("/");
-  }
+  // team?.name here is the current user's role on this team (see MyRole) —
+  // any resolved role means they're a member, even if it's just "member".
+  const isUserTeamMember = !!team?.name;
+
+  useEffect(() => {
+    if (!isUserTeamMember) {
+      navigator("/");
+      return;
+    }
+    // Only the Settings tab (WowAudit integration, invite links, member
+    // role management) is admin-only — Members and Roster (so any member
+    // can claim their player) are open to the whole team.
+    if (activeTab === "settings" && !isUserAdmin) {
+      navigator("/team/roster", { replace: true });
+    }
+  }, [isUserTeamMember, isUserAdmin, activeTab, navigator]);
 
   if (isLoading) {
     return (
@@ -297,7 +310,9 @@ const Team: FC = () => {
         <div
           className={`flex gap-1 border-b ${colorMode === "dark" ? "border-slate-800" : "border-slate-200"}`}
         >
-          {(["members", "settings", "roster"] as const).map((tab) => (
+          {(["members", "settings", "roster"] as const)
+            .filter((tab) => tab !== "settings" || isUserAdmin)
+            .map((tab) => (
             <button
               key={tab}
               onClick={() => navigator(`/team/${tab}`, { replace: true })}
@@ -315,7 +330,7 @@ const Team: FC = () => {
         </div>
 
         {/* Settings tab — WowAudit Integration */}
-        {activeTab === "settings" && (
+        {activeTab === "settings" && isUserAdmin && (
           <div
             className={`rounded-xl border ${
               colorMode === "dark"
@@ -938,6 +953,7 @@ const Team: FC = () => {
             team={data}
             teamId={team?.team_id ?? -1}
             roles={data.roles}
+            isAdmin={isUserAdmin}
           />
         )}
       </div>
