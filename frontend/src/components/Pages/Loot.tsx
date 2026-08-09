@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronsLeft, ChevronsRight, Minus, Plus, CheckCircle2, Search, X } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Circle, CheckSquare, Minus, Plus, CheckCircle2, Search, Square, X } from "lucide-react";
 import { useDocumentTitle, useTeam, useTheme, useUser } from "../../hooks";
 import {
   useCurrentExpansion,
@@ -116,6 +116,28 @@ const ItemRow: FC<{
             : "border-slate-200 hover:bg-slate-50"
       } ${item.obtained ? "opacity-50" : ""}`}
     >
+      {/* A dedicated checkbox, separate from the Wowhead icon link below —
+          previously the only way to target an item was clicking the item
+          name text, and the row's hover/tint styling made the whole row
+          look clickable, including the Wowhead icon (which actually opens
+          a new tab instead, reading as "nothing happened" on this page). */}
+      <button
+        onClick={onToggleWish}
+        title={item.wished ? "Remove from bonus roll targets" : "Target this item for bonus rolls"}
+        className={`shrink-0 transition-colors ${
+          item.wished
+            ? "text-cyan-400"
+            : colorMode === "dark"
+              ? "text-slate-600 hover:text-slate-300"
+              : "text-slate-400 hover:text-slate-600"
+        }`}
+      >
+        {item.wished ? (
+          <CheckSquare className="w-5 h-5" />
+        ) : (
+          <Square className="w-5 h-5" />
+        )}
+      </button>
       <WowheadItemIcon
         wowItemId={item.wow_item_id}
         bonusIds={bonusIds}
@@ -144,18 +166,22 @@ const ItemRow: FC<{
             onToggleObtained();
           }}
           title={item.obtained ? "Mark as not obtained" : "Mark as obtained"}
-          className={`flex items-center gap-1 px-1.5 py-0.5 rounded-md shrink-0 transition-colors ${
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-md border shrink-0 transition-colors ${
             item.obtained
-              ? "text-emerald-400"
-              : "text-slate-500 hover:text-emerald-400"
+              ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10"
+              : colorMode === "dark"
+                ? "text-slate-400 border-slate-700 hover:text-emerald-400 hover:border-emerald-500/40"
+                : "text-slate-500 border-slate-300 hover:text-emerald-600 hover:border-emerald-400"
           }`}
         >
-          <CheckCircle2 className="w-5 h-5" />
-          {item.obtained && (
-            <span className="text-xs font-semibold font-montserrat uppercase tracking-wide">
-              Acquired
-            </span>
+          {item.obtained ? (
+            <CheckCircle2 className="w-4 h-4" />
+          ) : (
+            <Circle className="w-4 h-4" />
           )}
+          <span className="text-xs font-semibold font-montserrat uppercase tracking-wide">
+            {item.obtained ? "Acquired" : "Mark Acquired"}
+          </span>
         </button>
       )}
     </div>

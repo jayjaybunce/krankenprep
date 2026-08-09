@@ -7,7 +7,12 @@ import { Clock, ChevronLeft, ChevronRight, Eye, Pencil } from "lucide-react";
 
 const raids = [
   {
-    name: "Midnight",
+    name: "Midnight S2",
+    route: "/plan/midnight-s2",
+    imageSrc: "https://cdn.raidplan.io/wow/lorebg/windrunnerspire.jpg", // Placeholder - will be replaced
+  },
+  {
+    name: "Midnight S1",
     route: "/plan/midnight",
     imageSrc: "https://cdn.raidplan.io/wow/lorebg/windrunnerspire.jpg", // Placeholder - will be replaced
   },
