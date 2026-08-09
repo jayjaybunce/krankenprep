@@ -1221,6 +1221,7 @@ export const midnight: RaidData = [
           { name: "Raised Amani", iconSrc: "/midnight/thevenemousabyss/nekzali/icons/raised-amani.png" },
           { name: "Swirling Spirit", iconSrc: "/midnight/thevenemousabyss/nekzali/icons/swirling-spirit.png" },
           { name: "Vessel of Awakening", iconSrc: "/midnight/thevenemousabyss/nekzali/icons/vessel-of-awakening.png" },
+          { name: "Sarcophogus", iconSrc: "/midnight/thevenemousabyss/nekzali/icons/sarcophogus.png"}
         ],
         spellIcons: [
           { name: "Anguished Echoes", iconSrc: "/midnight/thevenemousabyss/nekzali/icons/anguished-echoes.png" },
