@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useKpApi } from "../hooks"
 import type { Tab } from "../components/Planner/Planner"
+import type { BossLoot, TierSlotEntry } from "./queryHooks"
 
 type CreateTeamPayload = {
     name: string,
@@ -540,16 +541,50 @@ type ToggleItemWishPayload = {
     wished: boolean
 }
 
-export const useToggleItemWish = (teamId: number, bossId: number) => {
+// characterId/difficulty scope this to the exact boss_loot cache entry
+// currently being viewed (useGetBossLoot's query key), so the optimistic
+// patch below lands on the right cached data instead of guessing.
+export const useToggleItemWish = (
+    teamId: number,
+    bossId: number,
+    characterId: number,
+    difficulty: string
+) => {
     const { headers, url } = useKpApi(`/teams/${teamId}/loot/boss/${bossId}/wish`)
     const queryClient = useQueryClient()
+    const queryKey = ["boss_loot", teamId, bossId, characterId, difficulty]
     return useMutation({
-        mutationKey: ["toggleItemWish"],
+        mutationKey: ["toggleItemWish", teamId, bossId, characterId, difficulty],
         mutationFn: (payload: ToggleItemWishPayload) => fetch(url, {
             method: "PUT",
             headers,
             body: JSON.stringify(payload)
-        }).then((res) => res.json()),
+        }).then(async (res) => {
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to update wishlist")
+            }
+            return data
+        }),
+        onMutate: async (payload) => {
+            await queryClient.cancelQueries({ queryKey })
+            const previous = queryClient.getQueryData<BossLoot>(queryKey)
+            queryClient.setQueryData<BossLoot>(queryKey, (old) => {
+                if (!old) return old
+                return {
+                    ...old,
+                    items: old.items.map((item) =>
+                        item.id === payload.item_id ? { ...item, wished: payload.wished } : item
+                    )
+                }
+            })
+            return { previous }
+        },
+        onError: (_err, _payload, context) => {
+            if (context?.previous) {
+                queryClient.setQueryData(queryKey, context.previous)
+            }
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["boss_loot", teamId, bossId] })
         }
@@ -563,16 +598,47 @@ type UpdateItemObtainedPayload = {
     obtained: boolean
 }
 
-export const useUpdateItemObtained = (teamId: number, bossId: number) => {
+export const useUpdateItemObtained = (
+    teamId: number,
+    bossId: number,
+    characterId: number,
+    difficulty: string
+) => {
     const { headers, url } = useKpApi(`/teams/${teamId}/loot/boss/${bossId}/obtained`)
     const queryClient = useQueryClient()
+    const queryKey = ["boss_loot", teamId, bossId, characterId, difficulty]
     return useMutation({
-        mutationKey: ["updateItemObtained"],
+        mutationKey: ["updateItemObtained", teamId, bossId, characterId, difficulty],
         mutationFn: (payload: UpdateItemObtainedPayload) => fetch(url, {
             method: "PUT",
             headers,
             body: JSON.stringify(payload)
-        }).then((res) => res.json()),
+        }).then(async (res) => {
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to update obtained status")
+            }
+            return data
+        }),
+        onMutate: async (payload) => {
+            await queryClient.cancelQueries({ queryKey })
+            const previous = queryClient.getQueryData<BossLoot>(queryKey)
+            queryClient.setQueryData<BossLoot>(queryKey, (old) => {
+                if (!old) return old
+                return {
+                    ...old,
+                    items: old.items.map((item) =>
+                        item.id === payload.item_id ? { ...item, obtained: payload.obtained } : item
+                    )
+                }
+            })
+            return { previous }
+        },
+        onError: (_err, _payload, context) => {
+            if (context?.previous) {
+                queryClient.setQueryData(queryKey, context.previous)
+            }
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["boss_loot", teamId, bossId] })
         }
@@ -692,6 +758,7 @@ type SetCharacterTierSlotPayload = {
 export const useSetCharacterTierSlot = (teamId: number, characterId: number) => {
     const { headers, url } = useKpApi(`/teams/${teamId}/loot/tier-tracker/characters/${characterId}`)
     const queryClient = useQueryClient()
+    const queryKey = ["team_tier_slots", teamId]
     return useMutation({
         mutationKey: ["setCharacterTierSlot", teamId, characterId],
         mutationFn: (payload: SetCharacterTierSlotPayload) => fetch(url, {
@@ -705,8 +772,34 @@ export const useSetCharacterTierSlot = (teamId: number, characterId: number) => 
             }
             return data
         }),
+        // Flip the cell to the picked value immediately rather than waiting
+        // on a round trip + a second refetch — deterministic write, the
+        // server has no reason to disagree, so the guess is always right on
+        // success. Rolled back in onError if it isn't.
+        onMutate: async (payload) => {
+            await queryClient.cancelQueries({ queryKey })
+            const previous = queryClient.getQueryData<TierSlotEntry[]>(queryKey)
+            queryClient.setQueryData<TierSlotEntry[]>(queryKey, (old) => {
+                const existing = old ?? []
+                const idx = existing.findIndex(
+                    (e) => e.character_id === characterId && e.slot === payload.slot
+                )
+                if (idx === -1) {
+                    return [...existing, { character_id: characterId, slot: payload.slot, source: payload.source }]
+                }
+                const next = [...existing]
+                next[idx] = { ...next[idx], source: payload.source }
+                return next
+            })
+            return { previous }
+        },
+        onError: (_err, _payload, context) => {
+            if (context?.previous) {
+                queryClient.setQueryData(queryKey, context.previous)
+            }
+        },
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ["team_tier_slots", teamId] })
+            queryClient.invalidateQueries({ queryKey })
         }
     })
 }

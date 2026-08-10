@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronsLeft, ChevronsRight, Circle, CheckSquare, Minus, Plus, CheckCircle2, Search, Square, X } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Circle, CheckSquare, LoaderCircle, Minus, Plus, CheckCircle2, Search, Square, X } from "lucide-react";
 import { useDocumentTitle, useTeam, useTheme, useUser } from "../../hooks";
 import {
   useCurrentExpansion,
@@ -103,9 +103,47 @@ const ItemRow: FC<{
   item: BossLootItem;
   bonusIds: string;
   colorMode: string;
-  onToggleWish: () => void;
-  onToggleObtained: () => void;
-}> = ({ item, bonusIds, colorMode, onToggleWish, onToggleObtained }) => {
+  teamId: number;
+  bossId: number;
+  characterId: number;
+  difficulty: string;
+}> = ({ item, bonusIds, colorMode, teamId, bossId, characterId, difficulty }) => {
+  // Instantiated per-row (not once at the tab level) so isPending/error are
+  // scoped to this one item, not shared across the whole list — otherwise
+  // clicking one item would show every row as "pending" at once. Optimistic
+  // onMutate (see mutationHooks.ts) flips the UI instantly instead of
+  // waiting on a request + a second invalidation refetch; disabling while
+  // isPending is what actually stops a rapid double-click from firing two
+  // overlapping requests, not just making the click look like it landed.
+  const {
+    mutate: toggleWish,
+    isPending: isTogglingWish,
+    error: wishError,
+  } = useToggleItemWish(teamId, bossId, characterId, difficulty);
+  const {
+    mutate: updateObtained,
+    isPending: isTogglingObtained,
+    error: obtainedError,
+  } = useUpdateItemObtained(teamId, bossId, characterId, difficulty);
+
+  const handleToggleWish = () => {
+    toggleWish({
+      character_id: characterId,
+      item_id: item.id,
+      difficulty,
+      wished: !item.wished,
+    });
+  };
+
+  const handleToggleObtained = () => {
+    updateObtained({
+      character_id: characterId,
+      item_id: item.id,
+      difficulty,
+      obtained: !item.obtained,
+    });
+  };
+
   return (
     <div
       className={`flex items-center gap-3 px-3 py-2 rounded-lg border transition-colors ${
@@ -114,7 +152,7 @@ const ItemRow: FC<{
           : colorMode === "dark"
             ? "border-slate-800 hover:bg-slate-800/50"
             : "border-slate-200 hover:bg-slate-50"
-      } ${item.obtained ? "opacity-50" : ""}`}
+      } ${item.obtained ? "opacity-50" : ""} ${wishError ? "border-rose-500/60" : ""}`}
     >
       {/* A dedicated checkbox, separate from the Wowhead icon link below —
           previously the only way to target an item was clicking the item
@@ -122,17 +160,28 @@ const ItemRow: FC<{
           look clickable, including the Wowhead icon (which actually opens
           a new tab instead, reading as "nothing happened" on this page). */}
       <button
-        onClick={onToggleWish}
-        title={item.wished ? "Remove from bonus roll targets" : "Target this item for bonus rolls"}
-        className={`shrink-0 transition-colors ${
-          item.wished
-            ? "text-cyan-400"
-            : colorMode === "dark"
-              ? "text-slate-600 hover:text-slate-300"
-              : "text-slate-400 hover:text-slate-600"
+        onClick={handleToggleWish}
+        disabled={isTogglingWish}
+        title={
+          wishError
+            ? wishError.message
+            : item.wished
+              ? "Remove from bonus roll targets"
+              : "Target this item for bonus rolls"
+        }
+        className={`shrink-0 transition-colors disabled:cursor-wait ${
+          wishError
+            ? "text-rose-400"
+            : item.wished
+              ? "text-cyan-400"
+              : colorMode === "dark"
+                ? "text-slate-600 hover:text-slate-300"
+                : "text-slate-400 hover:text-slate-600"
         }`}
       >
-        {item.wished ? (
+        {isTogglingWish ? (
+          <LoaderCircle className="w-5 h-5 animate-spin" />
+        ) : item.wished ? (
           <CheckSquare className="w-5 h-5" />
         ) : (
           <Square className="w-5 h-5" />
@@ -144,8 +193,9 @@ const ItemRow: FC<{
         iconUrl={item.icon_url}
       />
       <button
-        onClick={onToggleWish}
-        className="flex items-center gap-3 flex-1 min-w-0 text-left"
+        onClick={handleToggleWish}
+        disabled={isTogglingWish}
+        className="flex items-center gap-3 flex-1 min-w-0 text-left disabled:cursor-wait"
       >
         <span
           className={`text-sm font-medium font-montserrat truncate flex-1 ${
@@ -163,18 +213,29 @@ const ItemRow: FC<{
         <button
           onClick={(e) => {
             e.stopPropagation();
-            onToggleObtained();
+            handleToggleObtained();
           }}
-          title={item.obtained ? "Mark as not obtained" : "Mark as obtained"}
-          className={`flex items-center gap-1.5 px-2 py-1 rounded-md border shrink-0 transition-colors ${
-            item.obtained
-              ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10"
-              : colorMode === "dark"
-                ? "text-slate-400 border-slate-700 hover:text-emerald-400 hover:border-emerald-500/40"
-                : "text-slate-500 border-slate-300 hover:text-emerald-600 hover:border-emerald-400"
+          disabled={isTogglingObtained}
+          title={
+            obtainedError
+              ? obtainedError.message
+              : item.obtained
+                ? "Mark as not obtained"
+                : "Mark as obtained"
+          }
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-md border shrink-0 transition-colors disabled:cursor-wait ${
+            obtainedError
+              ? "text-rose-400 border-rose-500/60"
+              : item.obtained
+                ? "text-emerald-400 border-emerald-500/40 bg-emerald-500/10"
+                : colorMode === "dark"
+                  ? "text-slate-400 border-slate-700 hover:text-emerald-400 hover:border-emerald-500/40"
+                  : "text-slate-500 border-slate-300 hover:text-emerald-600 hover:border-emerald-400"
           }`}
         >
-          {item.obtained ? (
+          {isTogglingObtained ? (
+            <LoaderCircle className="w-4 h-4 animate-spin" />
+          ) : item.obtained ? (
             <CheckCircle2 className="w-4 h-4" />
           ) : (
             <Circle className="w-4 h-4" />
@@ -695,11 +756,6 @@ export const Loot: FC = () => {
     difficulty,
   );
 
-  const { mutate: toggleWish } = useToggleItemWish(teamId, selectedBossId ?? -1);
-  const { mutate: updateObtained } = useUpdateItemObtained(
-    teamId,
-    selectedBossId ?? -1,
-  );
   const {
     mutate: setPriority,
     error: setPriorityError,
@@ -1579,22 +1635,10 @@ export const Loot: FC = () => {
                           item={item}
                           bonusIds={bossLoot?.bonus_ids ?? ""}
                           colorMode={colorMode}
-                          onToggleWish={() =>
-                            toggleWish({
-                              character_id: selectedCharacterId!,
-                              item_id: item.id,
-                              difficulty,
-                              wished: !item.wished,
-                            })
-                          }
-                          onToggleObtained={() =>
-                            updateObtained({
-                              character_id: selectedCharacterId!,
-                              item_id: item.id,
-                              difficulty,
-                              obtained: !item.obtained,
-                            })
-                          }
+                          teamId={teamId}
+                          bossId={selectedBossId ?? -1}
+                          characterId={selectedCharacterId ?? -1}
+                          difficulty={difficulty}
                         />
                       ))
                     )}
