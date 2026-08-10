@@ -160,9 +160,24 @@ func GetBossLoot(c *gin.Context) {
 	}
 
 	var spec models.Specialization
-	if err := database.DB.Preload("WeaponTypes").First(&spec, *character.SpecializationID).Error; err != nil {
+	if err := database.DB.First(&spec, *character.SpecializationID).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to load specialization"})
 		return
+	}
+	// Deliberately not Preload("WeaponTypes") — confirmed by direct testing
+	// that GORM's many2many preload silently drops the associated
+	// WeaponType row whose primary key is 0 (Axe (One-Hand), seeded at ID 0
+	// to match Blizzard's own subclass numbering — same root cause as the
+	// seeding bug fixed in backend/seed/seed.go, but this is an independent
+	// bug on the read side, not fixed by that change). Loading the join
+	// explicitly via Pluck + a plain WHERE id IN (...) sidesteps GORM's
+	// association-scanning code entirely.
+	var weaponTypeIDs []uint
+	database.DB.Table("specialization_weapon_types").
+		Where("specialization_id = ?", spec.ID).
+		Pluck("weapon_type_id", &weaponTypeIDs)
+	if len(weaponTypeIDs) > 0 {
+		database.DB.Where("id IN ?", weaponTypeIDs).Find(&spec.WeaponTypes)
 	}
 
 	var boss models.Boss
