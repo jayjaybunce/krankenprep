@@ -1,4 +1,5 @@
 {
+  "type": "module",
   "scripts": {
     "pipe": "tsc spell_population.ts && node spell_population.js"
   },

@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type FC } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown } from "lucide-react";
+import { ChevronDown, LoaderCircle } from "lucide-react";
 import { useSetCharacterTierSlot } from "../../api/mutationHooks";
 import type { Character } from "../../api/queryHooks";
 import type { TierSlotEntry } from "../../api/queryHooks";
@@ -70,7 +70,9 @@ const TierSourceSelect: FC<{
   value: string | null;
   onChange: (source: string) => void;
   colorMode: string;
-}> = ({ value, onChange, colorMode }) => {
+  isPending?: boolean;
+  error?: Error | null;
+}> = ({ value, onChange, colorMode, isPending, error }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0, width: 0 });
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -102,12 +104,20 @@ const TierSourceSelect: FC<{
       <button
         ref={triggerRef}
         type="button"
+        disabled={isPending}
+        title={error?.message}
         onClick={() => (isOpen ? setIsOpen(false) : openMenu())}
-        className={`w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg text-xs font-bold font-montserrat transition-opacity hover:opacity-90 ${pill.className}`}
+        className={`w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg text-xs font-bold font-montserrat transition-opacity hover:opacity-90 disabled:cursor-wait ${
+          error ? "ring-2 ring-rose-500" : ""
+        } ${pill.className}`}
         style={pill.style}
       >
         <span className="truncate">{pill.label}</span>
-        <ChevronDown className="w-3 h-3 shrink-0" />
+        {isPending ? (
+          <LoaderCircle className="w-3 h-3 shrink-0 animate-spin" />
+        ) : (
+          <ChevronDown className="w-3 h-3 shrink-0" />
+        )}
       </button>
       {isOpen &&
         createPortal(
@@ -142,6 +152,43 @@ const TierSourceSelect: FC<{
   );
 };
 
+// One mutation-hook instance per (character, slot) cell — not per row —
+// so isPending/error are scoped to the single dropdown the user actually
+// clicked, not shared across all 5 slots for that character.
+const TierSlotCell: FC<{
+  teamId: number;
+  characterId: number;
+  slot: string;
+  value: string | null;
+  canEdit: boolean;
+  colorMode: string;
+}> = ({ teamId, characterId, slot, value, canEdit, colorMode }) => {
+  const { mutate: setTierSlot, isPending, error } = useSetCharacterTierSlot(teamId, characterId);
+
+  return (
+    <td
+      className={`px-1 py-1.5 border-t min-w-28 ${colorMode === "dark" ? "border-slate-800" : "border-slate-200"}`}
+    >
+      {canEdit ? (
+        <TierSourceSelect
+          value={value}
+          onChange={(source) => setTierSlot({ slot, source })}
+          colorMode={colorMode}
+          isPending={isPending}
+          error={error}
+        />
+      ) : (
+        <div
+          className={`w-full px-2 py-1.5 rounded-lg text-xs font-bold font-montserrat ${sourcePill(value ?? DEFAULT_SOURCE, colorMode).className}`}
+          style={sourcePill(value ?? DEFAULT_SOURCE, colorMode).style}
+        >
+          {sourcePill(value ?? DEFAULT_SOURCE, colorMode).label}
+        </div>
+      )}
+    </td>
+  );
+};
+
 const TierTrackerRow: FC<{
   character: Character;
   teamId: number;
@@ -151,8 +198,6 @@ const TierTrackerRow: FC<{
   stickyColClass: string;
   onSelectCharacter?: (specializationId: number) => void;
 }> = ({ character, teamId, slotByName, canEdit, colorMode, stickyColClass, onSelectCharacter }) => {
-  const { mutate: setTierSlot } = useSetCharacterTierSlot(teamId, character.id);
-
   const pcCount = TIER_SLOTS.reduce(
     (count, slot) => count + (ACQUIRED_SOURCES.has(slotByName.get(slot) ?? "") ? 1 : 0),
     0,
@@ -177,30 +222,17 @@ const TierTrackerRow: FC<{
           <span style={{ color: getClassColor(character.class) }}>{character.name}</span>
         )}
       </td>
-      {TIER_SLOTS.map((slot) => {
-        const value = slotByName.get(slot) ?? null;
-        return (
-          <td
-            key={slot}
-            className={`px-1 py-1.5 border-t min-w-28 ${colorMode === "dark" ? "border-slate-800" : "border-slate-200"}`}
-          >
-            {canEdit ? (
-              <TierSourceSelect
-                value={value}
-                onChange={(source) => setTierSlot({ slot, source })}
-                colorMode={colorMode}
-              />
-            ) : (
-              <div
-                className={`w-full px-2 py-1.5 rounded-lg text-xs font-bold font-montserrat ${sourcePill(value ?? DEFAULT_SOURCE, colorMode).className}`}
-                style={sourcePill(value ?? DEFAULT_SOURCE, colorMode).style}
-              >
-                {sourcePill(value ?? DEFAULT_SOURCE, colorMode).label}
-              </div>
-            )}
-          </td>
-        );
-      })}
+      {TIER_SLOTS.map((slot) => (
+        <TierSlotCell
+          key={slot}
+          teamId={teamId}
+          characterId={character.id}
+          slot={slot}
+          value={slotByName.get(slot) ?? null}
+          canEdit={canEdit}
+          colorMode={colorMode}
+        />
+      ))}
       <td
         className={`px-2 py-1.5 border-t text-center text-sm font-semibold font-montserrat ${
           pcCount >= 4

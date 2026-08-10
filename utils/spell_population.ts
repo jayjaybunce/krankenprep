@@ -6,7 +6,7 @@ import csvtojson from 'csvtojson'
 import format from 'pg-format'
 
 
-const BUILD_VERSION = "12.1.0.68209"
+const BUILD_VERSION = "12.1.0.69189"
 const TABLE_FORMAT = "csv"
 const URL_BASE = "https://wago.tools/db2"
 const COMMUNITY_LISTFILE_URL = "https://github.com/wowdev/wow-listfile/releases/latest/download/community-listfile.csv"
