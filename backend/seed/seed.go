@@ -236,8 +236,26 @@ func SeedSpecializations(db *gorm.DB) error {
 		if err := db.Where("name IN ?", s.WeaponTypes).Find(&weaponTypes).Error; err != nil {
 			return fmt.Errorf("finding weapon types for spec %s: %w", s.Name, err)
 		}
-		if err := db.Model(&spec).Association("WeaponTypes").Replace(weaponTypes); err != nil {
-			return fmt.Errorf("associating weapon types for spec %s: %w", s.Name, err)
+		// Deliberately not Association("WeaponTypes").Replace(weaponTypes) —
+		// confirmed by direct inspection that it silently drops the join row
+		// for any WeaponType whose ID is 0 (Axe (One-Hand) is seeded at ID 0
+		// to match Blizzard's own subclass numbering, same reason ArmorType/
+		// WeaponType use autoIncrement:false). GORM's association-replace
+		// path treats a zero-value ID as "no primary key set" and appears to
+		// skip inserting that join row, even though the referenced row
+		// itself already exists. Raw delete-then-insert sidesteps GORM's
+		// judgment about the association entirely, so a real ID of 0 is
+		// just another integer, not a special case.
+		if err := db.Exec("DELETE FROM specialization_weapon_types WHERE specialization_id = ?", spec.ID).Error; err != nil {
+			return fmt.Errorf("clearing weapon types for spec %s: %w", s.Name, err)
+		}
+		for _, wt := range weaponTypes {
+			if err := db.Exec(
+				"INSERT INTO specialization_weapon_types (specialization_id, weapon_type_id) VALUES (?, ?)",
+				spec.ID, wt.ID,
+			).Error; err != nil {
+				return fmt.Errorf("associating weapon type %s for spec %s: %w", wt.Name, s.Name, err)
+			}
 		}
 	}
 
