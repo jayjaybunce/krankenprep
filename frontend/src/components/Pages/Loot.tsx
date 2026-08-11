@@ -794,6 +794,28 @@ export const Loot: FC = () => {
     .filter((b): b is NonNullable<typeof b> => !!b)
     .map((b) => ({ id: b.id, name: b.name, icon_img_url: b.icon_img_url }));
 
+  // The currently-viewed boss tags along even if it has no priority yet —
+  // that's exactly the case when a conflicting priority gets rejected (see
+  // setPriorityError below): it needs to appear in the Fix Priorities
+  // modal's orderable list so the user can drag it into the slot they
+  // actually wanted, instead of only being able to reorder bosses that
+  // already had a priority set.
+  const selectedBossForFixModal = allCurrentBosses.find(
+    (b) => b.id === selectedBossId,
+  );
+  const bossesForFixModal: PriorityBoss[] =
+    selectedBossForFixModal &&
+    !prioritizedBossesInOrder.some((b) => b.id === selectedBossId)
+      ? [
+          ...prioritizedBossesInOrder,
+          {
+            id: selectedBossForFixModal.id,
+            name: selectedBossForFixModal.name,
+            icon_img_url: selectedBossForFixModal.icon_img_url,
+          },
+        ]
+      : prioritizedBossesInOrder;
+
   const [isFixPrioritiesModalOpen, setIsFixPrioritiesModalOpen] =
     useState(false);
   const [isDoneBannerDismissed, setIsDoneBannerDismissed] = useState(false);
@@ -1674,9 +1696,20 @@ export const Loot: FC = () => {
                         }`}
                       />
                       {setPriorityError && (
-                        <span className="text-xs font-montserrat text-rose-500">
-                          {setPriorityError.message}
-                        </span>
+                        <>
+                          <span className="text-xs font-montserrat text-rose-500">
+                            {setPriorityError.message}
+                          </span>
+                          <button
+                            onClick={() => {
+                              resetSetPriorityError();
+                              setIsFixPrioritiesModalOpen(true);
+                            }}
+                            className="text-xs font-montserrat font-semibold text-rose-500 underline underline-offset-2 shrink-0"
+                          >
+                            Fix priorities
+                          </button>
+                        </>
                       )}
                     </div>
                   )}
@@ -1731,7 +1764,7 @@ export const Loot: FC = () => {
           teamId={teamId}
           characterId={selectedCharacterId}
           difficulty={difficulty}
-          bosses={prioritizedBossesInOrder}
+          bosses={bossesForFixModal}
         />
       )}
 

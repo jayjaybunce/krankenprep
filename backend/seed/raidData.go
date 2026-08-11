@@ -396,10 +396,10 @@ var MidnightData = models.Expansion{
 							SplashImgUrl: "https://imagedelivery.net/CIR8y8W77F5MkiSF5jXvpg/bf0ab769-07b5-49b3-cbc2-37472df63400/public",
 						},
 						{
-							Name:         "The Bargained Crown",
+							Name:         "The Coiled Altar",
 							Order:        7,
-							Slug:         "the-bargained-crown",
-							ShortName:    "The Bargained Crown",
+							Slug:         "the-coiled-altar",
+							ShortName:    "The Coiled Altar",
 							IconImgUrl:   "https://imagedelivery.net/CIR8y8W77F5MkiSF5jXvpg/7eada24b-f0fa-4e75-9403-2885b6d85700/icon",
 							SplashImgUrl: "https://imagedelivery.net/CIR8y8W77F5MkiSF5jXvpg/2ea772b6-869a-4166-551a-bf96f7ad1600/public",
 						},
