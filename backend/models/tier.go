@@ -18,13 +18,15 @@ const (
 // explicitly stored rather than left as "no row yet" so a slot can be reset
 // back to it from the UI like any other value.
 const (
-	TierSourceNone          = "None"
-	TierSourceChampion      = "Champ"
-	TierSourceVeteran       = "Vet"
-	TierSourceHero          = "Hero"
-	TierSourceMyth          = "Myth"
-	TierSourceEmbellishment = "Embellishment"
-	TierSourceInVault       = "In Vault"
+	TierSourceNone            = "None"
+	TierSourceChampion        = "Champ"
+	TierSourceVeteran         = "Vet"
+	TierSourceHero            = "Hero"
+	TierSourceMyth            = "Myth"
+	TierSourceEmbellishment   = "Embellishment"
+	TierSourceInVaultChampion = "In Vault (Champ)"
+	TierSourceInVaultHero     = "In Vault (Hero)"
+	TierSourceInVaultMyth     = "In Vault (Myth)"
 )
 
 // CharacterTierSlot is a current-snapshot record of where (or whether) a

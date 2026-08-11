@@ -24,7 +24,9 @@ const TIER_SOURCES = [
   "Hero",
   "Myth",
   "Embellishment",
-  "In Vault",
+  "In Vault (Champ)",
+  "In Vault (Hero)",
+  "In Vault (Myth)",
 ] as const;
 
 const DEFAULT_SOURCE = "None";
@@ -35,7 +37,9 @@ const SOURCE_STYLES: Record<string, { label: string; bg: string; text: string }>
   Hero: { label: "Hero", bg: "#4338ca", text: "#ffffff" },
   Myth: { label: "Myth", bg: "#f97316", text: "#ffffff" },
   Embellishment: { label: "Embellishment", bg: "#64748b", text: "#ffffff" },
-  "In Vault": { label: "In Vault", bg: "#ede9fe", text: "#6d28d9" },
+  "In Vault (Champ)": { label: "In Vault (Champ)", bg: "#ede9fe", text: "#6d28d9" },
+  "In Vault (Hero)": { label: "In Vault (Hero)", bg: "#ede9fe", text: "#6d28d9" },
+  "In Vault (Myth)": { label: "In Vault (Myth)", bg: "#ede9fe", text: "#6d28d9" },
 };
 
 // "None" keeps the same theme-aware neutral background the very first pass

@@ -1451,7 +1451,7 @@ export const midnight: RaidData = [
         ]
       },
       {
-        name: "The Bargained Crown",
+        name: "The Coiled Altar",
         backgrounds: [
           { name: "Platform", src: "/midnight/thevenemousabyss/thecoiledaltar/platform.png" }
         ],

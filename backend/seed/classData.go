@@ -141,9 +141,9 @@ var specSeeds = []specSeed{
 	// weapon type (Blizzard subclass 9). Fist Weapon/Axe/Sword are still an
 	// unconfirmed placeholder guess for the rest of the list — only the
 	// Warglaive addition and Devourer's stat are confirmed.
-	{ClassName: "Demon Hunter", Name: "Havoc", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/demonhunter_havoc.png", WeaponTypes: []string{WeaponFistWeapon, WeaponAxe1H, WeaponSword1H, WeaponWarglaive}},
+	{ClassName: "Demon Hunter", Name: "Havoc", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/demonhunter_havoc.png", WeaponTypes: []string{WeaponFistWeapon, WeaponAxe1H, WeaponSword1H, WeaponWarglaive, WeaponDagger}},
 	{ClassName: "Demon Hunter", Name: "Vengeance", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "Tank", IconUrl: "/icons/classes/demonhunter_vengeance.png", WeaponTypes: []string{WeaponFistWeapon, WeaponAxe1H, WeaponSword1H, WeaponWarglaive}},
-	{ClassName: "Demon Hunter", Name: "Devourer", ArmorType: ArmorLeather, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/demonhunter_devourer.jpg", WeaponTypes: []string{WeaponFistWeapon, WeaponAxe1H, WeaponSword1H, WeaponWarglaive}},
+	{ClassName: "Demon Hunter", Name: "Devourer", ArmorType: ArmorLeather, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/demonhunter_devourer.jpg", WeaponTypes: []string{WeaponFistWeapon, WeaponAxe1H, WeaponSword1H, WeaponWarglaive, WeaponDagger}},
 
 	// Druid — Leather. Balance/Restoration Intellect, Feral/Guardian Agility.
 	{ClassName: "Druid", Name: "Balance", ArmorType: ArmorLeather, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/druid_balance.png", WeaponTypes: []string{WeaponDagger, WeaponFistWeapon, WeaponMace1H, WeaponStaff, WeaponPolearm}},
@@ -152,9 +152,9 @@ var specSeeds = []specSeed{
 	{ClassName: "Druid", Name: "Restoration", ArmorType: ArmorLeather, PrimaryStat: "Intellect", Role: "Healer", IconUrl: "/icons/classes/druid_restoration.png", WeaponTypes: []string{WeaponDagger, WeaponFistWeapon, WeaponMace1H, WeaponStaff, WeaponPolearm}},
 
 	// Evoker — Mail, Intellect, all specs. LOW CONFIDENCE (newest class).
-	{ClassName: "Evoker", Name: "Devastation", ArmorType: ArmorMail, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/evoker_devastation.png", WeaponTypes: []string{WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponDagger}},
-	{ClassName: "Evoker", Name: "Preservation", ArmorType: ArmorMail, PrimaryStat: "Intellect", Role: "Healer", IconUrl: "/icons/classes/evoker_preservation.png", WeaponTypes: []string{WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponDagger}},
-	{ClassName: "Evoker", Name: "Augmentation", ArmorType: ArmorMail, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/evoker_augmentation.png", WeaponTypes: []string{WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponDagger}},
+	{ClassName: "Evoker", Name: "Devastation", ArmorType: ArmorMail, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/evoker_devastation.png", WeaponTypes: []string{WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponDagger, WeaponStaff}},
+	{ClassName: "Evoker", Name: "Preservation", ArmorType: ArmorMail, PrimaryStat: "Intellect", Role: "Healer", IconUrl: "/icons/classes/evoker_preservation.png", WeaponTypes: []string{WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponDagger, WeaponStaff}},
+	{ClassName: "Evoker", Name: "Augmentation", ArmorType: ArmorMail, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/evoker_augmentation.png", WeaponTypes: []string{WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponDagger, WeaponStaff}},
 
 	// Hunter — Mail, Agility, all specs share a broad ranged+melee list.
 	// Note: "marksmenship" is a typo in the actual icon filename — copied

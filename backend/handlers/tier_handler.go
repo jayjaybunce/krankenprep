@@ -20,13 +20,15 @@ var validTierSlots = map[string]bool{
 }
 
 var validTierSources = map[string]bool{
-	models.TierSourceNone:          true,
-	models.TierSourceChampion:      true,
-	models.TierSourceVeteran:       true,
-	models.TierSourceHero:          true,
-	models.TierSourceMyth:          true,
-	models.TierSourceEmbellishment: true,
-	models.TierSourceInVault:       true,
+	models.TierSourceNone:            true,
+	models.TierSourceChampion:        true,
+	models.TierSourceVeteran:         true,
+	models.TierSourceHero:            true,
+	models.TierSourceMyth:            true,
+	models.TierSourceEmbellishment:   true,
+	models.TierSourceInVaultChampion: true,
+	models.TierSourceInVaultHero:     true,
+	models.TierSourceInVaultMyth:     true,
 }
 
 type tierSlotEntry struct {
