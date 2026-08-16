@@ -41,6 +41,7 @@ export const CharacterModal: FC<CharacterModalProps> = ({
   const [specializationId, setSpecializationId] = useState<
     string | string[] | null
   >("");
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -55,6 +56,7 @@ export const CharacterModal: FC<CharacterModalProps> = ({
           ? String(character.specialization_id)
           : "",
       );
+      setSaveError(null);
     }
   }, [isOpen, character]);
 
@@ -74,6 +76,7 @@ export const CharacterModal: FC<CharacterModalProps> = ({
     (Array.isArray(value) ? value[0] : value) ?? "";
 
   const handleSave = () => {
+    setSaveError(null);
     const specId = singleValue(specializationId);
     const payload = {
       name: name.trim(),
@@ -83,13 +86,18 @@ export const CharacterModal: FC<CharacterModalProps> = ({
       is_main: isMain,
       specialization_id: specId ? Number(specId) : null,
     };
+    const onError = (err: unknown) =>
+      setSaveError(err instanceof Error ? err.message : "Failed to save character.");
     if (isEditing && character) {
       updateCharacter(
         { characterId: character.id, ...payload },
-        { onSuccess: handleClose },
+        { onSuccess: handleClose, onError },
       );
     } else {
-      createCharacter({ playerId, ...payload }, { onSuccess: handleClose });
+      createCharacter(
+        { playerId, ...payload },
+        { onSuccess: handleClose, onError },
+      );
     }
   };
 
@@ -213,6 +221,9 @@ export const CharacterModal: FC<CharacterModalProps> = ({
           variant="default"
           helperText="Marking this as main will unmark any other main character for this player"
         />
+        {saveError && (
+          <p className="text-xs text-rose-500 font-montserrat">{saveError}</p>
+        )}
       </div>
     </Modal>
   );

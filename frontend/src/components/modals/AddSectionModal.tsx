@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { Modal } from "../Modal";
 import { Save, X as XIcon } from "lucide-react";
 import { useTheme } from "../../hooks";
-import { Dropdown, TextInput } from "../form";
+import { Dropdown, TextInput, Textarea } from "../form";
 import { Card, type CardVariant } from "../Card";
 import Markdown from "react-markdown";
 import Badge from "../Badge";
@@ -15,7 +15,6 @@ export type AddSectionForm = {
   description: string;
   tags: string[];
   tagInput: string;
-  notes?: string;
 };
 
 type AddSectionModalProps = {
@@ -91,18 +90,21 @@ export const AddSectionModal: FC<AddSectionModalProps> = ({
     onSave(formState);
   };
 
-  const cardVariants = [
-    "default",
-    "elevated",
-    "gradient",
-    "bordered",
-    "solid",
-    "neon",
-    "neon-gradient",
-    "outlined",
-    "success",
-    "warning",
-    "danger",
+  // value stays the raw variant name (matches CardVariant / the backend
+  // field), label is display-only — a raid officer sees "Neon Gradient",
+  // not "neon-gradient".
+  const cardVariants: { value: CardVariant; label: string }[] = [
+    { value: "default", label: "Default" },
+    { value: "elevated", label: "Elevated" },
+    { value: "gradient", label: "Gradient" },
+    { value: "bordered", label: "Bordered" },
+    { value: "solid", label: "Solid" },
+    { value: "neon", label: "Neon" },
+    { value: "neon-gradient", label: "Neon Gradient" },
+    { value: "outlined", label: "Outlined" },
+    { value: "success", label: "Success (green)" },
+    { value: "warning", label: "Warning (amber)" },
+    { value: "danger", label: "Danger (red)" },
   ];
 
   return (
@@ -110,7 +112,7 @@ export const AddSectionModal: FC<AddSectionModalProps> = ({
       isOpen={isOpen}
       onClose={() => onClose(false)}
       title={initialValues ? `Edit section in ${title}` : `Add section to ${title}`}
-      subtitle="Share resources with your teammates or anyone you want"
+      subtitle="Organize this boss's strategy for your team"
       variant="neon-gradient"
       size="xl"
       actions={
@@ -137,7 +139,6 @@ export const AddSectionModal: FC<AddSectionModalProps> = ({
               handleSave();
               setFormState(defaultFormState);
             }}
-            // disabled={!acceptTerms || !teamName}
             className={`
               px-4 py-2 rounded-xl font-medium font-montserrat
               transition-all duration-200
@@ -148,7 +149,7 @@ export const AddSectionModal: FC<AddSectionModalProps> = ({
           >
             <div className="flex items-center gap-2">
               <Save className="w-4 h-4" />
-              {/* {isPending ? <LoaderCircle /> : "Create Team"} */}
+              {initialValues ? "Save Changes" : "Save Section"}
             </div>
           </button>
         </>
@@ -161,8 +162,16 @@ export const AddSectionModal: FC<AddSectionModalProps> = ({
             variant="minimal"
             className="font-montserrat"
             label="Name Your Section"
-            placeholder="...."
+            placeholder="e.g. Phase 1: Add Legion"
             onChange={(e) => handleFormChange("sectionName", e.target.value)}
+          />
+          <Textarea
+            value={formState.description}
+            variant="minimal"
+            className="font-montserrat"
+            label="Description"
+            placeholder="What should your team know about this section?"
+            onChange={(e) => handleFormChange("description", e.target.value)}
           />
         </div>
 
@@ -183,6 +192,7 @@ export const AddSectionModal: FC<AddSectionModalProps> = ({
                 {tag}
                 <button
                   onClick={() => handleRemoveTag(tag)}
+                  aria-label={`Remove tag ${tag}`}
                   className="hover:bg-cyan-500/30 rounded-full p-0.5 transition-colors"
                 >
                   <X className="w-3 h-3" />
@@ -201,6 +211,7 @@ export const AddSectionModal: FC<AddSectionModalProps> = ({
             />
             <button
               onClick={handleAddTag}
+              aria-label="Add tag"
               className={`
                 px-4 py-2 rounded-xl font-medium font-montserrat
                 transition-all duration-200
@@ -216,23 +227,21 @@ export const AddSectionModal: FC<AddSectionModalProps> = ({
           </div>
         </div>
 
-        <div className="flex flex-row gap-4">
+        <div className="flex flex-col gap-1">
           <Dropdown
-            label="Variant"
+            label="Style"
             value={formState.variant}
-            // disabled={formState.region == ""}
             onChange={(e) => {
               if (typeof e != "string") return;
               handleFormChange("variant", e);
             }}
             searchable
-            options={cardVariants.map((v) => {
-              return {
-                value: v,
-                label: v,
-              };
-            })}
+            options={cardVariants}
           />
+          <p className="text-xs font-montserrat text-slate-500 dark:text-slate-500">
+            Changes the section card's color and border — see the preview
+            below.
+          </p>
         </div>
       </div>
       <div className="flex flex-col gap-4 pt-4">

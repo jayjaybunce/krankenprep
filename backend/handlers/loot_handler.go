@@ -362,7 +362,7 @@ func UpdateItemObtained(c *gin.Context) {
 		return
 	}
 	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "item is not on this character's wishlist"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "item is not targeted by this character"})
 		return
 	}
 

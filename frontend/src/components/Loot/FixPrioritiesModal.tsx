@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FC } from "react";
 import { useDrag, useDrop } from "react-dnd";
 import update from "immutability-helper";
-import { GripVertical } from "lucide-react";
+import { GripVertical, X } from "lucide-react";
 import { Modal } from "../Modal";
 import { useTheme } from "../../hooks";
 import { useReorderBossPriorities } from "../../api/mutationHooks";
@@ -22,8 +22,11 @@ const BossPriorityRow: FC<{
   boss: PriorityBoss;
   index: number;
   moveRow: (dragIndex: number, hoverIndex: number) => void;
+  // Drops this boss from the list entirely (unsets its priority) — separate
+  // from moveRow since it changes the list's length, not just its order.
+  removeRow: (index: number) => void;
   colorMode: string;
-}> = ({ boss, index, moveRow, colorMode }) => {
+}> = ({ boss, index, moveRow, removeRow, colorMode }) => {
   const ref = useRef<HTMLDivElement>(null);
 
   // Same hover/swap mechanics as PhaseCard.tsx — reused verbatim rather than
@@ -91,10 +94,22 @@ const BossPriorityRow: FC<{
         className="w-8 h-8 rounded-md shrink-0"
       />
       <span
-        className={`text-sm font-medium font-montserrat truncate ${colorMode === "dark" ? "text-slate-200" : "text-slate-800"}`}
+        className={`text-sm font-medium font-montserrat truncate flex-1 ${colorMode === "dark" ? "text-slate-200" : "text-slate-800"}`}
       >
         {boss.name}
       </span>
+      <button
+        type="button"
+        onClick={() => removeRow(index)}
+        title={`Unset priority on ${boss.name}`}
+        className={`shrink-0 p-1 rounded-md transition-colors ${
+          colorMode === "dark"
+            ? "text-slate-500 hover:text-rose-400 hover:bg-slate-800"
+            : "text-slate-400 hover:text-rose-500 hover:bg-slate-100"
+        }`}
+      >
+        <X className="w-3.5 h-3.5" />
+      </button>
     </div>
   );
 };
@@ -119,6 +134,7 @@ export const FixPrioritiesModal: FC<FixPrioritiesModalProps> = ({
 }) => {
   const { colorMode } = useTheme();
   const [orderedBosses, setOrderedBosses] = useState<PriorityBoss[]>(bosses);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const { mutate: reorder, isPending } = useReorderBossPriorities(
     teamId,
     characterId,
@@ -130,6 +146,7 @@ export const FixPrioritiesModal: FC<FixPrioritiesModalProps> = ({
     // in-progress drag.
     if (isOpen) {
       setOrderedBosses(bosses);
+      setSaveError(null);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen]);
@@ -145,10 +162,25 @@ export const FixPrioritiesModal: FC<FixPrioritiesModalProps> = ({
     );
   };
 
+  // Drops a boss from the list — unsetting its priority. Nothing is sent
+  // until "Save order" is clicked, same as reordering; the removed boss's
+  // slot is closed automatically since this list is the source of truth for
+  // the save (index 0 -> priority 1, etc).
+  const removeRow = (index: number) => {
+    setOrderedBosses((prev) => update(prev, { $splice: [[index, 1]] }));
+  };
+
   const handleSave = () => {
+    setSaveError(null);
     reorder(
       { difficulty, boss_ids: orderedBosses.map((b) => b.id) },
-      { onSuccess: () => onClose() },
+      {
+        onSuccess: () => onClose(),
+        onError: (err) =>
+          setSaveError(
+            err instanceof Error ? err.message : "Failed to save priority order.",
+          ),
+      },
     );
   };
 
@@ -157,7 +189,7 @@ export const FixPrioritiesModal: FC<FixPrioritiesModalProps> = ({
       isOpen={isOpen}
       onClose={() => onClose()}
       title="Fix priorities"
-      subtitle={`Drag to reorder your ${difficulty} priorities — position in the list is the new priority.`}
+      subtitle={`Drag to reorder your ${difficulty} priorities — position in the list is the new priority. Click ✕ to unset a boss entirely.`}
       actions={
         <>
           <button
@@ -181,15 +213,28 @@ export const FixPrioritiesModal: FC<FixPrioritiesModalProps> = ({
       }
     >
       <div className="space-y-2">
-        {orderedBosses.map((boss, index) => (
-          <BossPriorityRow
-            key={boss.id}
-            boss={boss}
-            index={index}
-            moveRow={moveRow}
-            colorMode={colorMode}
-          />
-        ))}
+        {saveError && (
+          <p className="text-sm font-montserrat text-rose-500">{saveError}</p>
+        )}
+        {orderedBosses.length === 0 ? (
+          <p
+            className={`text-sm font-montserrat ${colorMode === "dark" ? "text-slate-500" : "text-slate-400"}`}
+          >
+            No priorities set — save to clear them all, or cancel to leave
+            things as they are.
+          </p>
+        ) : (
+          orderedBosses.map((boss, index) => (
+            <BossPriorityRow
+              key={boss.id}
+              boss={boss}
+              index={index}
+              moveRow={moveRow}
+              removeRow={removeRow}
+              colorMode={colorMode}
+            />
+          ))
+        )}
       </div>
     </Modal>
   );

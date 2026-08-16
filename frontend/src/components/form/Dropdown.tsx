@@ -391,10 +391,14 @@ export const Dropdown = <T = string,>({
 
         <div className="flex items-center gap-1 flex-shrink-0">
           {clearable && selectedOptions.length > 0 && (
-            <X
-              className={`${currentSize.icon} hover:scale-110 transition-transform`}
+            <button
+              type="button"
+              aria-label="Clear selection"
               onClick={handleClear}
-            />
+              className="hover:scale-110 transition-transform"
+            >
+              <X className={currentSize.icon} />
+            </button>
           )}
           <ChevronDown
             className={`${currentSize.icon} transition-transform duration-200 ${

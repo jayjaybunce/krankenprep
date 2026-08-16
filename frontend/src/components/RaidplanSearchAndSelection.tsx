@@ -68,7 +68,7 @@ const ListView: FC<ListViewProps> = ({
         <div className="w-5 h-5 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
       </div>
     ) : filtered.length > 0 ? (
-      <div className="flex-1 overflow-y-auto p-1.5 unfuck-scrollbar-1">
+      <div className="flex-1 overflow-y-auto p-1.5 scrollbar-indigo">
         {filtered.map((plan) => (
           <div
             key={plan.id}
@@ -134,6 +134,7 @@ const TabSelectionView: FC<TabSelectionViewProps> = ({
       >
         <button
           onClick={onBack}
+          title="Back to plan list"
           className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-slate-200 transition-colors"
         >
           <ChevronLeft className="w-4 h-4" />
@@ -188,12 +189,12 @@ const TabSelectionView: FC<TabSelectionViewProps> = ({
           onClick={onInsertPlan}
           className="w-full text-left px-2 py-1 rounded text-xs font-medium text-slate-400 hover:text-cyan-400 hover:bg-cyan-500/10 transition-all font-montserrat"
         >
-          Insert link (no specific slide)
+          Link the whole plan (no specific slide)
         </button>
       </div>
 
       {/* Tab thumbnails — background images only (lightweight) */}
-      <div className="flex-1 overflow-y-auto p-3 unfuck-scrollbar-1">
+      <div className="flex-1 overflow-y-auto p-3 scrollbar-indigo">
         <p className="text-xs text-slate-500 mb-2 font-montserrat">
           Or select a specific slide:
         </p>

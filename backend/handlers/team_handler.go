@@ -28,6 +28,9 @@ type CreatTeamPayload struct {
 	WowAuditIntegration bool   `json:"wowaudit_integration"`
 	WowAuditUrl         string `json:"wowaudit_url"`
 	WowAuditApiKey      string `json:"wowaudit_api_key"`
+	WowUtilsIntegration bool   `json:"wowutils_integration"`
+	WowUtilsGroupId     string `json:"wowutils_group_id"`
+	WowUtilsApiKey      string `json:"wowutils_api_key"`
 }
 
 func CreateTeam(c *gin.Context) {
@@ -53,7 +56,18 @@ func CreateTeam(c *gin.Context) {
 	log.Print("Attempting to create team with data")
 	log.Print(createTeamPayload)
 
-	team := models.Team{Name: createTeamPayload.Name, RioUrl: createTeamPayload.RioUrl, Region: createTeamPayload.Region, Server: createTeamPayload.Server, WowAuditIntegration: createTeamPayload.WowAuditIntegration, WowAuditUrl: createTeamPayload.WowAuditUrl, WowAuditApiKey: createTeamPayload.WowAuditApiKey}
+	team := models.Team{
+		Name:                createTeamPayload.Name,
+		RioUrl:              createTeamPayload.RioUrl,
+		Region:              createTeamPayload.Region,
+		Server:              createTeamPayload.Server,
+		WowAuditIntegration: createTeamPayload.WowAuditIntegration,
+		WowAuditUrl:         createTeamPayload.WowAuditUrl,
+		WowAuditApiKey:      createTeamPayload.WowAuditApiKey,
+		WowUtilsIntegration: createTeamPayload.WowUtilsIntegration,
+		WowUtilsGroupId:     createTeamPayload.WowUtilsGroupId,
+		WowUtilsApiKey:      createTeamPayload.WowUtilsApiKey,
+	}
 	result := gorm.WithResult()
 	err := gorm.G[models.Team](database.DB, result).Create(ctx, &team)
 	if err != nil {
@@ -76,6 +90,7 @@ func CreateTeam(c *gin.Context) {
 	// // Reload team with roles to include in response
 	// database.DB.Preload("Roles").First(&team, team.ID)
 
+	team.WowUtilsApiKeySet = team.WowUtilsApiKey != ""
 	c.JSON(http.StatusCreated, gin.H{
 		"message": "Team created successfully",
 		"team":    team,
@@ -86,6 +101,9 @@ type UpdateTeamPayload struct {
 	WowAuditIntegration bool   `json:"wowaudit_integration"`
 	WowAuditUrl         string `json:"wowaudit_url"`
 	WowAuditApiKey      string `json:"wowaudit_api_key"`
+	WowUtilsIntegration bool   `json:"wowutils_integration"`
+	WowUtilsGroupId     string `json:"wowutils_group_id"`
+	WowUtilsApiKey      string `json:"wowutils_api_key"`
 }
 
 func UpdateTeam(c *gin.Context) {
@@ -131,11 +149,22 @@ func UpdateTeam(c *gin.Context) {
 		team.WowAuditApiKey = payload.WowAuditApiKey
 	}
 
+	team.WowUtilsIntegration = payload.WowUtilsIntegration
+	team.WowUtilsGroupId = payload.WowUtilsGroupId
+	// Blank key on update means "keep the existing one" — same convention as
+	// WowAuditApiKey above. Needed here specifically because the client
+	// never gets the real key back (see Team.WowUtilsApiKey), so re-saving
+	// settings without retyping the key must not wipe it.
+	if payload.WowUtilsApiKey != "" {
+		team.WowUtilsApiKey = payload.WowUtilsApiKey
+	}
+
 	if err := database.DB.Save(&team).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to update team"})
 		return
 	}
 
+	team.WowUtilsApiKeySet = team.WowUtilsApiKey != ""
 	c.JSON(http.StatusOK, team)
 }
 
@@ -237,6 +266,7 @@ func GetTeamById(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "team not found"})
 		return
 	}
+	team.WowUtilsApiKeySet = team.WowUtilsApiKey != ""
 	c.JSON(http.StatusOK, team)
 
 }

@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { ExternalLink, Eye } from "lucide-react";
+import { ExternalLink } from "lucide-react";
 import { useSearchIcons } from "../api/queryHooks";
 import { useTheme } from "../hooks";
 
@@ -54,21 +54,12 @@ const IconSearchResult: FC<IconSearchResultProps> = ({
         href={`https://www.wowhead.com/spell=${spell_id}`}
         target="_blank"
         rel="noopener noreferrer"
+        title="View on Wowhead"
         onClick={(e) => e.stopPropagation()}
         className="shrink-0 p-1 rounded text-slate-500 hover:text-cyan-400 transition-colors duration-200"
       >
-        <Eye className="w-3.5 h-3.5" />
-      </a>
-      <button
-        type="button"
-        onClick={(e) => {
-          e.stopPropagation();
-          window.open(`https://wowhead.com/spell=${spell_id}`, "_blank", "noopener,noreferrer");
-        }}
-        className="shrink-0 p-1 rounded text-slate-500 hover:text-cyan-400 transition-colors duration-200"
-      >
         <ExternalLink className="w-3.5 h-3.5" />
-      </button>
+      </a>
     </div>
   );
 };
@@ -94,7 +85,7 @@ const SpellSearchAndSelection: FC<SpellSearchAndSelectionProps> = ({
         fixed z-50 flex flex-col
         rounded-xl border overflow-hidden
         animate-in fade-in slide-in-from-top-2 duration-200
-        unfuck-scrollbar-1
+        scrollbar-indigo
         ${
           colorMode === "dark"
             ? "bg-slate-900/95 backdrop-blur-xl border-slate-800 shadow-2xl shadow-slate-950/50 text-slate-50"

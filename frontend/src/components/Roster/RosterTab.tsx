@@ -2,6 +2,7 @@ import { type FC, useState } from "react";
 import { UserPlus, Plus, Pencil, Trash2, Star, Users, Link2, Link2Off } from "lucide-react";
 import { useTheme, useUser } from "../../hooks";
 import Button from "../Button";
+import Alert from "../Alert";
 import type { Character, MyRole, Player, Team } from "../../api/queryHooks";
 import {
   useClaimPlayer,
@@ -20,6 +21,7 @@ type CharacterChipProps = {
   colorMode: string;
   isAdmin: boolean;
   onEdit: () => void;
+  onActionError: (fallback: string) => (err: unknown) => void;
 };
 
 const CharacterChip: FC<CharacterChipProps> = ({
@@ -28,6 +30,7 @@ const CharacterChip: FC<CharacterChipProps> = ({
   colorMode,
   isAdmin,
   onEdit,
+  onActionError,
 }) => {
   const [expanded, setExpanded] = useState(false);
   const { mutate: updateCharacter, isPending: isSettingMain } =
@@ -103,15 +106,18 @@ const CharacterChip: FC<CharacterChipProps> = ({
               size="xs"
               disabled={isSettingMain}
               onClick={() =>
-                updateCharacter({
-                  characterId: character.id,
-                  name: character.name,
-                  class: character.class,
-                  realm: character.realm,
-                  region: character.region,
-                  is_main: true,
-                  specialization_id: character.specialization_id,
-                })
+                updateCharacter(
+                  {
+                    characterId: character.id,
+                    name: character.name,
+                    class: character.class,
+                    realm: character.realm,
+                    region: character.region,
+                    is_main: true,
+                    specialization_id: character.specialization_id,
+                  },
+                  { onError: onActionError("Couldn't set that character as main — try again.") },
+                )
               }
             >
               <Star className="w-3 h-3" />
@@ -131,7 +137,11 @@ const CharacterChip: FC<CharacterChipProps> = ({
                 variant="danger"
                 size="xs"
                 disabled={isDeleting}
-                onClick={() => deleteCharacter(character.id)}
+                onClick={() =>
+                  deleteCharacter(character.id, {
+                    onError: onActionError("Couldn't delete that character — try again."),
+                  })
+                }
               >
                 <Trash2 className="w-3 h-3" />
               </Button>
@@ -153,6 +163,7 @@ type PlayerCardProps = {
   onEditPlayer: () => void;
   onAddCharacter: () => void;
   onEditCharacter: (character: Character) => void;
+  onActionError: (fallback: string) => (err: unknown) => void;
 };
 
 const PlayerCard: FC<PlayerCardProps> = ({
@@ -165,6 +176,7 @@ const PlayerCard: FC<PlayerCardProps> = ({
   onEditPlayer,
   onAddCharacter,
   onEditCharacter,
+  onActionError,
 }) => {
   const { mutate: deletePlayer, isPending: isDeleting } =
     useDeletePlayer(teamId);
@@ -216,7 +228,11 @@ const PlayerCard: FC<PlayerCardProps> = ({
               variant="ghost"
               size="xs"
               disabled={isUnclaiming}
-              onClick={() => unclaimPlayer(player.id)}
+              onClick={() =>
+                unclaimPlayer(player.id, {
+                  onError: onActionError("Couldn't unclaim that player — try again."),
+                })
+              }
             >
               <Link2Off className="w-3 h-3" />
               Unclaim
@@ -227,7 +243,11 @@ const PlayerCard: FC<PlayerCardProps> = ({
               variant="secondary"
               size="xs"
               disabled={isClaiming}
-              onClick={() => claimPlayer(player.id)}
+              onClick={() =>
+                claimPlayer(player.id, {
+                  onError: onActionError("Couldn't claim that player — try again."),
+                })
+              }
             >
               <Link2 className="w-3 h-3" />
               Claim
@@ -246,7 +266,11 @@ const PlayerCard: FC<PlayerCardProps> = ({
                 variant="danger"
                 size="xs"
                 disabled={isDeleting}
-                onClick={() => deletePlayer(player.id)}
+                onClick={() =>
+                  deletePlayer(player.id, {
+                    onError: onActionError("Couldn't delete that player — try again."),
+                  })
+                }
               >
                 <Trash2 className="w-3 h-3" />
               </Button>
@@ -265,13 +289,18 @@ const PlayerCard: FC<PlayerCardProps> = ({
               colorMode={colorMode}
               isAdmin={isAdmin}
               onEdit={() => onEditCharacter(c)}
+              onActionError={onActionError}
             />
           ))
         ) : (
           <p
             className={`px-3 py-3 text-sm ${colorMode === "dark" ? "text-slate-500" : "text-slate-400"}`}
           >
-            No characters yet
+            {isAdmin
+              ? "No characters yet — click + Character above to add one."
+              : isMine
+                ? "No characters yet. Ask your admin to add your character so you can set up your loot wishlist."
+                : "No characters yet"}
           </p>
         )}
       </div>
@@ -299,11 +328,15 @@ export const RosterTab: FC<RosterTabProps> = ({ team, teamId, roles, isAdmin }) 
   const [editingCharacter, setEditingCharacter] = useState<Character | null>(
     null,
   );
+  const [actionError, setActionError] = useState<string | null>(null);
+  const onActionError = (fallback: string) => (err: unknown) =>
+    setActionError(err instanceof Error ? err.message : fallback);
 
   const players = team.players ?? [];
   const myClaimedPlayerId = players.find(
     (p) => p.user && user && String(p.user.id) === String(user.id),
   )?.id;
+  const hasUnclaimedPlayer = players.some((p) => !p.user);
 
   const openAddPlayer = () => {
     setEditingPlayer(null);
@@ -356,6 +389,31 @@ export const RosterTab: FC<RosterTabProps> = ({ team, teamId, roles, isAdmin }) 
         </div>
 
         <div className="p-4">
+          {actionError && (
+            <div className="mb-4">
+              <Alert type="danger" title="Something went wrong">
+                {actionError}
+              </Alert>
+            </div>
+          )}
+          {players.length > 0 && myClaimedPlayerId === undefined && (
+            <div className="mb-4">
+              {hasUnclaimedPlayer ? (
+                <Alert type="info" title="Claim your character">
+                  Find your name in the list below and click{" "}
+                  <strong>Claim</strong> to link your account to it — that's
+                  how the app knows which character's wishlist and
+                  priorities are yours.
+                </Alert>
+              ) : (
+                <Alert type="warning" title="You haven't been added yet">
+                  Every player on this roster is already claimed by someone
+                  else. Ask your admin to add a player entry for you so you
+                  can claim it.
+                </Alert>
+              )}
+            </div>
+          )}
           {players.length > 0 ? (
             <div className="flex flex-col gap-3">
               {players.map((player) => (
@@ -372,6 +430,7 @@ export const RosterTab: FC<RosterTabProps> = ({ team, teamId, roles, isAdmin }) 
                   onEditCharacter={(character) =>
                     openEditCharacter(player.id, character)
                   }
+                  onActionError={onActionError}
                 />
               ))}
             </div>
@@ -381,7 +440,9 @@ export const RosterTab: FC<RosterTabProps> = ({ team, teamId, roles, isAdmin }) 
                 colorMode === "dark" ? "text-slate-500" : "text-slate-400"
               }`}
             >
-              No players added yet
+              {isAdmin
+                ? "No players yet — click Add Player above to build your roster."
+                : "Your team hasn't added any players yet. Ask your admin to add you to the roster."}
             </p>
           )}
         </div>

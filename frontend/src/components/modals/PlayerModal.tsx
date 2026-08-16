@@ -27,6 +27,7 @@ export const PlayerModal: FC<PlayerModalProps> = ({
   const [name, setName] = useState("");
   const [battletag, setBattletag] = useState("");
   const [userId, setUserId] = useState<number | number[] | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -34,6 +35,7 @@ export const PlayerModal: FC<PlayerModalProps> = ({
       setName(player?.name ?? "");
       setBattletag(player?.battletag ?? "");
       setUserId(player?.user_id ?? null);
+      setSaveError(null);
     }
   }, [isOpen, player]);
 
@@ -46,19 +48,22 @@ export const PlayerModal: FC<PlayerModalProps> = ({
   const handleClose = () => onClose(false);
 
   const handleSave = () => {
+    setSaveError(null);
     const linkedUserId = Array.isArray(userId) ? userId[0] : userId;
     const payload = {
       name: name.trim(),
       battletag: battletag.trim(),
       user_id: linkedUserId,
     };
+    const onError = (err: unknown) =>
+      setSaveError(err instanceof Error ? err.message : "Failed to save player.");
     if (isEditing && player) {
       updatePlayer(
         { playerId: player.id, ...payload },
-        { onSuccess: handleClose },
+        { onSuccess: handleClose, onError },
       );
     } else {
-      createPlayer(payload, { onSuccess: handleClose });
+      createPlayer(payload, { onSuccess: handleClose, onError });
     }
   };
 
@@ -108,7 +113,7 @@ export const PlayerModal: FC<PlayerModalProps> = ({
           value={battletag}
           variant="minimal"
           className="font-montserrat"
-          label="Battletag"
+          label="BattleTag"
           placeholder="Name#1234"
           onChange={(e) => setBattletag(e.target.value)}
         />
@@ -121,6 +126,9 @@ export const PlayerModal: FC<PlayerModalProps> = ({
           clearable
           options={userOptions}
         />
+        {saveError && (
+          <p className="text-xs text-rose-500 font-montserrat">{saveError}</p>
+        )}
       </div>
     </Modal>
   );

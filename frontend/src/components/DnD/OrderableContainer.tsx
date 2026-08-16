@@ -41,7 +41,7 @@ export const OrderableContainer: FC<
           id={item.id}
           moveCard={moveItem}
           phaseNotes={item.posts}
-          subtitle={`${item.posts.length} note${item.posts.length > 1 ? "s" : ""}`}
+          subtitle={`${item.posts.length} note${item.posts.length !== 1 ? "s" : ""}`}
           title={item?.name}
           phaseNumber={item?.phaseNumber}
           hasNewNotes={item?.hasNewNotes ?? true}

@@ -23,7 +23,6 @@ import { PlanTab } from "./PlanTab";
 import { useCreateRaidplan, useUpdateRaidplan } from "../../api/mutationHooks";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { RaidData } from "../../data/raids";
-// import { raidData } from "../../data/raids";
 
 export type Shape = {
   type: AllowedShapes;
@@ -135,12 +134,6 @@ const Planner: FC<PlannerProps> = ({
 
   const isViewing = mode === "view";
 
-  // const isEditing = status === "edit";
-
-  // useEffect(() => {
-  //   setTabs(data?.content);
-  // }, [data]);
-
   const handleSave = () => {
     if (mode === "create") {
       createRaidplan(
@@ -163,7 +156,6 @@ const Planner: FC<PlannerProps> = ({
       );
     }
     if (mode === "edit") {
-      console.log("Attempting update");
       updateRaidPlan({
         boss: tabs[0].boss,
         name: planName,
@@ -326,11 +318,6 @@ const Planner: FC<PlannerProps> = ({
     const transform = groupNode.getAbsoluteTransform();
     const copyTabs = [...tabs];
 
-    // Get the group's current position, rotation, and scale
-    // const groupPos = groupNode.position();
-    // const groupRotation = groupNode.rotation();
-    // const groupScale = { x: groupNode.scaleX(), y: groupNode.scaleY() };
-
     copyTabs[activeTab].shapes = copyTabs[activeTab].shapes.map((shape) => {
       if (!ids.includes(shape.id)) return shape;
 
@@ -413,7 +400,6 @@ const Planner: FC<PlannerProps> = ({
   };
 
   const handleAddShape = (type: AllowedShapes) => {
-    console.log("hi");
     if (!contextMenu) return;
 
     // Only shapes get 0.7 opacity, images get full opacity (1.0)
@@ -436,7 +422,7 @@ const Planner: FC<PlannerProps> = ({
         strokeWidth: 0,
         stroke: "",
 
-        fill: "bladk",
+        fill: "black",
         rotation: 0,
         radiusX: 40,
         radiusY: 40,
@@ -668,12 +654,6 @@ const Planner: FC<PlannerProps> = ({
           e.preventDefault();
         }
       }
-
-      // Toggle drawing mode (D key)
-      // if (e.key === "d" || e.key === "D") {
-      //   setDrawingMode((prev) => !prev);
-      //   e.preventDefault();
-      // }
     };
 
     window.addEventListener("keydown", handleKeyDown);
@@ -809,7 +789,7 @@ const Planner: FC<PlannerProps> = ({
                     : ""
                 }
               >
-                <option value="">-- Select a Boss --</option>
+                <option value="">Choose a boss...</option>
                 {raidData?.map((raid, raidIndex) => (
                   <optgroup key={raidIndex} label={raid.raidName}>
                     {raid.bosses.map((boss, bossIndex) => (
@@ -920,6 +900,7 @@ const Planner: FC<PlannerProps> = ({
             {!isViewing && (
               <button
                 onClick={handleAddTab}
+                title="Add slide"
                 className={`
                     flex items-center justify-center p-2 rounded-xl
                     border transition-all duration-200

@@ -34,34 +34,43 @@ type ToolbarShape = {
   toolbarEl: ReactNode;
   type: AllowedShapes;
   src?: string;
+  // Shown as a hover tooltip — every drag-and-drop icon in this toolbar is
+  // otherwise unlabeled, so a first-time user has no way to tell e.g. which
+  // class icon is which spec, or what "mdps"/"rdps" mean, without this.
+  label: string;
 };
 
 const shapes: ToolbarShape[] = [
   {
     toolbarEl: <Square height={24} width={24} fill="white" stroke="white" />,
     type: "rect",
+    label: "Rectangle",
   },
   {
     toolbarEl: (
       <CircleIcon height={24} width={24} fill="white" stroke="white" />
     ),
     type: "circle",
+    label: "Circle",
   },
   {
     toolbarEl: (
       <TriangleIcon height={24} width={24} fill="white" stroke="white" />
     ),
     type: "triangle",
+    label: "Triangle",
   },
   {
     toolbarEl: (
       <TriangleRight height={24} width={24} fill="white" stroke="white" />
     ),
     type: "right triangle",
+    label: "Right Triangle",
   },
   {
     toolbarEl: <Type height={24} width={24} stroke="white" />,
     type: "text",
+    label: "Text",
   },
   {
     toolbarEl: (
@@ -71,6 +80,7 @@ const shapes: ToolbarShape[] = [
       </svg>
     ),
     type: "ring",
+    label: "Ring",
   },
 ];
 
@@ -79,41 +89,49 @@ const worldMarkers: ToolbarShape[] = [
     toolbarEl: <img src="/star.png" className="h-6 w-6" />,
     type: "img",
     src: "/star.png",
+    label: "Star marker",
   },
   {
     toolbarEl: <img src="/circle.png" className="h-6 w-6" />,
     type: "img",
     src: "/circle.png",
+    label: "Circle marker",
   },
   {
     toolbarEl: <img src="/cross.png" className="h-6 w-6" />,
     type: "img",
     src: "/cross.png",
+    label: "Cross marker",
   },
   {
     toolbarEl: <img src="/diamond.png" className="h-6 w-6" />,
     type: "img",
     src: "/diamond.png",
+    label: "Diamond marker",
   },
   {
     toolbarEl: <img src="/moon.png" className="h-6 w-6" />,
     type: "img",
     src: "/moon.png",
+    label: "Moon marker",
   },
   {
     toolbarEl: <img src="/skull.png" className="h-6 w-6" />,
     type: "img",
     src: "/skull.png",
+    label: "Skull marker",
   },
   {
     toolbarEl: <img src="/square.png" className="h-6 w-6" />,
     type: "img",
     src: "/square.png",
+    label: "Square marker",
   },
   {
     toolbarEl: <img src="/triangle.png" className="h-6 w-6" />,
     type: "img",
     src: "/triangle.png",
+    label: "Triangle marker",
   },
 ];
 
@@ -122,66 +140,79 @@ const classIcons: ToolbarShape[] = [
     toolbarEl: <img src="/deathknight.png" className="h-6 w-6" />,
     type: "img",
     src: "/deathknight.png",
+    label: "Death Knight",
   },
   {
     toolbarEl: <img src="/demonhunter.png" className="h-6 w-6" />,
     type: "img",
     src: "/demonhunter.png",
+    label: "Demon Hunter",
   },
   {
     toolbarEl: <img src="/druid.png" className="h-6 w-6" />,
     type: "img",
     src: "/druid.png",
+    label: "Druid",
   },
   {
     toolbarEl: <img src="/evoker.png" className="h-6 w-6" />,
     type: "img",
     src: "/evoker.png",
+    label: "Evoker",
   },
   {
     toolbarEl: <img src="/hunter.png" className="h-6 w-6" />,
     type: "img",
     src: "/hunter.png",
+    label: "Hunter",
   },
   {
     toolbarEl: <img src="/mage.png" className="h-6 w-6" />,
     type: "img",
     src: "/mage.png",
+    label: "Mage",
   },
   {
     toolbarEl: <img src="/monk.png" className="h-6 w-6" />,
     type: "img",
     src: "/monk.png",
+    label: "Monk",
   },
   {
     toolbarEl: <img src="/paladin.png" className="h-6 w-6" />,
     type: "img",
     src: "/paladin.png",
+    label: "Paladin",
   },
   {
     toolbarEl: <img src="/priest.png" className="h-6 w-6" />,
     type: "img",
     src: "/priest.png",
+    label: "Priest",
   },
   {
     toolbarEl: <img src="/rogue.png" className="h-6 w-6" />,
     type: "img",
     src: "/rogue.png",
+    label: "Rogue",
   },
   {
     toolbarEl: <img src="/shaman.png" className="h-6 w-6" />,
     type: "img",
     src: "/shaman.png",
+    label: "Shaman",
   },
   {
     toolbarEl: <img src="/warlock.png" className="h-6 w-6" />,
     type: "img",
     src: "/warlock.png",
+    label: "Warlock",
   },
   {
     toolbarEl: <img src="/warrior.png" className="h-6 w-6" />,
     type: "img",
     src: "/warrior.png",
+    label: "Warrior",
   },
 ];
 
@@ -190,21 +221,25 @@ const roleIcons: ToolbarShape[] = [
     toolbarEl: <img src="/healer.svg" className="h-6 w-6" />,
     type: "img",
     src: "/healer.svg",
+    label: "Healer",
   },
   {
     toolbarEl: <img src="/mdps.svg" className="h-6 w-6" />,
     type: "img",
     src: "/mdps.svg",
+    label: "Melee DPS",
   },
   {
     toolbarEl: <img src="/rdps.svg" className="h-6 w-6" />,
     type: "img",
     src: "/rdps.svg",
+    label: "Ranged DPS",
   },
   {
     toolbarEl: <img src="/tank.svg" className="h-6 w-6" />,
     type: "img",
     src: "/tank.svg",
+    label: "Tank",
   },
 ];
 
@@ -216,6 +251,7 @@ const renderToolbarItem = (
   <div
     key={shape.src || shape.type}
     draggable
+    title={shape.label}
     className="z-10 p-1 bg-slate-800 rounded border border-slate-600 hover:bg-slate-700 hover:border-slate-500 transition-all cursor-grab active:cursor-grabbing hover:scale-105 flex items-center justify-center"
     data-id={shape.type}
     onDragStart={() => {
@@ -284,6 +320,7 @@ export const Toolbar: FC<ToolbarProps> = ({
       <div className="space-y-1">
         <button
           onClick={() => setDrawingMode(!drawingMode)}
+          title="Toggle freehand drawing"
           className={`
             w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg
             border transition-all duration-200 font-medium text-xs

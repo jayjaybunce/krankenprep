@@ -126,7 +126,7 @@ export const BoeSaleModal: FC<BoeSaleModalProps> = ({
             disabled={!canSave || isPending}
           >
             <Save className="w-4 h-4" />
-            {isPending ? "Saving..." : isEditing ? "Save" : "Add Sale"}
+            {isPending ? "Saving..." : isEditing ? "Save" : "Add BoE Sale"}
           </Button>
         </>
       }
@@ -170,7 +170,7 @@ export const BoeSaleModal: FC<BoeSaleModalProps> = ({
           onChange={(e) => setSoldToPlayer(e.target.checked)}
           label="Sold directly to another player"
           variant="default"
-          helperText="Guild forgoes its cut so the buyer only pays 50% market value — the player still only gets 50% of the entered sale price, not the whole thing"
+          helperText="Guild forgoes its cut so the buyer only pays half of market value — the player still only gets 50% of the entered sale price, not the whole amount"
         />
         <div className="flex items-center justify-between text-xs font-montserrat text-slate-400 border-t border-slate-800 pt-3">
           <span>Guild cut: {previewGuildCut.toLocaleString()}g</span>

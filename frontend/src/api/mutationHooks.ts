@@ -11,6 +11,9 @@ type CreateTeamPayload = {
     wowaudit_integration: boolean,
     wowaudit_url?: string,
     wowaudit_api_key?: string,
+    wowutils_integration: boolean,
+    wowutils_group_id?: string,
+    wowutils_api_key?: string,
 }
 
 type CreateSectionPayload = {
@@ -35,6 +38,9 @@ type UpdateTeamPayload = {
     wowaudit_integration: boolean,
     wowaudit_url: string,
     wowaudit_api_key: string,
+    wowutils_integration: boolean,
+    wowutils_group_id: string,
+    wowutils_api_key: string,
 }
 
 export const useUpdateTeam = (teamId: number) => {
@@ -42,11 +48,18 @@ export const useUpdateTeam = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["updateTeam"],
-        mutationFn: (payload: UpdateTeamPayload) => fetch(url, {
-            method: "PUT",
-            headers,
-            body: JSON.stringify(payload)
-        }).then(res => res.json()),
+        mutationFn: async (payload: UpdateTeamPayload) => {
+            const res = await fetch(url, {
+                method: "PUT",
+                headers,
+                body: JSON.stringify(payload)
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to update team")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`]})
             queryClient.invalidateQueries({ queryKey: ["my_teams"]})
@@ -77,11 +90,18 @@ export const useCreateSection = (bossId: string | undefined, teamId: string | un
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["createSection"],
-        mutationFn: (payload: CreateSectionPayload) => fetch(url, {
-            method: "POST",
-            headers: headers,
-            body: JSON.stringify(payload)
-        }),
+        mutationFn: async (payload: CreateSectionPayload) => {
+            const res = await fetch(url, {
+                method: "POST",
+                headers: headers,
+                body: JSON.stringify(payload)
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to create section")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_${teamId}_boss_${bossId}`]})
         }
@@ -99,8 +119,14 @@ export const useUpdateSection = (bossId: string | undefined, teamId: string | un
     const { url, headers } = useKpApi("/sections")
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: ({ sectionId, ...payload }: { sectionId: number } & UpdateSectionPayload) =>
-            fetch(`${url}/${sectionId}`, { method: "PUT", headers, body: JSON.stringify(payload) }),
+        mutationFn: async ({ sectionId, ...payload }: { sectionId: number } & UpdateSectionPayload) => {
+            const res = await fetch(`${url}/${sectionId}`, { method: "PUT", headers, body: JSON.stringify(payload) })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to update section")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_${teamId}_boss_${bossId}`] })
         }
@@ -111,8 +137,14 @@ export const useDeleteSection = (bossId: string | undefined, teamId: string | un
     const { url, headers } = useKpApi("/sections")
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: (sectionId: number) =>
-            fetch(`${url}/${sectionId}`, { method: "DELETE", headers }),
+        mutationFn: async (sectionId: number) => {
+            const res = await fetch(`${url}/${sectionId}`, { method: "DELETE", headers })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to delete section")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_${teamId}_boss_${bossId}`] })
         }
@@ -129,11 +161,18 @@ export const useCreateNote = (bossId: string | undefined, teamId: string | undef
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["createNote"],
-        mutationFn: (payload: CreateNotePayload) => fetch(url, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(payload)
-        }),
+        mutationFn: async (payload: CreateNotePayload) => {
+            const res = await fetch(url, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(payload)
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to create note")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_${teamId}_boss_${bossId}`]})
         }
@@ -144,8 +183,14 @@ export const useUpdateNote = (bossId: string | undefined, teamId: string | undef
     const { url, headers } = useKpApi("/notes")
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: ({ noteId, content }: { noteId: number; content: string }) =>
-            fetch(`${url}/${noteId}`, { method: "PUT", headers, body: JSON.stringify({ content }) }),
+        mutationFn: async ({ noteId, content }: { noteId: number; content: string }) => {
+            const res = await fetch(`${url}/${noteId}`, { method: "PUT", headers, body: JSON.stringify({ content }) })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to update note")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_${teamId}_boss_${bossId}`] })
         }
@@ -156,8 +201,14 @@ export const useDeleteNote = (bossId: string | undefined, teamId: string | undef
     const { url, headers } = useKpApi("/notes")
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: (noteId: number) =>
-            fetch(`${url}/${noteId}`, { method: "DELETE", headers }),
+        mutationFn: async (noteId: number) => {
+            const res = await fetch(`${url}/${noteId}`, { method: "DELETE", headers })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to delete note")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_${teamId}_boss_${bossId}`] })
         }
@@ -235,11 +286,18 @@ export const useCreateInviteLink = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["createInviteLink"],
-        mutationFn: (payload: CreateInviteLinkPayload) => fetch(url, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(payload)
-        }).then(res => res.json() as Promise<CreateInviteLinkResponse>),
+        mutationFn: async (payload: CreateInviteLinkPayload) => {
+            const res = await fetch(url, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(payload)
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to create invite link")
+            }
+            return data as CreateInviteLinkResponse
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`]})
         }
@@ -256,11 +314,16 @@ export const useRevokeInviteLink = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["revokeInviteLink"],
-        mutationFn: (inviteHash: string) => {
-            return fetch(url + `?token=${inviteHash}`, {
+        mutationFn: async (inviteHash: string) => {
+            const res = await fetch(url + `?token=${inviteHash}`, {
                 method: "DELETE",
                 headers,
-            }).then(res => res.json() as Promise<RevokeInviteLinkResponse>)
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to revoke invite link")
+            }
+            return data as RevokeInviteLinkResponse
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`]})
@@ -302,10 +365,17 @@ export const useSyncWowAuditWishlists = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["syncWowAuditWishlists"],
-        mutationFn: () => fetch(url, {
-            method: "POST",
-            headers,
-        }).then(res => res.json()),
+        mutationFn: async () => {
+            const res = await fetch(url, {
+                method: "POST",
+                headers,
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to sync WowAudit wishlists")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`]})
             queryClient.invalidateQueries({ queryKey: ["my_teams"]})
@@ -324,11 +394,18 @@ export const useCreatePlayer = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["createPlayer"],
-        mutationFn: (payload: CreatePlayerPayload) => fetch(url, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(payload)
-        }).then(res => res.json()),
+        mutationFn: async (payload: CreatePlayerPayload) => {
+            const res = await fetch(url, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(payload)
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to add player")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
         }
@@ -347,11 +424,18 @@ export const useUpdatePlayer = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["updatePlayer"],
-        mutationFn: ({ playerId, ...payload }: UpdatePlayerPayload) => fetch(`${url}/${playerId}`, {
-            method: "PUT",
-            headers,
-            body: JSON.stringify(payload)
-        }).then(res => res.json()),
+        mutationFn: async ({ playerId, ...payload }: UpdatePlayerPayload) => {
+            const res = await fetch(`${url}/${playerId}`, {
+                method: "PUT",
+                headers,
+                body: JSON.stringify(payload)
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to update player")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
         }
@@ -363,10 +447,17 @@ export const useDeletePlayer = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["deletePlayer"],
-        mutationFn: (playerId: number) => fetch(`${url}/${playerId}`, {
-            method: "DELETE",
-            headers
-        }).then(res => res.json()),
+        mutationFn: async (playerId: number) => {
+            const res = await fetch(`${url}/${playerId}`, {
+                method: "DELETE",
+                headers
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to delete player")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
         }
@@ -378,10 +469,17 @@ export const useClaimPlayer = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["claimPlayer"],
-        mutationFn: (playerId: number) => fetch(`${url}/${playerId}/claim`, {
-            method: "POST",
-            headers
-        }).then(res => res.json()),
+        mutationFn: async (playerId: number) => {
+            const res = await fetch(`${url}/${playerId}/claim`, {
+                method: "POST",
+                headers
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to claim character")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
         }
@@ -393,10 +491,17 @@ export const useUnclaimPlayer = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["unclaimPlayer"],
-        mutationFn: (playerId: number) => fetch(`${url}/${playerId}/claim`, {
-            method: "DELETE",
-            headers
-        }).then(res => res.json()),
+        mutationFn: async (playerId: number) => {
+            const res = await fetch(`${url}/${playerId}/claim`, {
+                method: "DELETE",
+                headers
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to unclaim character")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
         }
@@ -418,11 +523,18 @@ export const useCreateCharacter = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["createCharacter"],
-        mutationFn: ({ playerId, ...payload }: CreateCharacterPayload) => fetch(`${url}/${playerId}/characters`, {
-            method: "POST",
-            headers,
-            body: JSON.stringify(payload)
-        }).then(res => res.json()),
+        mutationFn: async ({ playerId, ...payload }: CreateCharacterPayload) => {
+            const res = await fetch(`${url}/${playerId}/characters`, {
+                method: "POST",
+                headers,
+                body: JSON.stringify(payload)
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to add character")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
         }
@@ -444,11 +556,18 @@ export const useUpdateCharacter = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["updateCharacter"],
-        mutationFn: ({ characterId, ...payload }: UpdateCharacterPayload) => fetch(`${url}/${characterId}`, {
-            method: "PUT",
-            headers,
-            body: JSON.stringify(payload)
-        }).then(res => res.json()),
+        mutationFn: async ({ characterId, ...payload }: UpdateCharacterPayload) => {
+            const res = await fetch(`${url}/${characterId}`, {
+                method: "PUT",
+                headers,
+                body: JSON.stringify(payload)
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to update character")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
         }
@@ -460,10 +579,17 @@ export const useDeleteCharacter = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["deleteCharacter"],
-        mutationFn: (characterId: number) => fetch(`${url}/${characterId}`, {
-            method: "DELETE",
-            headers
-        }).then(res => res.json()),
+        mutationFn: async (characterId: number) => {
+            const res = await fetch(`${url}/${characterId}`, {
+                method: "DELETE",
+                headers
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to delete character")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`] })
         }
@@ -475,10 +601,17 @@ export const useDeleteMemberFromTeam = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["deleteMemberFromTeam"],
-        mutationFn: (roleId: number) => fetch(`${url}/${roleId}`, {
-            method: "DELETE",
-            headers
-        }).then((res) => res.json()),
+        mutationFn: async (roleId: number) => {
+            const res = await fetch(`${url}/${roleId}`, {
+                method: "DELETE",
+                headers
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to remove member")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`]})
         }
@@ -495,20 +628,34 @@ export const useUpdateMemberRole = (teamId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["updateMemberRole"],
-        mutationFn: ({ roleId, name }: UpdateMemberRolePayload) => fetch(`${url}/${roleId}`, {
-            method: "PUT",
-            headers,
-            body: JSON.stringify({ name })
-        }).then((res) => res.json()),
+        mutationFn: async ({ roleId, name }: UpdateMemberRolePayload) => {
+            const res = await fetch(`${url}/${roleId}`, {
+                method: "PUT",
+                headers,
+                body: JSON.stringify({ name })
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to update member role")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`team_id_${teamId}`]})
         }
     })
 }
 
+export type DroptimizerProvider = "wowaudit" | "wowutils"
+
 type UploadDroptimizerPayload = {
-    wishlist_name: string
     url: string
+    // wishlist_name is WowAudit-only (which wishlist config to validate/
+    // upload against). profile_key is WowUtils-only (which profile to pull
+    // out of a report with several) and unused for now — not surfaced in
+    // the UI yet.
+    wishlist_name?: string
+    profile_key?: string
 }
 
 export class DroptimizerUploadError extends Error {
@@ -523,11 +670,18 @@ export const useUpsertAssignmentNote = (teamId: string | undefined, bossId: stri
     const { url, headers } = useKpApi(`/teams/${teamId}/assignment-note/boss/${bossId}`)
     const queryClient = useQueryClient()
     return useMutation({
-        mutationFn: (note: string) => fetch(url, {
-            method: "PUT",
-            headers,
-            body: JSON.stringify({ note })
-        }).then(res => res.json()),
+        mutationFn: async (note: string) => {
+            const res = await fetch(url, {
+                method: "PUT",
+                headers,
+                body: JSON.stringify({ note })
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to save assignment note")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: [`assignment_note_team_${teamId}_boss_${bossId}`] })
         }
@@ -717,21 +871,28 @@ export const useSetBonusRollCount = (teamId: number, bossId: number) => {
     const queryClient = useQueryClient()
     return useMutation({
         mutationKey: ["setBonusRollCount"],
-        mutationFn: (payload: SetBonusRollCountPayload) => fetch(url, {
-            method: "PUT",
-            headers,
-            body: JSON.stringify(payload)
-        }).then((res) => res.json()),
+        mutationFn: async (payload: SetBonusRollCountPayload) => {
+            const res = await fetch(url, {
+                method: "PUT",
+                headers,
+                body: JSON.stringify(payload)
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to update bonus rolls")
+            }
+            return data
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ["boss_loot", teamId, bossId] })
         }
     })
 }
 
-export const useUploadDroptimizer = (teamId: number) => {
-    const { headers, url } = useKpApi(`/teams/${teamId}/wowaudit/upload`)
+export const useUploadDroptimizer = (teamId: number, provider: DroptimizerProvider) => {
+    const { headers, url } = useKpApi(`/teams/${teamId}/${provider}/upload`)
     return useMutation({
-        mutationKey: ["uploadDroptimizer", teamId],
+        mutationKey: ["uploadDroptimizer", provider, teamId],
         mutationFn: async (payload: UploadDroptimizerPayload) => {
             const res = await fetch(url, {
                 method: "POST",

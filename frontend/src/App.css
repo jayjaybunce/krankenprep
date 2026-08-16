@@ -58,11 +58,11 @@ body {
   display: none;
 }
 
-.unfuck-scrollbar-1::-webkit-scrollbar {
+.scrollbar-indigo::-webkit-scrollbar {
   width: 7px;
 }
 
-.unfuck-scrollbar-1::-webkit-scrollbar-thumb {
+.scrollbar-indigo::-webkit-scrollbar-thumb {
   background: linear-gradient(
     to bottom,
     #6366f1, /* indigo-500 */
@@ -72,15 +72,15 @@ body {
   border: 1px solid #fff;
 }
 
-.unfuck-scrollbar-1::-webkit-scrollbar-track {
+.scrollbar-indigo::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.unfuck-scrollbar-2::-webkit-scrollbar {
+.scrollbar-warm::-webkit-scrollbar {
   width: 7px;
 }
 
-.unfuck-scrollbar-2::-webkit-scrollbar-thumb {
+.scrollbar-warm::-webkit-scrollbar-thumb {
   background: linear-gradient(
     to bottom,
     #f97316, /* orange-500 */
@@ -90,7 +90,7 @@ body {
   border: 1px solid #fff;
 }
 
-.unfuck-scrollbar-2::-webkit-scrollbar-track {
+.scrollbar-warm::-webkit-scrollbar-track {
   background: transparent;
 }
 

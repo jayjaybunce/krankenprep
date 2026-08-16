@@ -72,6 +72,8 @@ func main() {
 		protected.POST("/teams/wowaudit/test", handlers.TestWowAuditIntegration)
 		protected.POST("/teams/:teamId/wowaudit/sync", handlers.SyncWowAuditWishlists)
 		protected.POST("/teams/:teamId/wowaudit/upload", handlers.UploadDroptimizer)
+		protected.POST("/teams/wowutils/test", handlers.TestWowUtilsIntegration)
+		protected.POST("/teams/:teamId/wowutils/upload", handlers.UploadDroptimizerToWowUtils)
 		protected.GET("/me", handlers.GetMe)
 		protected.GET("/me/teams", handlers.GetMyTeams)
 		protected.GET("/expansions", handlers.GetExpansions)

@@ -106,7 +106,9 @@ export const TierSimTable: FC<{
   if (entries.length === 0) {
     return (
       <p className={`text-sm font-montserrat ${colorMode === "dark" ? "text-slate-500" : "text-slate-400"}`}>
-        No tier sim data for the current season yet.
+        No tier sim data published for the current season yet. This is
+        community reference data, not something your team configures — check
+        back once it's available.
       </p>
     );
   }
@@ -152,22 +154,26 @@ export const TierSimTable: FC<{
                 Spec
               </th>
               <th
+                title={`${labels.a} tier pieces, single-target sim`}
                 className={`sticky top-0 z-10 px-1.5 py-1.5 text-right text-xs font-medium font-montserrat uppercase tracking-wide ${stickyHeadBg} ${headerTextClass}`}
               >
                 {labels.a} ST
               </th>
               <th
+                title={`${labels.b} tier pieces, single-target sim`}
                 className={`sticky top-0 z-10 px-1.5 py-1.5 text-right text-xs font-medium font-montserrat uppercase tracking-wide ${stickyHeadBg} ${headerTextClass}`}
               >
                 {labels.b} ST
               </th>
               <th
+                title="Raw DPS gained from the tier bonus"
                 className={`sticky top-0 z-10 px-1.5 py-1.5 text-right text-xs font-medium font-montserrat uppercase tracking-wide cursor-pointer select-none ${stickyHeadBg} ${headerTextClass}`}
                 onClick={() => toggleSort("raw")}
               >
                 Raw #{sortIcon("raw")}
               </th>
               <th
+                title="Percent DPS gained from the tier bonus"
                 className={`sticky top-0 z-10 px-1.5 py-1.5 text-right text-xs font-medium font-montserrat uppercase tracking-wide cursor-pointer select-none ${stickyHeadBg} ${headerTextClass}`}
                 onClick={() => toggleSort("percent")}
               >

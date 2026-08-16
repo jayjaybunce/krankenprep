@@ -6,7 +6,7 @@ import {
   Fragment,
   type FC,
 } from "react";
-import { createPortal, preload } from "react-dom";
+import { createPortal } from "react-dom";
 import { ChevronDown, Check, Swords } from "lucide-react";
 import { useCurrentExpansion } from "../api/queryHooks";
 import { type Boss, type Raid } from "../types/api/expansion";
@@ -184,42 +184,6 @@ export const BossDropdown: FC<BossDropdownProps> = ({ raids, boss, setBoss, full
   );
 };
 
-export const BossSelection: FC = () => {
-  const { boss, setBoss } = useTeam();
-  const { isLoading: isExpLoading, data: expData, error: expError } =
-    useCurrentExpansion();
-
-  console.log(isExpLoading, expError);
-
-  useEffect(() => {
-    expData?.forEach((exp) => {
-      exp?.seasons?.forEach((s) => {
-        s?.raids?.forEach((r) => {
-          r?.bosses?.forEach((b) => {
-            if (b?.splash_img_url) preload(b.splash_img_url, { as: "image" });
-          });
-        });
-      });
-    });
-  }, [expData]);
-
-  const raids =
-    expData
-      ?.flatMap((exp) =>
-        exp?.seasons
-          ?.filter((s) => s?.is_current)
-          ?.flatMap((s) =>
-            s?.raids?.map((raid, i) => ({ raid, index: i })) ?? [],
-          ) ?? [],
-      )
-      ?.sort((a, b) => a.raid.order - b.raid.order) ?? [];
-
-  return (
-    <div className="sticky top-5 z-10 w-1/2">
-      <BossDropdown raids={raids} boss={boss} setBoss={setBoss} fullWidth />
-    </div>
-  );
-};
 
 export const BossSelectionV2: FC = () => {
   const { boss, setBoss } = useTeam();

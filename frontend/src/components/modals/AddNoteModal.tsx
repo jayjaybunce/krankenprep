@@ -202,7 +202,7 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
       isOpen={isOpen}
       onClose={() => onClose(false)}
       title={initialValues ? `Edit note in ${title}` : `Add note to ${title}`}
-      subtitle="Share resources with your teammates or anyone you want"
+      subtitle="Write a strategy note your team will see here"
       variant="neon-gradient"
       size="full"
       actions={
@@ -239,6 +239,7 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
           >
             <div className="flex items-center gap-2">
               <Save className="w-4 h-4" />
+              {initialValues ? "Save Changes" : "Save Note"}
             </div>
           </button>
         </>
@@ -287,7 +288,7 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
           </div>
           <Textarea
             ref={contentRef}
-            label="Add a brief content"
+            label="Note content"
             value={formState.content}
             placeholder="Add markdown or text"
             onChange={(e) => {
