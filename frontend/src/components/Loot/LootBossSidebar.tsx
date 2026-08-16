@@ -31,7 +31,7 @@ export const LootBossSidebar: FC<LootBossSidebarProps> = ({
         <p
           className={`text-sm px-2 ${colorMode === "dark" ? "text-slate-500" : "text-slate-400"}`}
         >
-          No current-tier raids found
+          No current-tier raids found.
         </p>
       ) : (
         raids.map((raid) => (

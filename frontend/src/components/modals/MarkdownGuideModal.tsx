@@ -11,7 +11,7 @@ type MarkdownGuideModalProps = {
 
 const markdownGuide = `# Markdown Guide
 
-Use markdown to format your raid notes with rich text, links, and more.
+Use markdown to format your notes with rich text, links, and more.
 
 ## Basic Formatting
 
@@ -92,7 +92,7 @@ function greet(name) {
 }
 \`\`\`
 
-Use triple backticks with language name for syntax highlighting.
+Use triple backticks with a language name to mark code as a block.
 
 ---
 
@@ -145,7 +145,7 @@ export const MarkdownGuideModal: FC<MarkdownGuideModalProps> = ({
       isOpen={isOpen}
       onClose={onClose}
       title="Markdown Formatting Guide"
-      subtitle="Learn how to format your raid notes with markdown"
+      subtitle="Learn how to format your notes with markdown"
       variant="neon-gradient"
       size="full"
       actions={

@@ -1,5 +1,5 @@
 import { createRef, useEffect, useState, type FC } from "react";
-import { RotateCw } from "lucide-react";
+import { RotateCw, AlertCircle } from "lucide-react";
 import Planner, { type Tab } from "../Planner/Planner";
 import { v4 as uuid } from "uuid";
 import { useLocation } from "react-router-dom";
@@ -32,8 +32,8 @@ const Plan: FC = () => {
   const raidData = useRaidData(location.pathname);
   const { isLoading: isUserLoading, user } = useUser();
   const { id, status } = getIdFromPathname(location.pathname);
-  const { data, isLoading, refetch } = useGetRaidplanById(id, id == "");
-  useDocumentTitle("Planner", raidData[0].raidName);
+  const { data, isLoading, error, refetch } = useGetRaidplanById(id, id == "");
+  useDocumentTitle("Raid Planner", raidData[0].raidName);
   const getMode = () => {
     if (!id) {
       return "create";
@@ -51,7 +51,6 @@ const Plan: FC = () => {
   const persistViewedPlan = () => {
     if (isUserLoading) return;
     if (isLoading && !data) return;
-    console.log("here");
     const authedLSKey = user
       ? `user_${user.btag}_recent_plans`
       : "user_null_recent_plans";
@@ -140,6 +139,25 @@ const Plan: FC = () => {
           </h2>
           <p className="text-slate-400 text-sm font-montserrat">
             The Raid Planner requires landscape mode
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  // Without this, a failed/invalid share link silently fell through to the
+  // default blank-plan state above — a user could think they were looking
+  // at a real saved plan when the fetch had actually failed.
+  if (id && !isLoading && error) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-8">
+        <AlertCircle className="w-14 h-14 text-rose-400" />
+        <div>
+          <h2 className="font-montserrat font-bold text-white text-2xl mb-2">
+            This Plan Couldn't Be Loaded
+          </h2>
+          <p className="text-slate-400 text-sm font-montserrat">
+            It may have been deleted, or the link may be invalid.
           </p>
         </div>
       </div>

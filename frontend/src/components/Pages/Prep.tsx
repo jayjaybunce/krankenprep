@@ -11,6 +11,7 @@ import { useEffect, useMemo, useRef, useState, type FC } from "react";
 import { useSession, Descope } from "@descope/react-sdk";
 import { StaticHeroImage } from "../StaticHeroImage";
 import Button from "../Button";
+import Alert from "../Alert";
 import {
   Library,
   PlusIcon,
@@ -140,6 +141,11 @@ const BossDisplay: FC<BossProps> = ({
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showMarkdownGuide, setShowMarkdownGuide] = useState(false);
+  // Section/note CRUD had no failure feedback at all before — a failed
+  // save/delete just silently did nothing.
+  const [actionError, setActionError] = useState<string | null>(null);
+  const onActionError = (fallback: string) => (err: unknown) =>
+    setActionError(err instanceof Error ? err.message : fallback);
   const [highlightedNoteId, setHighlightedNoteId] = useState<number | null>(
     null,
   );
@@ -319,11 +325,6 @@ const BossDisplay: FC<BossProps> = ({
             Beta
           </span>
         </button>
-        {/* <iframe src="https://raidstrats.gg/planner?embed=true&amp;id=c8cbdf70-afc8-4e16-9987-58ee91c87d02&amp;animation=true&amp;hidetrails=true&amp;circleMode=true&amp;maxCharacters=4&amp;players=Wynsloww%7CPriest%2CMagicpally%7CPaladin%2CFunkdrip%7CShaman%2CTettybear%7CDruid%2CZaghunt%7CHunter%2CGruesum%7CDeath+Knight%2CJaemsy%7CWarrior%2CKrankenmight%7CEvoker%2CTatros%7CPaladin%2CMetzinger%7CDemon+Hunter%2CGoomt%7CRogue%2CDeeznutticus%7CWarrior%2CUchai%7CMonk%2CArx%7CDeath+Knight%2CSkellestone%7CWarlock%2CSobiezhunter%7CHunter%2CStridur%7CHunter%2CWipe%7CMage%2CLyconic%7CWarlock%2CPkrz%7CShaman" 
-        title="P2 Galvanize Soaks" 
-        style={{ width: "100%", height: "100%", borderWidth: "medium", borderStyle: "none", borderColor: "currentcolor", borderImage: "initial", opacity: 1, transition: "opacity 200ms 150ms" }}
-        ></iframe> */}
-
         </>
       )}
     </div>
@@ -399,7 +400,14 @@ const BossDisplay: FC<BossProps> = ({
                 </Button>
               )}
             </div>
-            <div className="flex flex-col flex-2 gap-3 mt-3 p-4 overflow-y-scroll unfuck-scrollbar-1">
+            {actionError && (
+              <div className="px-3 pt-2">
+                <Alert type="danger" title="Something went wrong">
+                  {actionError}
+                </Alert>
+              </div>
+            )}
+            <div className="flex flex-col flex-2 gap-3 mt-3 p-4 overflow-y-scroll scrollbar-indigo">
               {sections.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 px-6">
                   <div className="relative mb-6">
@@ -412,12 +420,13 @@ const BossDisplay: FC<BossProps> = ({
                     No Sections Yet
                   </h3>
                   <p className="font-montserrat text-sm text-slate-600 dark:text-slate-400 text-center max-w-md mb-4">
-                    Click the 'Add Section' button above to create your first
-                    section section and start organizing your boss strategy.
+                    {isUserAdmin
+                      ? "Click the 'Add Section' button above to create your first section and start organizing your boss strategy."
+                      : "No sections yet. Contact your team admin to start organizing this boss's strategy."}
                   </p>
                 </div>
               ) : (
-                <div className="flex flex-col gap-3 bg-red">
+                <div className="flex flex-col gap-3">
                   {sections.map((section) => {
                     const isSelected = selectedSection?.id === section?.id;
                     return (
@@ -464,7 +473,9 @@ const BossDisplay: FC<BossProps> = ({
                                       </span>
                                       <button
                                         onClick={() => {
-                                          deleteSection(section.id);
+                                          deleteSection(section.id, {
+                                            onError: onActionError("Couldn't delete that section — try again."),
+                                          });
                                           setPendingDeleteSectionId(null);
                                         }}
                                         className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 transition-colors"
@@ -580,9 +591,7 @@ const BossDisplay: FC<BossProps> = ({
               </div>
             </div>
 
-            <div className="overflow-y-auto h-full unfuck-scrollbar-2 mt-4">
-              {/* <div className="flex flex-col gap-2 pl-3 mb-5"></div> */}
-
+            <div className="overflow-y-auto h-full scrollbar-warm mt-4">
               {!selectedSection ? (
                 <div className="flex flex-col items-center justify-center py-16 px-6">
                   <div className="relative mb-6">
@@ -619,7 +628,7 @@ const BossDisplay: FC<BossProps> = ({
                                 const date = new Date(note.created_at);
 
                                 if (isNaN(date.getTime())) {
-                                  return "Invalid date";
+                                  return "Date unavailable";
                                 }
 
                                 return date.toLocaleString("en-US", {
@@ -659,7 +668,9 @@ const BossDisplay: FC<BossProps> = ({
                                   </span>
                                   <button
                                     onClick={() => {
-                                      deleteNote(note.id);
+                                      deleteNote(note.id, {
+                                        onError: onActionError("Couldn't delete that note — try again."),
+                                      });
                                       setPendingDeleteNoteId(null);
                                     }}
                                     className="px-2 py-1 rounded-lg text-xs font-medium font-montserrat bg-rose-500/20 text-rose-400 hover:bg-rose-500/40 transition-colors"
@@ -765,29 +776,40 @@ const BossDisplay: FC<BossProps> = ({
             : undefined
         }
         onSave={(form) => {
+          setActionError(null);
           const variant = Array.isArray(form.variant)
             ? form.variant.join("-$-")
             : form.variant;
           const tags = form.tags.join("-$-");
           if (editingSection) {
-            updateSection({
-              sectionId: editingSection.id,
-              name: form.sectionName,
-              description: form.description,
-              variant,
-              tags,
-            });
-            setEditingSection(null);
+            updateSection(
+              {
+                sectionId: editingSection.id,
+                name: form.sectionName,
+                description: form.description,
+                variant,
+                tags,
+              },
+              {
+                onSuccess: () => setEditingSection(null),
+                onError: onActionError("Couldn't save that section — try again."),
+              },
+            );
           } else {
-            createSection({
-              boss_id: boss?.id as number,
-              team_id: team?.team_id as number,
-              description: form.description,
-              name: form.sectionName,
-              variant,
-              tags,
-            });
-            setIsAddingSection(false);
+            createSection(
+              {
+                boss_id: boss?.id as number,
+                team_id: team?.team_id as number,
+                description: form.description,
+                name: form.sectionName,
+                variant,
+                tags,
+              },
+              {
+                onSuccess: () => setIsAddingSection(false),
+                onError: onActionError("Couldn't create that section — try again."),
+              },
+            );
           }
         }}
       />
@@ -805,14 +827,26 @@ const BossDisplay: FC<BossProps> = ({
         urlBossId={boss?.id?.toString()}
         urlSectionId={selectedSection?.id?.toString()}
         onSave={(formState) => {
+          setActionError(null);
           if (editingNote) {
-            updateNote({ noteId: editingNote.id, content: formState.content });
-            setEditingNote(null);
+            updateNote(
+              { noteId: editingNote.id, content: formState.content },
+              {
+                onSuccess: () => setEditingNote(null),
+                onError: onActionError("Couldn't save that note — try again."),
+              },
+            );
           } else {
-            createNote({
-              section_id: selectedSection?.id as number,
-              content: formState.content,
-            });
+            createNote(
+              {
+                section_id: selectedSection?.id as number,
+                content: formState.content,
+              },
+              {
+                onSuccess: () => setIsAddingNote(false),
+                onError: onActionError("Couldn't create that note — try again."),
+              },
+            );
           }
         }}
       />
@@ -838,6 +872,7 @@ const BossDisplay: FC<BossProps> = ({
 
 const UnauthenticatedPrepView: FC = () => {
   const { colorMode } = useTheme();
+  const [authError, setAuthError] = useState<string | null>(null);
 
   return (
     <div className="w-full min-h-screen flex flex-col items-center justify-center p-8">
@@ -887,7 +922,7 @@ const UnauthenticatedPrepView: FC = () => {
               </div>
               <div className="space-y-2">
                 <h3 className="font-montserrat text-xl font-bold dark:text-white text-black">
-                  Rich Notes
+                  Markdown Notes
                 </h3>
                 <p className="text-sm text-slate-600 dark:text-slate-400">
                   Write detailed notes with full markdown support for
@@ -949,7 +984,8 @@ const UnauthenticatedPrepView: FC = () => {
                   </h4>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
                     Organize your strategy into sections like phases,
-                    assignments, or cooldown rotations.
+                    assignments, or cooldown rotations, with optional tags
+                    to label each one.
                   </p>
                 </div>
               </div>
@@ -962,8 +998,8 @@ const UnauthenticatedPrepView: FC = () => {
                     Add Notes
                   </h4>
                   <p className="text-sm text-slate-600 dark:text-slate-400">
-                    Write detailed notes for each section with markdown
-                    formatting and helpful tags.
+                    Write detailed notes for each section with full markdown
+                    formatting.
                   </p>
                 </div>
               </div>
@@ -1001,10 +1037,15 @@ const UnauthenticatedPrepView: FC = () => {
               <Descope
                 flowId="sign-up-or-in"
                 theme={colorMode}
-                onError={(err) => {
-                  console.log("Error!", err);
-                }}
+                onError={() =>
+                  setAuthError("We couldn't sign you in. Please try again.")
+                }
               />
+              {authError && (
+                <p className="text-sm text-rose-300 font-montserrat text-center mt-2">
+                  {authError}
+                </p>
+              )}
             </div>
           </div>
         </Card>

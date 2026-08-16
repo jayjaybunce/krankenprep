@@ -1,8 +1,13 @@
 import { type FC, useState, useEffect, useRef } from "react";
 import { useGetTeamById, type Wishlist } from "../../api/queryHooks";
 import { useTeam, useTheme, useDocumentTitle, useKpApi } from "../../hooks";
-import { Dropdown, TextInput, Toggle } from "../form";
+import { Dropdown } from "../form";
 import type { DropdownOption } from "../form/Dropdown";
+import Alert from "../Alert";
+import {
+  IntegrationCredentialsFields,
+  type IntegrationTestStatus,
+} from "../integrations/IntegrationCredentialsFields";
 import { formatDistanceToNow } from "date-fns";
 import {
   Users,
@@ -14,14 +19,14 @@ import {
   Trash2,
   RefreshCw,
   Zap,
-  FlaskConical,
-  CheckCircle,
-  LoaderCircle,
   Save,
+  AlertTriangle,
+  AlertCircle,
 } from "lucide-react";
 import Button from "../Button";
 import { CreateInviteLinkModal } from "../modals/CreateInviteLinkModal";
 import { RosterTab } from "../Roster/RosterTab";
+import { TeamSetupChecklist } from "../Team/TeamSetupChecklist";
 import {
   useRevokeInviteLink,
   useSyncWowAuditWishlists,
@@ -33,7 +38,7 @@ import { useNavigate, useParams } from "react-router-dom";
 
 const AVAILABLE_TRACK_UPGRAGES = 6;
 
-type WowAuditTestStatus = "idle" | "loading" | "success" | "error";
+const WOWUTILS_GROUP_ID_REGEX = /^[0-9a-f]{24}$/i;
 
 const WishlistCard: FC<{ wishlist: Wishlist; colorMode: string }> = ({
   wishlist,
@@ -41,11 +46,12 @@ const WishlistCard: FC<{ wishlist: Wishlist; colorMode: string }> = ({
 }) => {
   const dark = colorMode === "dark";
   const flags = [
-    { label: "Gems", active: wishlist.sockets },
-    { label: "PI", active: wishlist.pi },
-    { label: "Expert", active: wishlist.expert_mode },
+    { label: "Gems", title: "Sockets", active: wishlist.sockets },
+    { label: "PI", title: "Power Infusion", active: wishlist.pi },
+    { label: "Expert", title: "Expert Mode", active: wishlist.expert_mode },
     {
-      label: "Upgrade All Equipped Gear to the Same Level",
+      label: "Match Equipped Gear",
+      title: "Upgrade All Equipped Gear to the Same Level",
       active: wishlist.match_equipped_gear,
     },
   ];
@@ -74,12 +80,13 @@ const WishlistCard: FC<{ wishlist: Wishlist; colorMode: string }> = ({
 
       <div className="grid grid-cols-4 gap-1">
         {[
-          { label: "Myth", value: wishlist.upgrade_level_mythic },
-          { label: "Hero", value: wishlist.upgrade_level_heroic },
-          { label: "Norm", value: wishlist.upgrade_level_normal },
-        ].map(({ label, value }) => (
+          { label: "Myth", title: "Mythic track", value: wishlist.upgrade_level_mythic },
+          { label: "Hero", title: "Heroic track", value: wishlist.upgrade_level_heroic },
+          { label: "Norm", title: "Normal track", value: wishlist.upgrade_level_normal },
+        ].map(({ label, title, value }) => (
           <div
             key={label}
+            title={title}
             className={`rounded px-1.5 py-1 text-center ${
               dark ? "bg-slate-700/70" : "bg-slate-200/70"
             }`}
@@ -99,9 +106,10 @@ const WishlistCard: FC<{ wishlist: Wishlist; colorMode: string }> = ({
       </div>
 
       <div className="flex flex-wrap gap-1">
-        {flags.map(({ label, active }) => (
+        {flags.map(({ label, title, active }) => (
           <span
             key={label}
+            title={title}
             className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
               active
                 ? dark
@@ -128,8 +136,15 @@ const Team: FC = () => {
   useDocumentTitle("Team", team?.team?.name);
   const { colorMode } = useTheme();
   const [isInviteLinkModalOpen, setIsInviteLinkModalOpen] = useState(false);
+  // Shared banner for this page's various admin actions (revoke invite,
+  // sync, save settings, change a role, remove a member) — none of these
+  // had any failure feedback before; a failed request just silently
+  // reverted its button with no indication anything went wrong.
+  const [actionError, setActionError] = useState<string | null>(null);
+  const onActionError = (fallback: string) => (err: unknown) =>
+    setActionError(err instanceof Error ? err.message : fallback);
 
-  const { data, isLoading, error } = useGetTeamById(team?.team_id ?? -1);
+  const { data, isLoading, error, refetch } = useGetTeamById(team?.team_id ?? -1);
   const { mutate: revokeInviteLink, isPending: isRevoking } =
     useRevokeInviteLink(team?.team_id ?? -1);
   const { mutate: syncWishlists, isPending: isSyncing } =
@@ -142,10 +157,35 @@ const Team: FC = () => {
     useUpdateMemberRole(team?.team_id ?? -1);
   const [deletingRoleId, setDeletingRoleId] = useState<number | null>(null);
 
+  // Covers the read-only fallback below (non-admin viewers, and the Owner's
+  // own row, which is never editable) — ROLE_OPTIONS alone isn't enough
+  // since Owner is deliberately not an assignable option.
+  const ROLE_LABELS: Record<string, string> = {
+    owner: "Owner",
+    admin: "Admin",
+    member: "Member",
+    loot_council: "Loot Council",
+  };
+
   const ROLE_OPTIONS: DropdownOption[] = [
-    { label: "Member", value: "member" },
-    { label: "Admin", value: "admin" },
-    { label: "Loot Council", value: "loot_council" },
+    {
+      label: "Member",
+      value: "member",
+      description:
+        "Can view the team, claim their character, and manage their own loot wishlist and priorities.",
+    },
+    {
+      label: "Admin",
+      value: "admin",
+      description:
+        "Everything a Member can do, plus manage team settings, integrations, invites, and member roles.",
+    },
+    {
+      label: "Loot Council",
+      value: "loot_council",
+      description:
+        "Everything a Member can do, plus see every player's loot wishlist and priorities, the team-wide roll overview, and the audit log.",
+    },
   ];
 
   // WowAudit integration settings state
@@ -153,10 +193,21 @@ const Team: FC = () => {
   const [wowAuditGuildUrl, setWowAuditGuildUrl] = useState("");
   const [wowAuditApiKey, setWowAuditApiKey] = useState("");
   const [wowAuditTestStatus, setWowAuditTestStatus] =
-    useState<WowAuditTestStatus>("idle");
+    useState<IntegrationTestStatus>("idle");
   const initialized = useRef(false);
   const { url: wowAuditTestUrl, headers: wowAuditTestHeaders } = useKpApi(
     "/teams/wowaudit/test",
+  );
+
+  // WowUtils integration settings state
+  const [wowUtilsEnabled, setWowUtilsEnabled] = useState(false);
+  const [wowUtilsGroupId, setWowUtilsGroupId] = useState("");
+  const [wowUtilsApiKey, setWowUtilsApiKey] = useState("");
+  const [wowUtilsTestStatus, setWowUtilsTestStatus] =
+    useState<IntegrationTestStatus>("idle");
+  const [wowUtilsTestMessage, setWowUtilsTestMessage] = useState("");
+  const { url: wowUtilsTestUrl, headers: wowUtilsTestHeaders } = useKpApi(
+    "/teams/wowutils/test",
   );
 
   useEffect(() => {
@@ -165,13 +216,20 @@ const Team: FC = () => {
       setWowAuditEnabled(data.wowaudit_integration);
       setWowAuditGuildUrl(data.wowaudit_url ?? "");
       setWowAuditApiKey(data.wowaudit_api_key ?? "");
+      setWowUtilsEnabled(data.wowutils_integration);
+      setWowUtilsGroupId(data.wowutils_group_id ?? "");
+      // No wowutils_api_key equivalent here — the real key is never sent
+      // back down (see Team.WowUtilsApiKey on the backend), so this stays
+      // blank until the admin retypes a new one.
       initialized.current = true;
     }
   }, [data]);
 
   const handleRevokeInvite = (tokenHash: string) => {
     if (!team?.team_id) return;
-    revokeInviteLink(tokenHash);
+    revokeInviteLink(tokenHash, {
+      onError: onActionError("Couldn't revoke that invite link — try again."),
+    });
   };
 
   const isValidUrl = (value: string) => {
@@ -213,12 +271,69 @@ const Team: FC = () => {
     }
   };
 
-  const handleUpdateTeam = () => {
-    updateTeam({
-      wowaudit_integration: wowAuditEnabled,
-      wowaudit_url: wowAuditGuildUrl,
-      wowaudit_api_key: wowAuditApiKey,
-    });
+  const handleWowUtilsTest = async () => {
+    setWowUtilsTestStatus("loading");
+    setWowUtilsTestMessage("");
+    try {
+      const res = await fetch(wowUtilsTestUrl, {
+        method: "POST",
+        headers: wowUtilsTestHeaders,
+        body: JSON.stringify({
+          group_id: wowUtilsGroupId,
+          api_key: wowUtilsApiKey,
+        }),
+      });
+      const resData = await res.json();
+      if (!res.ok) {
+        setWowUtilsTestStatus("error");
+        setWowUtilsTestMessage(
+          resData.error ?? "Could not verify — check your Group ID and API key.",
+        );
+        return;
+      }
+      setWowUtilsTestStatus("success");
+      setWowUtilsTestMessage(
+        `Connected to ${resData.name} (${resData.member_count} members)`,
+      );
+    } catch {
+      setWowUtilsTestStatus("error");
+      setWowUtilsTestMessage("Failed to reach WowUtils.");
+    }
+  };
+
+  // UpdateTeam overwrites every integration field in one request (it's not
+  // a partial patch), so each "Save" below echoes back the other
+  // integration's last-saved values instead of its own live form state —
+  // saving WowAudit settings can't accidentally persist an in-progress,
+  // untested edit sitting in the WowUtils form (and vice versa). Blank API
+  // key fields are safe either way since the backend keeps the existing key
+  // when one isn't sent.
+  const handleSaveWowAudit = () => {
+    updateTeam(
+      {
+        wowaudit_integration: wowAuditEnabled,
+        wowaudit_url: wowAuditGuildUrl,
+        wowaudit_api_key: wowAuditApiKey,
+        wowutils_integration: data?.wowutils_integration ?? false,
+        wowutils_group_id: data?.wowutils_group_id ?? "",
+        wowutils_api_key: "",
+      },
+      { onError: onActionError("Couldn't save WowAudit settings — try again.") },
+    );
+  };
+
+  const handleSaveWowUtils = () => {
+    updateTeam(
+      {
+        wowaudit_integration: data?.wowaudit_integration ?? false,
+        wowaudit_url: data?.wowaudit_url ?? "",
+        wowaudit_api_key: "",
+        wowutils_integration: wowUtilsEnabled,
+        wowutils_group_id: wowUtilsGroupId,
+        wowutils_api_key: wowUtilsApiKey,
+      },
+      { onError: onActionError("Couldn't save WowUtils settings — try again.") },
+    );
   };
 
   const credentialsUnchanged =
@@ -232,6 +347,23 @@ const Team: FC = () => {
     (wowAuditBothFilled &&
       (wowAuditTestStatus === "success" ||
         (credentialsUnchanged && data?.wowaudit_integration)));
+
+  const wowUtilsGroupIdValid = WOWUTILS_GROUP_ID_REGEX.test(wowUtilsGroupId);
+  // "Nothing changed" for WowUtils means the Group ID matches what's saved
+  // and no new key was typed — we can't compare against the old key itself
+  // since the backend never sends it back (see Team.WowUtilsApiKey).
+  const wowUtilsCredentialsUnchanged =
+    wowUtilsGroupId === (data?.wowutils_group_id ?? "") &&
+    wowUtilsApiKey.trim() === "";
+  const wowUtilsFieldsFilled =
+    wowUtilsGroupIdValid && wowUtilsApiKey.trim() !== "";
+  const canSaveWowUtils =
+    !wowUtilsEnabled ||
+    (wowUtilsGroupIdValid &&
+      (wowUtilsTestStatus === "success" ||
+        (wowUtilsCredentialsUnchanged &&
+          data?.wowutils_integration &&
+          data?.wowutils_api_key_set)));
 
   const isUserAdmin = ["owner", "admin"].includes(team?.name ?? "");
   // team?.name here is the current user's role on this team (see MyRole) —
@@ -265,11 +397,24 @@ const Team: FC = () => {
 
   if (error || !data) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div
-          className={`text-lg ${colorMode === "dark" ? "text-rose-400" : "text-rose-600"}`}
-        >
-          Error loading team data
+      <div className="flex items-center justify-center h-64 p-8">
+        <div className="max-w-md w-full flex flex-col items-center gap-4 text-center">
+          <div className="p-4 bg-rose-500/20 rounded-full">
+            <AlertCircle className="w-12 h-12 text-rose-400" />
+          </div>
+          <div className="space-y-2">
+            <h2
+              className={`font-montserrat text-2xl font-bold ${colorMode === "dark" ? "text-white" : "text-black"}`}
+            >
+              Couldn't Load This Team
+            </h2>
+            <p className="text-slate-600 dark:text-slate-300">
+              Something went wrong fetching this team's data.
+            </p>
+          </div>
+          <Button variant="primary" size="sm" onClick={() => refetch()}>
+            Try Again
+          </Button>
         </div>
       </div>
     );
@@ -329,6 +474,12 @@ const Team: FC = () => {
           ))}
         </div>
 
+        {actionError && (
+          <Alert type="danger" title="Something went wrong">
+            {actionError}
+          </Alert>
+        )}
+
         {/* Settings tab — WowAudit Integration */}
         {activeTab === "settings" && isUserAdmin && (
           <div
@@ -364,6 +515,11 @@ const Team: FC = () => {
                       {data.wowaudit_integration ? "Enabled" : "Disabled"}
                     </span>
                   </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-500 max-w-lg">
+                    Syncs your guild's WowAudit wishlist configs (sim
+                    settings) and lets the team upload validated droptimizer
+                    sims against them.
+                  </p>
                   <span className="text-sm text-black dark:text-slate-400">
                     Last Sync:{" "}
                     <span className="text-cyan-400">
@@ -380,7 +536,11 @@ const Team: FC = () => {
                   <Button
                     variant="primary"
                     size="sm"
-                    onClick={() => syncWishlists()}
+                    onClick={() =>
+                      syncWishlists(undefined, {
+                        onError: onActionError("Couldn't sync WowAudit wishlists — try again."),
+                      })
+                    }
                     disabled={isSyncing}
                   >
                     <RefreshCw
@@ -401,9 +561,9 @@ const Team: FC = () => {
                       : "bg-amber-50 border-amber-300 text-amber-700"
                   }`}
                 >
-                  <span className="mt-0.5 shrink-0">⚠</span>
+                  <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
                   <span>
-                    Raidbots and WoWAudit are not yet updated for Midnight.
+                    Raidbots and WowAudit are not yet updated for Midnight.
                     Syncing wishlist configs works, but Droptimizer uploads are
                     temporarily unavailable. This will be re-enabled once both
                     services support the new expansion.
@@ -450,101 +610,165 @@ const Team: FC = () => {
               >
                 Integration Settings
               </h3>
-              <Toggle
-                variant="default"
-                label="Enable WowAudit integration"
-                checked={wowAuditEnabled}
-                onChange={(e) => {
-                  setWowAuditEnabled(e.target.checked);
+              <IntegrationCredentialsFields
+                enableLabel="Enable WowAudit integration"
+                enabled={wowAuditEnabled}
+                onToggleEnabled={(checked) => {
+                  setWowAuditEnabled(checked);
                   setWowAuditTestStatus("idle");
                 }}
+                fields={[
+                  {
+                    key: "guild_url",
+                    label: "WowAudit Guild URL",
+                    placeholder: "https://wowaudit.com/us/area-52/your-guild",
+                    value: wowAuditGuildUrl,
+                    onChange: (value) => {
+                      setWowAuditGuildUrl(value);
+                      setWowAuditTestStatus("idle");
+                    },
+                  },
+                  {
+                    key: "api_key",
+                    label: "WowAudit API Key",
+                    placeholder: "Your WowAudit API key",
+                    type: "password",
+                    value: wowAuditApiKey,
+                    onChange: (value) => {
+                      setWowAuditApiKey(value);
+                      setWowAuditTestStatus("idle");
+                    },
+                  },
+                ]}
+                fieldsFilled={wowAuditBothFilled}
+                testStatus={wowAuditTestStatus}
+                onTest={handleWowAuditTest}
+                testErrorMessage="Could not verify — check the URL and API key."
               />
-              {wowAuditEnabled && (
-                <div className="flex flex-col gap-4">
-                  <div className="flex flex-col sm:flex-row gap-4">
-                    <TextInput
-                      value={wowAuditGuildUrl}
-                      variant="minimal"
-                      className="font-montserrat"
-                      label="WowAudit Guild URL"
-                      placeholder="https://wowaudit.com/us/area-52/your-guild"
-                      disabled={wowAuditTestStatus === "success"}
-                      onChange={(e) => {
-                        setWowAuditGuildUrl(e.target.value);
-                        setWowAuditTestStatus("idle");
-                      }}
-                    />
-                    <TextInput
-                      value={wowAuditApiKey}
-                      variant="minimal"
-                      className="font-montserrat"
-                      label="WowAudit API Key"
-                      placeholder="Your WowAudit API key"
-                      type="password"
-                      disabled={wowAuditTestStatus === "success"}
-                      onChange={(e) => {
-                        setWowAuditApiKey(e.target.value);
-                        setWowAuditTestStatus("idle");
-                      }}
-                    />
-                  </div>
-                  {wowAuditBothFilled && (
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={handleWowAuditTest}
-                        disabled={
-                          wowAuditTestStatus === "loading" ||
-                          wowAuditTestStatus === "success"
-                        }
-                        className={`
-                        flex items-center gap-2 px-4 py-2 rounded-xl font-medium font-montserrat text-sm
-                        transition-all duration-200
-                        disabled:opacity-50 disabled:cursor-not-allowed
-                        ${
-                          wowAuditTestStatus === "success"
-                            ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
-                            : wowAuditTestStatus === "error"
-                              ? "bg-rose-600 text-white hover:bg-rose-500"
-                              : colorMode === "dark"
-                                ? "bg-slate-700 text-slate-200 hover:bg-slate-600"
-                                : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                        }
-                      `}
-                      >
-                        {wowAuditTestStatus === "loading" ? (
-                          <LoaderCircle className="w-4 h-4 animate-spin" />
-                        ) : wowAuditTestStatus === "success" ? (
-                          <CheckCircle className="w-4 h-4" />
-                        ) : (
-                          <FlaskConical className="w-4 h-4" />
-                        )}
-                        {wowAuditTestStatus === "success"
-                          ? "Verified"
-                          : wowAuditTestStatus === "error"
-                            ? "Retry"
-                            : "Test"}
-                      </button>
-                      {wowAuditTestStatus === "error" && (
-                        <span
-                          className={`text-xs font-montserrat ${
-                            colorMode === "dark"
-                              ? "text-rose-400"
-                              : "text-rose-600"
-                          }`}
-                        >
-                          Could not verify — check the URL and API key.
-                        </span>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
               <div className="flex justify-end">
                 <Button
                   variant="primary"
                   size="sm"
-                  onClick={handleUpdateTeam}
+                  onClick={handleSaveWowAudit}
                   disabled={!canSaveWowAudit || isUpdating}
+                >
+                  <Save className="w-4 h-4" />
+                  {isUpdating ? "Saving..." : "Save"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Settings tab — WowUtils Integration */}
+        {activeTab === "settings" && isUserAdmin && (
+          <div
+            className={`rounded-xl border ${
+              colorMode === "dark"
+                ? "bg-slate-900/50 border-slate-800"
+                : "bg-white border-slate-200"
+            }`}
+          >
+            <div className="p-4 border-b border-slate-800 flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5 text-cyan-500" />
+                <h2
+                  className={`text-xl font-semibold font-montserrat ${
+                    colorMode === "dark" ? "text-white" : "text-slate-900"
+                  }`}
+                >
+                  WowUtils Integration
+                </h2>
+                <span
+                  className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold ${
+                    data.wowutils_integration
+                      ? colorMode === "dark"
+                        ? "bg-emerald-500/20 text-emerald-400"
+                        : "bg-emerald-100 text-emerald-700"
+                      : colorMode === "dark"
+                        ? "bg-slate-700 text-slate-400"
+                        : "bg-slate-100 text-slate-500"
+                  }`}
+                >
+                  {data.wowutils_integration ? "Enabled" : "Disabled"}
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-500 max-w-lg">
+                Lets the team upload droptimizer sims straight to your
+                WowUtils group — no wishlist config to sync first.
+              </p>
+            </div>
+
+            <div className="p-4 flex flex-col gap-4">
+              <h3
+                className={`text-sm font-semibold font-montserrat ${
+                  colorMode === "dark" ? "text-slate-300" : "text-slate-700"
+                }`}
+              >
+                Integration Settings
+              </h3>
+              <IntegrationCredentialsFields
+                enableLabel="Enable WowUtils integration"
+                enabled={wowUtilsEnabled}
+                onToggleEnabled={(checked) => {
+                  setWowUtilsEnabled(checked);
+                  setWowUtilsTestStatus("idle");
+                }}
+                fields={[
+                  {
+                    key: "group_id",
+                    label: "WowUtils Group ID",
+                    placeholder: "Your WowUtils Group ID",
+                    value: wowUtilsGroupId,
+                    onChange: (value) => {
+                      setWowUtilsGroupId(value.trim().toLowerCase());
+                      setWowUtilsTestStatus("idle");
+                    },
+                  },
+                  {
+                    key: "api_key",
+                    label: data?.wowutils_api_key_set
+                      ? "WowUtils API Key (configured — leave blank to keep it)"
+                      : "WowUtils API Key",
+                    placeholder: "Your WowUtils API key",
+                    type: "password",
+                    value: wowUtilsApiKey,
+                    onChange: (value) => {
+                      setWowUtilsApiKey(value);
+                      setWowUtilsTestStatus("idle");
+                    },
+                  },
+                ]}
+                fieldsFilled={wowUtilsFieldsFilled}
+                testStatus={wowUtilsTestStatus}
+                onTest={handleWowUtilsTest}
+                testSuccessMessage={wowUtilsTestMessage}
+                testErrorMessage={
+                  wowUtilsTestMessage ||
+                  "Could not verify — check your Group ID and API key."
+                }
+              />
+              {wowUtilsEnabled &&
+                !wowUtilsFieldsFilled &&
+                data?.wowutils_api_key_set &&
+                wowUtilsGroupIdValid && (
+                  <p
+                    className={`text-xs font-montserrat ${
+                      colorMode === "dark"
+                        ? "text-slate-500"
+                        : "text-slate-400"
+                    }`}
+                  >
+                    A key is already saved for this team — retype it above
+                    only if you want to change it.
+                  </p>
+                )}
+              <div className="flex justify-end">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  onClick={handleSaveWowUtils}
+                  disabled={!canSaveWowUtils || isUpdating}
                 >
                   <Save className="w-4 h-4" />
                   {isUpdating ? "Saving..." : "Save"}
@@ -556,6 +780,15 @@ const Team: FC = () => {
 
         {activeTab === "members" && (
           <>
+            {isUserAdmin && (
+              <TeamSetupChecklist
+                team={data}
+                onCreateInviteLink={() => setIsInviteLinkModalOpen(true)}
+                onGoToRoster={() => navigator("/team/roster")}
+                onGoToSettings={() => navigator("/team/settings")}
+              />
+            )}
+
             {/* Team Members */}
             <div
               className={`rounded-xl border ${
@@ -654,15 +887,18 @@ const Team: FC = () => {
                                     ? value[0]
                                     : value;
                                   if (!name) return;
-                                  updateMemberRole({
-                                    roleId: role.id,
-                                    name: name as "member" | "admin" | "loot_council",
-                                  });
+                                  updateMemberRole(
+                                    {
+                                      roleId: role.id,
+                                      name: name as "member" | "admin" | "loot_council",
+                                    },
+                                    { onError: onActionError("Couldn't update that member's role — try again.") },
+                                  );
                                 }}
                                 options={ROLE_OPTIONS}
                               />
                             ) : (
-                              role.name
+                              ROLE_LABELS[role.name] ?? role.name
                             )}
                           </td>
                           <td
@@ -693,6 +929,7 @@ const Team: FC = () => {
                                   setDeletingRoleId(role.id);
                                   deleteMember(role.id, {
                                     onSettled: () => setDeletingRoleId(null),
+                                    onError: onActionError("Couldn't remove that member — try again."),
                                   });
                                 }}
                               >
@@ -770,15 +1007,6 @@ const Team: FC = () => {
                             : "text-slate-600"
                         }`}
                       >
-                        Created
-                      </th>
-                      <th
-                        className={`px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider ${
-                          colorMode === "dark"
-                            ? "text-slate-400"
-                            : "text-slate-600"
-                        }`}
-                      >
                         Expires
                       </th>
                       <th
@@ -828,18 +1056,6 @@ const Team: FC = () => {
                                 : "border-slate-200 hover:bg-slate-50"
                             } transition-colors`}
                           >
-                            <td
-                              className={`px-6 py-4 text-sm ${
-                                colorMode === "dark"
-                                  ? "text-slate-300"
-                                  : "text-slate-700"
-                              }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <Calendar className="w-4 h-4 text-slate-500" />
-                                {formatDate(link.expires_at)}
-                              </div>
-                            </td>
                             <td
                               className={`px-6 py-4 text-sm ${
                                 colorMode === "dark"

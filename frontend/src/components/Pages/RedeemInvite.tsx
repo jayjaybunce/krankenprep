@@ -21,6 +21,7 @@ const RedeemInvite: FC = () => {
   const { setTeam } = useContext(TeamContext);
   const { data: myTeams, refetch: refetchMyTeams } = useMyTeams();
   const [joinedTeamId, setJoinedTeamId] = useState<number | null>(null);
+  const [joinError, setJoinError] = useState<string | null>(null);
 
   const isUserAlreadyMemember =
     myTeams?.findIndex((x) => x.team_id == data?.team_id) != -1;
@@ -28,6 +29,7 @@ const RedeemInvite: FC = () => {
   const handleJoinTeam = () => {
     if (!token) return;
 
+    setJoinError(null);
     redeemInvite(token, {
       onSuccess: async (response) => {
         setJoinedTeamId(response.team_id);
@@ -41,6 +43,10 @@ const RedeemInvite: FC = () => {
           setTeam(joinedTeam);
         }
       },
+      onError: (err) =>
+        setJoinError(
+          err instanceof Error ? err.message : "Failed to join this team.",
+        ),
     });
   };
 
@@ -95,7 +101,7 @@ const RedeemInvite: FC = () => {
                 </h2>
                 <p className="text-slate-600 dark:text-slate-300">
                   This invite link is invalid, expired, or has been revoked.
-                  Please request a new invite from your team leader.
+                  Please ask a team admin for a new one.
                 </p>
               </div>
             </div>
@@ -186,7 +192,8 @@ const RedeemInvite: FC = () => {
             You've Been Invited!
           </h1>
           <p className="text-slate-600 dark:text-slate-400">
-            Join your team and start raiding together
+            KrankenPrep helps your raid team plan encounters, write strategy
+            notes, and manage loot priorities together.
           </p>
         </div>
 
@@ -219,7 +226,7 @@ const RedeemInvite: FC = () => {
                     Region
                   </p>
                   <p className="font-semibold dark:text-white text-black">
-                    {data?.team?.region}
+                    {data?.team?.region?.toUpperCase()}
                   </p>
                 </div>
               </div>
@@ -258,10 +265,28 @@ const RedeemInvite: FC = () => {
                   </div>
                 )}
               </div>
+
+              {/* Role — invite links always grant Member; there's no role
+                  picker at invite time, so this is a fixed explainer rather
+                  than driven by data. */}
+              <div className="pt-3 border-t border-slate-600 dark:border-slate-700 space-y-1">
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  Your role
+                </p>
+                <p className="font-semibold dark:text-white text-black">
+                  Member
+                </p>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  You'll be able to view the team, claim your character, and
+                  manage your own loot wishlist and priorities. A team admin
+                  can grant you Loot Council or Admin access later from the
+                  Team page.
+                </p>
+              </div>
             </div>
 
             {/* Join Button */}
-            <div className="pt-3">
+            <div className="pt-3 space-y-2">
               <Button
                 variant="primary"
                 size="lg"
@@ -270,6 +295,11 @@ const RedeemInvite: FC = () => {
               >
                 Join Team
               </Button>
+              {joinError && (
+                <p className="text-sm text-rose-500 font-montserrat text-center">
+                  {joinError}
+                </p>
+              )}
             </div>
           </div>
         </Card>

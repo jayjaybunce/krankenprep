@@ -1,10 +1,11 @@
-import { type FC } from "react";
+import { type FC, useState } from "react";
 import { useSession } from "@descope/react-sdk";
 import { Card } from "../Card";
 import Button from "../Button";
 import { useRecentlyViewedPlans, useTheme, useUser, useDocumentTitle } from "../../hooks";
-import { useGetNews } from "../../api/queryHooks";
+import { useGetNews, useMyTeams } from "../../api/queryHooks";
 import { MarkdownRenderer } from "../MarkdownRenderer";
+import { CreateTeamModal } from "../modals/CreateTeamModal";
 import {
   Calendar,
   BookOpen,
@@ -16,6 +17,7 @@ import {
   MapPin,
   CheckCircle,
   Clock,
+  Gem,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { getRelativeTime } from "../../utils/timeUtils";
@@ -179,35 +181,91 @@ const AuthenticatedHome: FC = () => {
   const { user } = useUser();
   const plans = useRecentlyViewedPlans(user);
   const { data: newsItems } = useGetNews();
+  const hasNoPlans = !plans?.plans || plans.plans.length === 0;
 
-  // Mock data for raid plans - replace with actual data from your API
-  const recentPlans = [
-    {
-      id: 1,
-      name: "Chimaerus - Opening Pull",
-      boss: "Chimaerus",
-      raid: "Dreamrift Bastion",
-      slides: 3,
-      lastEdited: "2 hours ago",
-    },
-    {
-      id: 2,
-      name: "Vexie - Phase 2 Positioning",
-      boss: "Vexie & the Geargrinders",
-      raid: "Dreamrift Bastion",
-      slides: 5,
-      lastEdited: "1 day ago",
-    },
-    {
-      id: 3,
-      name: "Terminus - Full Strategy",
-      boss: "Terminus",
-      raid: "Manaforge Omega",
-      slides: 8,
-      lastEdited: "3 days ago",
-    },
-  ];
+  // Checked against real membership data (not just whichever team happens
+  // to be selected in this browser — TeamProvider's cached selection can be
+  // null on a new device even for someone who already has teams) so this
+  // only shows for accounts that genuinely have zero teams, and disappears
+  // the moment that's no longer true.
+  const { data: myTeamsData, isLoading: isTeamsLoading } = useMyTeams();
+  const [isCreateTeamModalOpen, setIsCreateTeamModalOpen] = useState(false);
+  const hasNoTeams = !isTeamsLoading && (myTeamsData?.length ?? 0) === 0;
 
+  if (hasNoTeams) {
+    return (
+      <div className="w-full min-h-screen flex items-center justify-center p-8">
+        <div className="max-w-2xl w-full space-y-8 text-center">
+          <div className="space-y-3">
+            <h1 className="font-montserrat text-4xl font-bold dark:text-white text-black">
+              Welcome to KrankenPrep
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400 max-w-lg mx-auto">
+              Plan encounters visually, write up strategy notes, and manage
+              your raid team's loot priorities together — all in one place.
+              To get started, create a team for your guild.
+            </p>
+          </div>
+
+          <div className="grid sm:grid-cols-3 gap-4 text-left">
+            <Card variant="outlined" hover={false}>
+              <div className="flex flex-col gap-2">
+                <MapPin className="w-5 h-5 text-cyan-500" />
+                <h3 className="font-montserrat font-semibold text-sm dark:text-white text-black">
+                  Visual Planning
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Draw strategies directly on boss arena maps.
+                </p>
+              </div>
+            </Card>
+            <Card variant="outlined" hover={false}>
+              <div className="flex flex-col gap-2">
+                <BookOpen className="w-5 h-5 text-purple-500" />
+                <h3 className="font-montserrat font-semibold text-sm dark:text-white text-black">
+                  Strategy Notes
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Organized, markdown-powered boss guides.
+                </p>
+              </div>
+            </Card>
+            <Card variant="outlined" hover={false}>
+              <div className="flex flex-col gap-2">
+                <Gem className="w-5 h-5 text-emerald-500" />
+                <h3 className="font-montserrat font-semibold text-sm dark:text-white text-black">
+                  Loot &amp; Priorities
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Track bonus roll priorities and wishlists per raider.
+                </p>
+              </div>
+            </Card>
+          </div>
+
+          <div className="space-y-3">
+            <Button
+              variant="primary"
+              size="lg"
+              onClick={() => setIsCreateTeamModalOpen(true)}
+            >
+              <Plus className="w-4 h-4" />
+              Create Your Team
+            </Button>
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Already have a team? Ask a team admin for an invite link —
+              it'll bring you straight here to join.
+            </p>
+          </div>
+        </div>
+
+        <CreateTeamModal
+          isOpen={isCreateTeamModalOpen}
+          onClose={setIsCreateTeamModalOpen}
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full min-h-screen p-8">
@@ -335,7 +393,7 @@ const AuthenticatedHome: FC = () => {
                 </Link>
               ))}
 
-              {recentPlans.length === 0 && (
+              {hasNoPlans && (
                 <Card variant="outlined" hover={false}>
                   <div className="text-center py-8">
                     <MapPin className="w-12 h-12 text-slate-400 mx-auto mb-3" />

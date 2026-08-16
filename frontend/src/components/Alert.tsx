@@ -1,5 +1,5 @@
 import React from "react";
-import { AlertTriangle, Check } from "lucide-react";
+import { AlertTriangle, Check, Info } from "lucide-react";
 import { useTheme } from "../hooks";
 import theme from "../theme/theme";
 
@@ -19,7 +19,7 @@ const Alert = ({ type = "info", title, children }: AlertProps) => {
           info: {
             bg: "bg-cyan-950/50 backdrop-blur-sm",
             border: "border-cyan-500/50 border-l-4 border-l-cyan-500",
-            icon: <AlertTriangle className="w-5 h-5 text-cyan-400" />,
+            icon: <Info className="w-5 h-5 text-cyan-400" />,
             iconBg: "bg-cyan-500/20 text-cyan-400",
           },
           success: {
@@ -45,7 +45,7 @@ const Alert = ({ type = "info", title, children }: AlertProps) => {
           info: {
             bg: "bg-cyan-50 backdrop-blur-sm",
             border: "border-cyan-200 border-l-4 border-l-cyan-500",
-            icon: <AlertTriangle className="w-5 h-5 text-cyan-600" />,
+            icon: <Info className="w-5 h-5 text-cyan-600" />,
             iconBg: "bg-cyan-100 text-cyan-600",
           },
           success: {

@@ -21,7 +21,6 @@ export type SectionProps = {
   tags?: React.ReactNode;
   showPulse?: boolean;
   children: React.ReactNode;
-  // defaultExpanded?: boolean;
   collapsible?: boolean;
   className?: string;
   titleBackgroundImage?: string;
@@ -36,14 +35,12 @@ export const Section: React.FC<SectionProps> = ({
   tags,
   showPulse = false,
   children,
-  // defaultExpanded = true,
   collapsible = true,
   className = "",
   titleBackgroundImage,
   isExpanded,
   setIsExpanded,
 }) => {
-  // const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const { colorMode } = useTheme();
 
   const variants = {

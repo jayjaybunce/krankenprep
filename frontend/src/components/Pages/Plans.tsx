@@ -7,12 +7,7 @@ import { Clock, ChevronLeft, ChevronRight, Eye, Pencil } from "lucide-react";
 
 const raids = [
   {
-    name: "Midnight S2",
-    route: "/plan/midnight-s2",
-    imageSrc: "https://cdn.raidplan.io/wow/lorebg/windrunnerspire.jpg", // Placeholder - will be replaced
-  },
-  {
-    name: "Midnight S1",
+    name: "Midnight",
     route: "/plan/midnight",
     imageSrc: "https://cdn.raidplan.io/wow/lorebg/windrunnerspire.jpg", // Placeholder - will be replaced
   },
@@ -37,7 +32,7 @@ const raids = [
 ];
 
 const Plans: FC = () => {
-  useDocumentTitle("My Plans");
+  useDocumentTitle("Raid Plans");
   const { data: raidPlans, isLoading } = useMyRaidplans();
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 15;
@@ -50,6 +45,7 @@ const Plans: FC = () => {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
 
+    if (diffMins < 1) return "Just now";
     if (diffMins < 60) return `${diffMins} minutes ago`;
     if (diffHours < 24) return `${diffHours} hours ago`;
     if (diffDays === 1) return "1 day ago";

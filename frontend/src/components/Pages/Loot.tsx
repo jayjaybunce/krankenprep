@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type FC } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { ChevronsLeft, ChevronsRight, Circle, CheckSquare, LoaderCircle, Minus, Plus, CheckCircle2, Search, Square, X } from "lucide-react";
+import { ChevronsLeft, ChevronsRight, Circle, CheckSquare, LoaderCircle, Minus, Plus, CheckCircle2, Search, Square, X, HelpCircle } from "lucide-react";
+import Tooltip from "../Tooltip";
+import { LootGuideModal } from "../modals/LootGuideModal";
 import { useDocumentTitle, useTeam, useTheme, useUser } from "../../hooks";
 import {
   useCurrentExpansion,
@@ -75,6 +77,22 @@ const TAB_LABELS: Record<LootTab, string> = {
   "audit-log": "Audit Log",
 };
 
+// One-line "what is this tab" shown on hover — the loot-council-only tabs
+// say so up front rather than letting someone click in and hit an
+// unauthorized wall first.
+const TAB_DESCRIPTIONS: Record<LootTab, string> = {
+  "bonus-rolls":
+    "Which bosses you're sending bonus rolls on this tier, and in what priority order.",
+  "per-item": "Loot council: who's wished for a specific item, and their priority/bonus rolls.",
+  "per-boss":
+    "Loot council: every player's priority, bonus rolls, and item wishes for one boss.",
+  "raid-wide":
+    "Loot council: a character × boss matrix of priority and bonus rolls across the whole tier.",
+  "tier-tracker": "Track which players have claimed each tier-set slot.",
+  boe: "Log Bind-on-Equip item sales for the team.",
+  "audit-log": "Loot council: a history of every wish, priority, and bonus roll change.",
+};
+
 // Turns a LootAuditLogEntry into the exact sentence shape requested:
 // "{character} {action}". The leading timestamp/user portion is rendered
 // separately (formatAuditLogPrefix) since it doesn't depend on event_type.
@@ -85,9 +103,9 @@ const formatAuditLogAction = (entry: LootAuditLogEntry): string => {
     case "item_unwished":
       return `removed ${entry.item_name ?? "an item"} as bonus roll target`;
     case "item_obtained":
-      return `acquired ${entry.item_name ?? "an item"}`;
+      return `obtained ${entry.item_name ?? "an item"}`;
     case "item_unobtained":
-      return `un-marked ${entry.item_name ?? "an item"} as acquired`;
+      return `unmarked ${entry.item_name ?? "an item"} as obtained`;
     case "priority_set":
       return `set priority ${entry.value ?? "—"} on ${entry.difficulty} ${entry.boss_name}`;
     case "bonus_roll_added":
@@ -164,7 +182,7 @@ const ItemRow: FC<{
         disabled={isTogglingWish}
         title={
           wishError
-            ? wishError.message
+            ? "Couldn't update — try refreshing."
             : item.wished
               ? "Remove from bonus roll targets"
               : "Target this item for bonus rolls"
@@ -218,7 +236,7 @@ const ItemRow: FC<{
           disabled={isTogglingObtained}
           title={
             obtainedError
-              ? obtainedError.message
+              ? "Couldn't update — try refreshing."
               : item.obtained
                 ? "Mark as not obtained"
                 : "Mark as obtained"
@@ -241,7 +259,7 @@ const ItemRow: FC<{
             <Circle className="w-4 h-4" />
           )}
           <span className="text-xs font-semibold font-montserrat uppercase tracking-wide">
-            {item.obtained ? "Acquired" : "Mark Acquired"}
+            {item.obtained ? "Obtained" : "Mark Obtained"}
           </span>
         </button>
       )}
@@ -321,7 +339,7 @@ const RollInterestSection: FC<{
             <span
               className={`text-xs font-montserrat ${colorMode === "dark" ? "text-slate-400" : "text-slate-600"}`}
             >
-              {roll.pool_size} item{roll.pool_size !== 1 ? "s" : ""} in pool
+              {roll.pool_size} eligible item{roll.pool_size !== 1 ? "s" : ""}
             </span>
           </div>
         );
@@ -344,7 +362,7 @@ const ItemInterestSection: FC<{
       <p
         className={`text-sm font-montserrat ${colorMode === "dark" ? "text-slate-500" : "text-slate-400"}`}
       >
-        No items wished for yet.
+        No items wished for on this boss yet.
       </p>
     );
   }
@@ -466,12 +484,12 @@ const ItemWisherSection: FC<{
             <span
               className={`text-xs font-montserrat ${colorMode === "dark" ? "text-slate-400" : "text-slate-600"}`}
             >
-              {wisher.pool_size} item{wisher.pool_size !== 1 ? "s" : ""} in pool
+              {wisher.pool_size} eligible item{wisher.pool_size !== 1 ? "s" : ""}
             </span>
             {wisher.obtained && (
               <span className="inline-flex items-center gap-1 text-xs font-semibold font-montserrat uppercase tracking-wide text-emerald-400">
                 <CheckCircle2 className="w-3.5 h-3.5" />
-                Acquired
+                Obtained
               </span>
             )}
           </div>
@@ -589,6 +607,7 @@ const RaidWideMatrix: FC<{
                         </span>
                         {roll.bonus_rolls > 0 && (
                           <span
+                            title="Bonus rolls sent"
                             className={`text-[10px] font-montserrat ${colorMode === "dark" ? "text-slate-500" : "text-slate-400"}`}
                           >
                             {roll.bonus_rolls} BR
@@ -624,7 +643,8 @@ const AuditLogSection: FC<{
       <p
         className={`text-sm font-montserrat ${colorMode === "dark" ? "text-slate-500" : "text-slate-400"}`}
       >
-        No wishlist activity recorded yet.
+        No activity recorded yet — wishes, priority changes, and bonus
+        rolls will show up here.
       </p>
     );
   }
@@ -823,19 +843,30 @@ export const Loot: FC = () => {
     setIsDoneBannerDismissed(false);
   }, [selectedBossId, selectedCharacterId, difficulty]);
 
-  const { mutate: reorderPriorities } = useReorderBossPriorities(
-    teamId,
-    selectedCharacterId ?? -1,
-  );
+  const { mutate: reorderPriorities, isPending: isClearingPriority } =
+    useReorderBossPriorities(teamId, selectedCharacterId ?? -1);
 
-  const handleConfirmDoneBossPriorityShift = () => {
-    if (!selectedBossId) return;
+  // Unsets a single boss's priority — drops it from the ordering and shifts
+  // everything below it up to close the gap, via the same delete-then-
+  // recreate reorder endpoint the drag-to-fix modal uses. Shared by the
+  // "done with this boss" banner (which unsets automatically once every
+  // wished item is obtained) and the always-available "Clear" control next
+  // to the priority input (for pausing/unsetting a boss temporarily, before
+  // it's actually done). Compacting rather than leaving a gap means clearing
+  // one boss's priority doesn't itself trip the "priorities aren't in
+  // order" banner for the rest.
+  const clearBossPriority = (bossId: number) => {
     reorderPriorities({
       difficulty,
       boss_ids: prioritizedBossesInOrder
-        .filter((b) => b.id !== selectedBossId)
+        .filter((b) => b.id !== bossId)
         .map((b) => b.id),
     });
+  };
+
+  const handleConfirmDoneBossPriorityShift = () => {
+    if (!selectedBossId) return;
+    clearBossPriority(selectedBossId);
   };
 
   const { data: bossRollOverview } = useGetBossRollOverview(
@@ -892,6 +923,7 @@ export const Loot: FC = () => {
   );
   const [isBoeModalOpen, setIsBoeModalOpen] = useState(false);
   const [editingBoeSale, setEditingBoeSale] = useState<BoeSale | null>(null);
+  const [isLootGuideOpen, setIsLootGuideOpen] = useState(false);
   const openCreateBoeModal = () => {
     setEditingBoeSale(null);
     setIsBoeModalOpen(true);
@@ -1018,36 +1050,42 @@ export const Loot: FC = () => {
   return (
     <div className="w-full min-h-screen p-8">
       <div className="max-w-[1600px] mx-auto space-y-6">
-        <div className="space-y-2">
-          <h1
-            className={`font-montserrat text-4xl font-bold ${colorMode === "dark" ? "text-white" : "text-black"}`}
-          >
-            Loot
-          </h1>
-          <p
-            className={colorMode === "dark" ? "text-slate-400" : "text-slate-600"}
-          >
-            Plan which bosses you're sending bonus rolls on this tier
-          </p>
+        <div className="space-y-2 flex items-start justify-between gap-4">
+          <div className="space-y-2">
+            <h1
+              className={`font-montserrat text-4xl font-bold ${colorMode === "dark" ? "text-white" : "text-black"}`}
+            >
+              Loot
+            </h1>
+            <p
+              className={colorMode === "dark" ? "text-slate-400" : "text-slate-600"}
+            >
+              Plan which bosses you're sending bonus rolls on this tier
+            </p>
+          </div>
+          <Button variant="ghost" size="sm" onClick={() => setIsLootGuideOpen(true)}>
+            <HelpCircle className="w-4 h-4" /> Loot Guide
+          </Button>
         </div>
 
         <div
           className={`flex gap-1 border-b ${colorMode === "dark" ? "border-slate-800" : "border-slate-200"}`}
         >
           {TABS.map((tab) => (
-            <button
-              key={tab}
-              onClick={() => navigate(`/loot/${tab}`, { replace: true })}
-              className={`px-4 py-2 text-sm font-medium font-montserrat border-b-2 -mb-px transition-colors ${
-                activeTab === tab
-                  ? "border-cyan-500 text-cyan-500"
-                  : colorMode === "dark"
-                    ? "border-transparent text-slate-400 hover:text-slate-200"
-                    : "border-transparent text-slate-500 hover:text-slate-900"
-              }`}
-            >
-              {TAB_LABELS[tab]}
-            </button>
+            <Tooltip key={tab} content={TAB_DESCRIPTIONS[tab]} side="bottom" wide>
+              <button
+                onClick={() => navigate(`/loot/${tab}`, { replace: true })}
+                className={`px-4 py-2 text-sm font-medium font-montserrat border-b-2 -mb-px transition-colors ${
+                  activeTab === tab
+                    ? "border-cyan-500 text-cyan-500"
+                    : colorMode === "dark"
+                      ? "border-transparent text-slate-400 hover:text-slate-200"
+                      : "border-transparent text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                {TAB_LABELS[tab]}
+              </button>
+            </Tooltip>
           ))}
         </div>
 
@@ -1061,8 +1099,8 @@ export const Loot: FC = () => {
               }`}
             >
               <p className="text-sm font-montserrat">
-                Loot council, admin, or owner access required to view this
-                tab.
+                This tab is for loot council, admins, and the team owner —
+                it shows everyone's standing, not just yours.
               </p>
             </div>
           ) : (
@@ -1142,8 +1180,8 @@ export const Loot: FC = () => {
               }`}
             >
               <p className="text-sm font-montserrat">
-                Loot council, admin, or owner access required to view this
-                tab.
+                This tab is for loot council, admins, and the team owner —
+                it shows everyone's standing, not just yours.
               </p>
             </div>
           ) : (
@@ -1186,8 +1224,8 @@ export const Loot: FC = () => {
               }`}
             >
               <p className="text-sm font-montserrat">
-                Loot council, admin, or owner access required to view this
-                tab.
+                This tab is for loot council, admins, and the team owner —
+                it shows everyone's standing, not just yours.
               </p>
             </div>
           ) : (
@@ -1420,8 +1458,8 @@ export const Loot: FC = () => {
               }`}
             >
               <p className="text-sm font-montserrat">
-                Loot council, admin, or owner access required to view this
-                tab.
+                This tab is for loot council, admins, and the team owner —
+                it shows everyone's standing, not just yours.
               </p>
             </div>
           ) : (
@@ -1479,18 +1517,6 @@ export const Loot: FC = () => {
               />
             </div>
           )
-        ) : activeTab !== "bonus-rolls" ? (
-          <div
-            className={`rounded-xl border p-12 text-center ${
-              colorMode === "dark"
-                ? "bg-slate-900/50 border-slate-800 text-slate-500"
-                : "bg-white border-slate-200 text-slate-400"
-            }`}
-          >
-            <p className="text-sm font-montserrat">
-              {TAB_LABELS[activeTab]} — coming soon
-            </p>
-          </div>
         ) : editableCharacters.length === 0 ? (
           <div
             className={`rounded-xl border p-12 text-center ${
@@ -1668,19 +1694,47 @@ export const Loot: FC = () => {
 
                   {hasWishedItems && (
                     <div className="flex items-center gap-2 flex-wrap">
-                      <label
-                        className={`text-xs font-medium font-montserrat uppercase tracking-wide ${colorMode === "dark" ? "text-slate-400" : "text-slate-600"}`}
+                      <Tooltip
+                        content="The order you're sending bonus rolls on this boss, relative to your other bosses this tier — 1 is first."
+                        side="top"
+                        wide
                       >
-                        Priority on this boss
-                      </label>
+                        <label
+                          className={`flex items-center gap-1 text-xs font-medium font-montserrat uppercase tracking-wide ${colorMode === "dark" ? "text-slate-400" : "text-slate-600"}`}
+                        >
+                          Priority on this boss
+                          <HelpCircle className="w-3 h-3 opacity-60" />
+                        </label>
+                      </Tooltip>
                       <input
-                        key={`${selectedBossId}-${selectedCharacterId}-${difficulty}`}
+                        // Remounting whenever bossLoot?.priority itself
+                        // changes (not just when boss/character/difficulty
+                        // change) keeps defaultValue in sync after a clear
+                        // or a "Fix priorities" reorder that touched this
+                        // boss out from under the input while it's still
+                        // mounted — otherwise the field would keep showing
+                        // a stale number (or a stale blank) until the user
+                        // navigated away and back.
+                        key={`${selectedBossId}-${selectedCharacterId}-${difficulty}-${bossLoot?.priority ?? "unset"}`}
                         type="number"
                         min={1}
+                        placeholder="—"
                         defaultValue={bossLoot?.priority ?? undefined}
+                        disabled={isClearingPriority}
                         onFocus={() => resetSetPriorityError()}
                         onBlur={(e) => {
-                          const value = Number(e.target.value);
+                          const raw = e.target.value.trim();
+                          // Clearing the field is how you unset a priority
+                          // — previously this branch silently did nothing,
+                          // leaving the field blank on screen while the old
+                          // priority stayed in effect underneath.
+                          if (raw === "") {
+                            if (selectedBossId != null && bossLoot?.priority != null) {
+                              clearBossPriority(selectedBossId);
+                            }
+                            return;
+                          }
+                          const value = Number(raw);
                           if (value > 0) {
                             setPriority({
                               character_id: selectedCharacterId!,
@@ -1689,12 +1743,31 @@ export const Loot: FC = () => {
                             });
                           }
                         }}
-                        className={`w-16 px-2 py-1 text-sm rounded-md border ${
+                        className={`w-16 px-2 py-1 text-sm rounded-md border disabled:opacity-50 ${
                           colorMode === "dark"
                             ? "bg-slate-800 border-slate-700 text-slate-200"
                             : "bg-white border-slate-300 text-slate-800"
                         }`}
                       />
+                      {bossLoot?.priority != null && (
+                        <button
+                          type="button"
+                          disabled={isClearingPriority}
+                          onClick={() => {
+                            if (selectedBossId == null) return;
+                            resetSetPriorityError();
+                            clearBossPriority(selectedBossId);
+                          }}
+                          title="Unset this boss's priority — you can set it again later."
+                          className={`text-xs font-montserrat font-semibold underline underline-offset-2 shrink-0 disabled:opacity-50 ${
+                            colorMode === "dark"
+                              ? "text-slate-400 hover:text-slate-200"
+                              : "text-slate-500 hover:text-slate-700"
+                          }`}
+                        >
+                          {isClearingPriority ? "Clearing…" : "Clear"}
+                        </button>
+                      )}
                       {setPriorityError && (
                         <>
                           <span className="text-xs font-montserrat text-rose-500">
@@ -1715,11 +1788,18 @@ export const Loot: FC = () => {
                   )}
 
                   <div className="flex items-center gap-2">
-                    <label
-                      className={`text-xs font-medium font-montserrat uppercase tracking-wide ${colorMode === "dark" ? "text-slate-400" : "text-slate-600"}`}
+                    <Tooltip
+                      content="A running total of bonus rolls spent on this boss this reset — there's no lockout tracking, just a manual counter."
+                      side="top"
+                      wide
                     >
-                      Bonus rolls sent
-                    </label>
+                      <label
+                        className={`flex items-center gap-1 text-xs font-medium font-montserrat uppercase tracking-wide ${colorMode === "dark" ? "text-slate-400" : "text-slate-600"}`}
+                      >
+                        Bonus rolls sent
+                        <HelpCircle className="w-3 h-3 opacity-60" />
+                      </label>
+                    </Tooltip>
                     <button
                       onClick={() =>
                         setBonusRolls({
@@ -1773,6 +1853,11 @@ export const Loot: FC = () => {
         onClose={setIsBoeModalOpen}
         teamId={teamId}
         sale={editingBoeSale}
+      />
+
+      <LootGuideModal
+        isOpen={isLootGuideOpen}
+        onClose={() => setIsLootGuideOpen(false)}
       />
     </div>
   );

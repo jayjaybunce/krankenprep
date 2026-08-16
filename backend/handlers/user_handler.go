@@ -45,6 +45,13 @@ func GetMyTeams(c *gin.Context) {
 
 	roles := []models.Role{}
 	database.DB.Model(&models.Role{}).Where("user_id = ?", user.ID).Joins("Team").Preload("Team.WishlistConfigs").Find(&roles)
+	// WowUtilsApiKeySet is computed (gorm:"-"), so it doesn't come back
+	// from the query above — every handler that serializes a Team has to
+	// set it explicitly. This is the one place Team rides along on another
+	// model (Role) rather than being queried directly, easy to miss.
+	for i := range roles {
+		roles[i].Team.WowUtilsApiKeySet = roles[i].Team.WowUtilsApiKey != ""
+	}
 	c.JSON(http.StatusOK, roles)
 
 	// c.JSON(http.StatusOK, "in /me/teams")

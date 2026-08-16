@@ -14,69 +14,27 @@ import {
 import { useTeam, useTheme, useUser } from "../hooks";
 import { Descope, useSession } from "@descope/react-sdk";
 import { useEffect, useState } from "react";
-import { WowAuditPopup } from "./WowAuditPopup";
+import { DroptimizerUploadPopup } from "./DroptimizerUploadPopup";
 import { useCurrentExpansion, useGetNews } from "../api/queryHooks";
 import { preload } from "react-dom";
 import { Link, useLocation } from "react-router-dom";
 import { BossSelectionV2 } from "./BossSelection";
 import Tooltip from "./Tooltip";
 
-// interface ContentBlock {
-//   type: "text" | "image" | "video";
-//   value: string;
-//   caption?: string;
-//   url?: string;
-//   bold?: boolean;
-//   italic?: boolean;
-//   highlight?: boolean;
-//   color?: string;
-// }
-
-// interface Post {
-//   id: number;
-//   title: string;
-//   cardType:
-//     | "assignment"
-//     | "warning"
-//     | "cooldown"
-//     | "positioning"
-//     | "mechanic"
-//     | "media"
-//     | "general";
-//   content: ContentBlock[];
-//   linkedGameId?: number;
-// }
-
-// interface Phase {
-//   id: number;
-//   phaseNumber: number;
-//   name: string;
-//   isExpanded: boolean;
-//   isCurrent: boolean;
-//   hasNewNotes: boolean;
-//   posts: Post[];
-// }
-
-// interface Boss {
-//   id: number;
-//   name: string;
-//   status: "killed" | "progressing";
-//   phases: Phase[];
-// }
-
 const LAST_SEEN_NEWS_KEY = "krankenprep_last_seen_news_at";
 
 const Layout: FC<PropsWithChildren> = ({ children }) => {
-  // Layout component thats rendered with every Secure Route
-  // const [activeExpansion, setActiveExpansion] = useState("Manaforge Omega");
   const { colorMode, toggleColorMode } = useTheme();
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const { isAuthenticated, isSessionLoading } = useSession();
+  // Shared between the mobile and desktop auth widgets below — they're the
+  // exact same sign-in flow rendered twice for responsive layout, not two
+  // independent ones, so one error message serves both.
+  const [authError, setAuthError] = useState<string | null>(null);
 
   const { user, isLoading } = useUser();
 
   const { team } = useTeam();
-  const isUserAdmin = ["owner", "admin"].includes(team?.name ?? "");
   const location = useLocation();
 
   const { data: expData } = useCurrentExpansion();
@@ -195,8 +153,15 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
             <Descope
               flowId="sign-up-or-in"
               theme={colorMode}
-              onError={(err) => console.log("Error!", err)}
+              onError={() =>
+                setAuthError("We couldn't sign you in. Please try again.")
+              }
             />
+            {authError && (
+              <p className="text-xs text-rose-400 font-montserrat mt-2">
+                {authError}
+              </p>
+            )}
           </div>
         )}
 
@@ -208,7 +173,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
               { to: "/plans", icon: Calendar, label: "Plan" },
               { to: "/prep", icon: BookOpen, label: "Prep" },
               ...(team ? [{ to: "/loot", icon: Gem, label: "Loot" }] : []),
-              ...(team && isUserAdmin ? [{ to: "/team", icon: ShieldHalf, label: "Team" }] : []),
+              ...(team ? [{ to: "/team", icon: ShieldHalf, label: "Team" }] : []),
             ] as const
           ).map(({ to, icon: Icon, label }) => (
             <Link
@@ -272,11 +237,15 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                 <Descope
                   flowId="sign-up-or-in"
                   theme={colorMode}
-                  onError={(err) => {
-                    console.log("Error!", err);
-                    // alert("Error: " + err.detail.message);
-                  }}
+                  onError={() =>
+                    setAuthError("We couldn't sign you in. Please try again.")
+                  }
                 />
+                {authError && (
+                  <p className="text-[10px] text-rose-400 font-montserrat mt-2 text-center">
+                    {authError}
+                  </p>
+                )}
               </div>
             ) : null}
             <div className="w-full flex-1">
@@ -322,7 +291,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
                     />
                   </Link>
                 </Tooltip>
-                {team && isUserAdmin ? (
+                {team ? (
                   <Tooltip content="Team" side="right">
                     <Link
                       to="/team"
@@ -393,7 +362,7 @@ const Layout: FC<PropsWithChildren> = ({ children }) => {
           {children}
         </div>
       </div>
-      {team && <WowAuditPopup />}
+      {team && <DroptimizerUploadPopup />}
     </>
   );
 };

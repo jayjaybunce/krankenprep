@@ -55,10 +55,12 @@ export const CreateInviteLinkModal: FC<CreateInviteLinkModalProps> = ({
   const [isPermanent, setIsPermanent] = useState(false);
   const [createdToken, setCreatedToken] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const { mutate, isPending } = useCreateInviteLink(teamId);
 
   const handleCreate = () => {
+    setCreateError(null);
     const daysValue = Array.isArray(usableForDays)
       ? usableForDays[0]
       : usableForDays;
@@ -79,6 +81,10 @@ export const CreateInviteLinkModal: FC<CreateInviteLinkModalProps> = ({
         onSuccess: (data) => {
           setCreatedToken(data.token);
         },
+        onError: (err) =>
+          setCreateError(
+            err instanceof Error ? err.message : "Failed to create invite link.",
+          ),
       },
     );
   };
@@ -89,6 +95,7 @@ export const CreateInviteLinkModal: FC<CreateInviteLinkModalProps> = ({
     setMaxUses(10);
     setIsPermanent(false);
     setCopied(false);
+    setCreateError(null);
     onClose(false);
   };
 
@@ -109,7 +116,7 @@ export const CreateInviteLinkModal: FC<CreateInviteLinkModalProps> = ({
       subtitle={
         createdToken
           ? "Share this link with your team members"
-          : "Configure invite link settings"
+          : "Choose how long the link works and how many people can use it"
       }
       variant="elevated"
       size="md"
@@ -174,7 +181,7 @@ export const CreateInviteLinkModal: FC<CreateInviteLinkModalProps> = ({
 
           <div className="grid grid-cols-2 gap-4">
             <Dropdown
-              label="Usable for"
+              label="Expires after"
               value={usableForDays}
               onChange={setUsableForDays}
               options={daysOptions}
@@ -191,6 +198,9 @@ export const CreateInviteLinkModal: FC<CreateInviteLinkModalProps> = ({
               variant="default"
             />
           </div>
+          {createError && (
+            <p className="text-xs text-rose-500 font-montserrat">{createError}</p>
+          )}
         </div>
       )}
     </Modal>

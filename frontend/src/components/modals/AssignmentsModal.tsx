@@ -642,8 +642,9 @@ export const AssignmentsModal: FC<AssignmentsModalProps> = ({
         {showEditor && (
           <div className="flex flex-col gap-2 p-4 bg-slate-900/60 border border-slate-800/60 rounded-xl">
             <p className="text-[11px] font-montserrat text-slate-500">
-              Paste the NSRT string from WoWutils below (WoWutils → Setups
-              view → copy the string). Assignments will update on save.
+              Paste the raid-assignment string exported from WowUtils' NSRT
+              tool below (WowUtils → Setups → copy the string). Assignments
+              will update on save.
             </p>
             <textarea
               value={noteContent}

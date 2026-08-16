@@ -12,6 +12,8 @@ type Team struct {
 	WoWAuditDataSyncDate time.Time        `json:"wowaudit_data_synced_at"`
 	WowAuditUrl          string           `json:"wowaudit_url"`
 	WowAuditApiKey       string           `json:"wowaudit_api_key"`
+	WowUtilsIntegration  bool             `json:"wowutils_integration"`
+	WowUtilsGroupId      string           `json:"wowutils_group_id"`
 	Roles                []Role           `json:"roles" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Players              []Player         `json:"players" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	Sections             []Section        `json:"sections" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
@@ -20,6 +22,15 @@ type Team struct {
 	AssignmentNotes      []AssignmentNote `json:"assignment_notes" gorm:"constraint:OnUpdate:CASCADE,OnDelete:CASCADE;"`
 	CreatedAt            time.Time        `json:"created_at"`
 	UpdatedAt            time.Time        `json:"updated_at"`
+
+	// WowUtilsApiKey is deliberately excluded from JSON — WowUtils only ever
+	// shows this key once at creation on their end, so we don't round-trip
+	// it back to the client the way WowAuditApiKey currently is. Handlers
+	// that return a Team should set WowUtilsApiKeySet explicitly beforehand
+	// so the settings UI can render "already configured" without ever
+	// seeing the real key back.
+	WowUtilsApiKey    string `json:"-"`
+	WowUtilsApiKeySet bool   `json:"wowutils_api_key_set" gorm:"-"`
 }
 
 type Wishlist struct {

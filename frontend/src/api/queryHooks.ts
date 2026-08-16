@@ -146,6 +146,12 @@ export type Team = {
         wowaudit_data_synced_at: string,
         wowaudit_url: string,
         wowaudit_api_key: string,
+        wowutils_integration: boolean,
+        wowutils_group_id: string,
+        // The real key is never sent back down (see Team.WowUtilsApiKey on
+        // the backend) — this just tells the settings UI whether one's
+        // already saved, so it can render "configured" without the value.
+        wowutils_api_key_set: boolean,
         wishlist_configs: Wishlist[] | null
         roles: MyRole[]
         players: Player[] | null
@@ -274,7 +280,6 @@ type TeamSectionsResponse = {
 
 export const useTeamAndBossSections = (bossId: string | undefined, teamId: string | undefined) => {
     const {url, headers, enabled} = useKpApi(`/teams/${teamId}/sections/boss/${bossId}`)
-    console.log(`team_${teamId}_boss_${bossId}`)
     return useQuery({
         queryKey: [`team_${teamId}_boss_${bossId}`],
         enabled,
@@ -318,10 +323,17 @@ export const useGetRaidplanById = (id: string, enabledOverride: boolean) => {
         queryKey: [`raidplan_${id}`],
         retry: 0,
         enabled: enabledOverride,
-        queryFn: () => fetch(url, {
-            method: "GET",
-            headers
-        }).then((res) => res.json() as Promise<RaidPlan>)
+        queryFn: async () => {
+            const res = await fetch(url, {
+                method: "GET",
+                headers
+            })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new Error(data.error ?? "Failed to load raid plan")
+            }
+            return data as RaidPlan
+        }
     })
 }
 

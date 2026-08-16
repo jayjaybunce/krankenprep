@@ -1,16 +1,14 @@
 import type { Dispatch, FC, SetStateAction } from "react";
 import { useState } from "react";
 import { Modal } from "../Modal";
-import {
-  Save,
-  X as XIcon,
-  LoaderCircle,
-  FlaskConical,
-  CheckCircle,
-} from "lucide-react";
+import { Save, X as XIcon, LoaderCircle } from "lucide-react";
 import { useTheme, useKpApi } from "../../hooks";
-import { Dropdown, TextInput, Toggle } from "../form";
+import { Dropdown, TextInput } from "../form";
 import type { DropdownOption } from "../form/Dropdown";
+import {
+  IntegrationCredentialsFields,
+  type IntegrationTestStatus,
+} from "../integrations/IntegrationCredentialsFields";
 import { useRegions, useServers } from "../../api/queryHooks";
 import { useCreateTeam } from "../../api/mutationHooks";
 
@@ -18,6 +16,8 @@ const REGION_MAP: { [key: string]: string } = {
   na: "North America",
   eu: "Europe",
 };
+
+const WOWUTILS_GROUP_ID_REGEX = /^[0-9a-f]{24}$/i;
 
 type CreateTeamModalProps = {
   isOpen: boolean;
@@ -30,8 +30,6 @@ type CreateTeamForm = {
   server: string | string[];
   rioUrl: string;
 };
-
-type WowAuditTestStatus = "idle" | "loading" | "success" | "error";
 
 const defaultFormState: CreateTeamForm = {
   teamName: "",
@@ -50,7 +48,14 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
   const [wowAuditGuildUrl, setWowAuditGuildUrl] = useState("");
   const [wowAuditApiKey, setWowAuditApiKey] = useState("");
   const [wowAuditTestStatus, setWowAuditTestStatus] =
-    useState<WowAuditTestStatus>("idle");
+    useState<IntegrationTestStatus>("idle");
+
+  const [wowUtilsEnabled, setWowUtilsEnabled] = useState(false);
+  const [wowUtilsGroupId, setWowUtilsGroupId] = useState("");
+  const [wowUtilsApiKey, setWowUtilsApiKey] = useState("");
+  const [wowUtilsTestStatus, setWowUtilsTestStatus] =
+    useState<IntegrationTestStatus>("idle");
+  const [wowUtilsTestMessage, setWowUtilsTestMessage] = useState("");
 
   const handleFormChange = (key: string, value: any) => {
     setFormState((prevState) => {
@@ -66,6 +71,9 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
   const { isLoading: isRegionDataLoading, data: regionData } = useRegions();
   const { url: wowAuditTestUrl, headers: authHeaders } = useKpApi(
     "/teams/wowaudit/test",
+  );
+  const { url: wowUtilsTestUrl, headers: wowUtilsTestHeaders } = useKpApi(
+    "/teams/wowutils/test",
   );
 
   const { mutate, isPending } = useCreateTeam();
@@ -86,12 +94,13 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
           wowaudit_url: wowAuditGuildUrl,
           wowaudit_api_key: wowAuditApiKey,
         }),
+        wowutils_integration: wowUtilsEnabled,
+        ...(wowUtilsEnabled && {
+          wowutils_group_id: wowUtilsGroupId,
+          wowutils_api_key: wowUtilsApiKey,
+        }),
       },
-      { onSuccess: (r) => {
-        r.json().then((data) => {
-          console.log(data)
-          
-        })
+      { onSuccess: () => {
         onClose(false)
       } },
     );
@@ -126,6 +135,36 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
     }
   };
 
+  const handleWowUtilsTest = async () => {
+    setWowUtilsTestStatus("loading");
+    setWowUtilsTestMessage("");
+    try {
+      const res = await fetch(wowUtilsTestUrl, {
+        method: "POST",
+        headers: wowUtilsTestHeaders,
+        body: JSON.stringify({
+          group_id: wowUtilsGroupId,
+          api_key: wowUtilsApiKey,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setWowUtilsTestStatus("error");
+        setWowUtilsTestMessage(
+          data.error ?? "Could not verify — check your Group ID and API key.",
+        );
+        return;
+      }
+      setWowUtilsTestStatus("success");
+      setWowUtilsTestMessage(
+        `Connected to ${data.name} (${data.member_count} members)`,
+      );
+    } catch {
+      setWowUtilsTestStatus("error");
+      setWowUtilsTestMessage("Failed to reach WowUtils.");
+    }
+  };
+
   const isValidUrl = (value: string) => {
     try {
       const u = new URL(value);
@@ -136,14 +175,18 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
   };
 
   const rioUrlValid = isValidUrl(formState.rioUrl);
+  const wowUtilsGroupIdValid = WOWUTILS_GROUP_ID_REGEX.test(wowUtilsGroupId);
   const canSave =
     formState.teamName.trim() !== "" &&
     rioUrlValid &&
-    (!wowAuditEnabled || wowAuditTestStatus === "success");
+    (!wowAuditEnabled || wowAuditTestStatus === "success") &&
+    (!wowUtilsEnabled || wowUtilsTestStatus === "success");
 
   const wowAuditGuildUrlValid = isValidUrl(wowAuditGuildUrl);
   const wowAuditBothFilled =
     wowAuditGuildUrlValid && wowAuditApiKey.trim() !== "";
+  const wowUtilsFieldsFilled =
+    wowUtilsGroupIdValid && wowUtilsApiKey.trim() !== "";
 
   const regionOptions: DropdownOption[] =
     !isRegionDataLoading && Array.isArray(regionData)
@@ -261,93 +304,85 @@ export const CreateTeamModal: FC<CreateTeamModalProps> = ({
           className={`h-px ${colorMode === "dark" ? "bg-slate-700/50" : "bg-slate-200"}`}
         />
 
-        <Toggle
-          variant="default"
-          label="Enable WowAudit integration"
-          checked={wowAuditEnabled}
-          onChange={(e) => {
-            setWowAuditEnabled(e.target.checked);
+        <IntegrationCredentialsFields
+          enableLabel="Enable WowAudit integration"
+          enabled={wowAuditEnabled}
+          onToggleEnabled={(checked) => {
+            setWowAuditEnabled(checked);
             setWowAuditTestStatus("idle");
           }}
+          fields={[
+            {
+              key: "guild_url",
+              label: "WowAudit Guild URL",
+              placeholder: "https://wowaudit.com/us/area-52/your-guild",
+              value: wowAuditGuildUrl,
+              onChange: (value) => {
+                setWowAuditGuildUrl(value);
+                setWowAuditTestStatus("idle");
+              },
+            },
+            {
+              key: "api_key",
+              label: "WowAudit API Key",
+              placeholder: "Your WowAudit API key",
+              type: "password",
+              value: wowAuditApiKey,
+              onChange: (value) => {
+                setWowAuditApiKey(value);
+                setWowAuditTestStatus("idle");
+              },
+            },
+          ]}
+          fieldsFilled={wowAuditBothFilled}
+          testStatus={wowAuditTestStatus}
+          onTest={handleWowAuditTest}
+          testErrorMessage="Could not verify — check the URL and API key."
         />
 
-        {wowAuditEnabled && (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-row gap-4">
-              <TextInput
-                value={wowAuditGuildUrl}
-                variant="minimal"
-                className="font-montserrat"
-                label="WowAudit Guild URL"
-                placeholder="https://wowaudit.com/us/area-52/your-guild"
-                disabled={wowAuditTestStatus === "success"}
-                onChange={(e) => {
-                  setWowAuditGuildUrl(e.target.value);
-                  setWowAuditTestStatus("idle");
-                }}
-              />
-              <TextInput
-                value={wowAuditApiKey}
-                variant="minimal"
-                className="font-montserrat"
-                label="WowAudit API Key"
-                placeholder="Your WowAudit API key"
-                type="password"
-                disabled={wowAuditTestStatus === "success"}
-                onChange={(e) => {
-                  setWowAuditApiKey(e.target.value);
-                  setWowAuditTestStatus("idle");
-                }}
-              />
-            </div>
+        <div
+          className={`h-px ${colorMode === "dark" ? "bg-slate-700/50" : "bg-slate-200"}`}
+        />
 
-            {wowAuditBothFilled && (
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleWowAuditTest}
-                  disabled={
-                    wowAuditTestStatus === "loading" ||
-                    wowAuditTestStatus === "success"
-                  }
-                  className={`
-                    flex items-center gap-2 px-4 py-2 rounded-xl font-medium font-montserrat text-sm
-                    transition-all duration-200
-                    disabled:opacity-50 disabled:cursor-not-allowed
-                    ${
-                      wowAuditTestStatus === "success"
-                        ? "bg-emerald-500 text-white shadow-lg shadow-emerald-500/30"
-                        : wowAuditTestStatus === "error"
-                          ? "bg-rose-600 text-white hover:bg-rose-500"
-                          : colorMode === "dark"
-                            ? "bg-slate-700 text-slate-200 hover:bg-slate-600"
-                            : "bg-slate-200 text-slate-700 hover:bg-slate-300"
-                    }
-                  `}
-                >
-                  {wowAuditTestStatus === "loading" ? (
-                    <LoaderCircle className="w-4 h-4 animate-spin" />
-                  ) : wowAuditTestStatus === "success" ? (
-                    <CheckCircle className="w-4 h-4" />
-                  ) : (
-                    <FlaskConical className="w-4 h-4" />
-                  )}
-                  {wowAuditTestStatus === "success"
-                    ? "Success"
-                    : wowAuditTestStatus === "error"
-                      ? "Retry"
-                      : "Test"}
-                </button>
-                {wowAuditTestStatus === "error" && (
-                  <span
-                    className={`text-xs font-montserrat ${colorMode === "dark" ? "text-rose-400" : "text-rose-600"}`}
-                  >
-                    Could not verify — check the URL and API key.
-                  </span>
-                )}
-              </div>
-            )}
-          </div>
-        )}
+        <IntegrationCredentialsFields
+          enableLabel="Enable WowUtils integration"
+          enabled={wowUtilsEnabled}
+          onToggleEnabled={(checked) => {
+            setWowUtilsEnabled(checked);
+            setWowUtilsTestStatus("idle");
+          }}
+          fields={[
+            {
+              key: "group_id",
+              label: "WowUtils Group ID",
+              placeholder: "24-character hex Group ID",
+              value: wowUtilsGroupId,
+              onChange: (value) => {
+                setWowUtilsGroupId(value.trim().toLowerCase());
+                setWowUtilsTestStatus("idle");
+              },
+            },
+            {
+              key: "api_key",
+              label: "WowUtils API Key",
+              placeholder: "Your WowUtils API key",
+              type: "password",
+              value: wowUtilsApiKey,
+              onChange: (value) => {
+                setWowUtilsApiKey(value);
+                setWowUtilsTestStatus("idle");
+              },
+            },
+          ]}
+          fieldsFilled={wowUtilsFieldsFilled}
+          testStatus={wowUtilsTestStatus}
+          onTest={handleWowUtilsTest}
+          testSuccessMessage={wowUtilsTestMessage}
+          testErrorMessage={
+            wowUtilsTestMessage ||
+            "Could not verify — check your Group ID and API key."
+          }
+        />
       </div>
     </Modal>
   );

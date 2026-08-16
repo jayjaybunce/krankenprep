@@ -31,15 +31,21 @@ const TIER_SOURCES = [
 
 const DEFAULT_SOURCE = "None";
 
+// Labels are display-only — the values above (Champ/Vet/Hero/Myth/...) are
+// stored as-is and match the backend's TierSource* constants exactly, so
+// they can't change without a data migration. "Hero"/"Myth" get expanded to
+// "Hero Track"/"Myth Track" here specifically to avoid reading as the
+// Heroic/Mythic difficulty toggle used everywhere else on this page — same
+// abbreviation, different axis (gear upgrade track vs. raid difficulty).
 const SOURCE_STYLES: Record<string, { label: string; bg: string; text: string }> = {
   Champ: { label: "Champion", bg: "#16a34a", text: "#ffffff" },
   Vet: { label: "Veteran", bg: "#2563eb", text: "#ffffff" },
-  Hero: { label: "Hero", bg: "#4338ca", text: "#ffffff" },
-  Myth: { label: "Myth", bg: "#f97316", text: "#ffffff" },
+  Hero: { label: "Hero Track", bg: "#4338ca", text: "#ffffff" },
+  Myth: { label: "Myth Track", bg: "#f97316", text: "#ffffff" },
   Embellishment: { label: "Embellishment", bg: "#64748b", text: "#ffffff" },
-  "In Vault (Champ)": { label: "In Vault (Champ)", bg: "#ede9fe", text: "#6d28d9" },
-  "In Vault (Hero)": { label: "In Vault (Hero)", bg: "#ede9fe", text: "#6d28d9" },
-  "In Vault (Myth)": { label: "In Vault (Myth)", bg: "#ede9fe", text: "#6d28d9" },
+  "In Vault (Champ)": { label: "In Vault (Champion)", bg: "#ede9fe", text: "#6d28d9" },
+  "In Vault (Hero)": { label: "In Vault (Hero Track)", bg: "#ede9fe", text: "#6d28d9" },
+  "In Vault (Myth)": { label: "In Vault (Myth Track)", bg: "#ede9fe", text: "#6d28d9" },
 };
 
 // "None" keeps the same theme-aware neutral background the very first pass
@@ -109,7 +115,7 @@ const TierSourceSelect: FC<{
         ref={triggerRef}
         type="button"
         disabled={isPending}
-        title={error?.message}
+        title={error ? "Couldn't save — try refreshing." : undefined}
         onClick={() => (isOpen ? setIsOpen(false) : openMenu())}
         className={`w-full flex items-center justify-between gap-1 px-2 py-1.5 rounded-lg text-xs font-bold font-montserrat transition-opacity hover:opacity-90 disabled:cursor-wait ${
           error ? "ring-2 ring-rose-500" : ""

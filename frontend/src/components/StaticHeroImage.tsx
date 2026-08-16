@@ -16,10 +16,7 @@ export const StaticHeroImage: FC<StaticHeroImageProps> = ({
   subtitles = [],
 }) => {
   return (
-    <div
-      className={`relative overflow-hidden my-[28.2px] ${className}`}
-      // style={{ height: 500 }}
-    >
+    <div className={`relative overflow-hidden my-[28.2px] ${className}`}>
       <div
         className="absolute inset-0 w-full h-full bg-cover"
         style={{

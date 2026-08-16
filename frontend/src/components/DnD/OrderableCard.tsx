@@ -72,7 +72,6 @@ export const SortableCard: FC<PropsWithChildren<SortableCardProps>> = ({
     }),
   });
   drag(drop(ref));
-  console.log(children);
   return (
     <div ref={ref} data-handler-id={handlerId}>
       {children}

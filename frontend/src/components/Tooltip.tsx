@@ -6,11 +6,17 @@ interface TooltipProps {
   content: ReactNode;
   children: ReactNode;
   side?: "right" | "left" | "top" | "bottom";
+  // Default bubbles are single-line (whitespace-nowrap), sized for the
+  // short nav-icon labels this component was built for. Glossary-style
+  // tooltips need actual sentences, which would otherwise render as one
+  // very wide (and on a narrow viewport, off-screen) line — wide switches
+  // to a capped width that wraps instead.
+  wide?: boolean;
 }
 
 const GAP = 10;
 
-const Tooltip: FC<TooltipProps> = ({ content, children, side = "right" }) => {
+const Tooltip: FC<TooltipProps> = ({ content, children, side = "right", wide = false }) => {
   const { colorMode } = useTheme();
   const dark = colorMode === "dark";
   const [pos, setPos] = useState<{ top: number; left: number } | null>(null);
@@ -64,7 +70,7 @@ const Tooltip: FC<TooltipProps> = ({ content, children, side = "right" }) => {
             transform: transforms[side],
             zIndex: 9999,
           }}
-          className={`pointer-events-none px-2 py-1 rounded-md text-xs font-medium whitespace-nowrap ${bubbleStyle}`}
+          className={`pointer-events-none px-2 py-1 rounded-md text-xs font-medium ${wide ? "w-64 whitespace-normal" : "whitespace-nowrap"} ${bubbleStyle}`}
         >
           <span className={`${arrowClass[side]} ${arrowStyle}`} />
           {content}
