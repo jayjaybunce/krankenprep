@@ -4,15 +4,44 @@ import type { TierSimEntry } from "../../api/queryHooks";
 
 const ARMOR_TYPE_ORDER = ["Cloth", "Leather", "Mail", "Plate"];
 
-type ComparisonView = "0v2" | "0v4" | "2v4";
+type TierSet = "current" | "transition";
 
-const COMPARISON_LABELS: Record<ComparisonView, { tab: string; a: string; b: string }> = {
+type CurrentTierView = "0v2" | "0v4" | "2v4";
+type TransitionView = "old4v2mix" | "2mixv4new" | "old4vnew4";
+type ComparisonView = CurrentTierView | TransitionView;
+
+type ComparisonLabel = { tab: string; a: string; b: string };
+
+// Tab labels within each set. The Tier Transition trio deliberately mirrors
+// the wording of the second spreadsheet the team owner receives each season
+// (see TierSimEntry.Score4pcPrevTier/Score2pcMixed on the backend) rather
+// than inventing our own phrasing, so hand-entry and the UI stay in sync.
+const CURRENT_TIER_LABELS: Record<CurrentTierView, ComparisonLabel> = {
   "0v2": { tab: "0pc - 2pc", a: "0p", b: "2p" },
   "0v4": { tab: "0pc - 4pc", a: "0p", b: "4p" },
   "2v4": { tab: "2pc - 4pc", a: "2p", b: "4p" },
 };
 
-const scoresForView = (entry: TierSimEntry, view: ComparisonView) => {
+const TRANSITION_LABELS: Record<TransitionView, ComparisonLabel> = {
+  old4v2mix: { tab: "4pc (old) - 2pc + 2pc", a: "4p (Old)", b: "2p + 2p" },
+  "2mixv4new": { tab: "2pc + 2pc - 4pc (new)", a: "2p + 2p", b: "4p (New)" },
+  old4vnew4: { tab: "4pc (old) - 4pc (new)", a: "4p (Old)", b: "4p (New)" },
+};
+
+const COMPARISON_LABELS: Record<ComparisonView, ComparisonLabel> = {
+  ...CURRENT_TIER_LABELS,
+  ...TRANSITION_LABELS,
+};
+
+// Tier Transition scores are nullable (see TierSimEntry) — a spec/build may
+// not have this data yet, or the season may be an expansion's first with no
+// "old tier" to compare against at all. Returning null here (rather than
+// coercing to 0) is what lets the table tell "no data" apart from "a real,
+// near-zero gain."
+const scoresForView = (
+  entry: TierSimEntry,
+  view: ComparisonView,
+): { a: number | null; b: number | null } => {
   switch (view) {
     case "0v2":
       return { a: entry.score_0pc, b: entry.score_2pc };
@@ -20,8 +49,20 @@ const scoresForView = (entry: TierSimEntry, view: ComparisonView) => {
       return { a: entry.score_0pc, b: entry.score_4pc };
     case "2v4":
       return { a: entry.score_2pc, b: entry.score_4pc };
+    case "old4v2mix":
+      return { a: entry.score_4pc_prev_tier, b: entry.score_2pc_mixed };
+    case "2mixv4new":
+      return { a: entry.score_2pc_mixed, b: entry.score_4pc_new_tier };
+    case "old4vnew4":
+      return { a: entry.score_4pc_prev_tier, b: entry.score_4pc_new_tier };
   }
 };
+
+const computeRaw = (a: number | null, b: number | null) =>
+  a == null || b == null ? null : b - a;
+
+const computePercent = (a: number | null, b: number | null) =>
+  a == null || b == null || a === 0 ? null : ((b - a) / a) * 100;
 
 // Light background tint derived from the class's hex color, readable in
 // both light and dark mode without reproducing the spreadsheet's solid
@@ -44,10 +85,45 @@ export const TierSimTable: FC<{
   // scroll and scan for it themselves.
   focusedSpecializationId?: number | null;
 }> = ({ entries, lastUpdated, colorMode, focusedSpecializationId }) => {
+  const [tierSet, setTierSet] = useState<TierSet>("current");
   const [view, setView] = useState<ComparisonView>("0v2");
   const [sortColumn, setSortColumn] = useState<"raw" | "percent" | null>(null);
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const rowRefs = useRef(new Map<number, HTMLTableRowElement>());
+
+  // Hides the whole Tier Transition set rather than showing it full of
+  // "—" — this is what stands in for an explicit "is this an expansion's
+  // first season" check: no season-numbering rule to keep in sync, and it
+  // degrades gracefully if data entry just hasn't caught up yet.
+  const hasTransitionData = useMemo(
+    () =>
+      entries.some(
+        (e) =>
+          e.score_4pc_prev_tier != null ||
+          e.score_2pc_mixed != null ||
+          e.score_4pc_new_tier != null,
+      ),
+    [entries],
+  );
+
+  // Falls back to the Current Tier set if the entries prop changes out from
+  // under a "transition" selection (e.g. switching seasons) and transition
+  // data is no longer available. Adjusted here during render rather than in
+  // an effect, per React's guidance for resetting state in response to a
+  // prop change — avoids the extra commit-then-effect render pass.
+  const [prevHasTransitionData, setPrevHasTransitionData] = useState(hasTransitionData);
+  if (hasTransitionData !== prevHasTransitionData) {
+    setPrevHasTransitionData(hasTransitionData);
+    if (!hasTransitionData && tierSet === "transition") {
+      setTierSet("current");
+      setView("0v2");
+    }
+  }
+
+  const handleSetChange = (nextSet: TierSet) => {
+    setTierSet(nextSet);
+    setView(nextSet === "current" ? "0v2" : "old4v2mix");
+  };
 
   useEffect(() => {
     if (focusedSpecializationId == null) return;
@@ -69,8 +145,13 @@ export const TierSimTable: FC<{
       return [...rows].sort((rowA, rowB) => {
         const { a: a0, b: b0 } = scoresForView(rowA, view);
         const { a: a1, b: b1 } = scoresForView(rowB, view);
-        const valueA = sortColumn === "raw" ? b0 - a0 : ((b0 - a0) / a0) * 100;
-        const valueB = sortColumn === "raw" ? b1 - a1 : ((b1 - a1) / a1) * 100;
+        const valueA = sortColumn === "raw" ? computeRaw(a0, b0) : computePercent(a0, b0);
+        const valueB = sortColumn === "raw" ? computeRaw(a1, b1) : computePercent(a1, b1);
+        // Rows missing this comparison's data sink to the bottom regardless
+        // of sort direction — there's nothing to rank them by.
+        if (valueA == null && valueB == null) return 0;
+        if (valueA == null) return 1;
+        if (valueB == null) return -1;
         return sortDir === "asc" ? valueA - valueB : valueB - valueA;
       });
     };
@@ -91,6 +172,8 @@ export const TierSimTable: FC<{
   };
 
   const labels = COMPARISON_LABELS[view];
+  const activeSetLabels: Record<string, ComparisonLabel> =
+    tierSet === "current" ? CURRENT_TIER_LABELS : TRANSITION_LABELS;
   const headerTextClass = colorMode === "dark" ? "text-slate-400" : "text-slate-600";
   const borderClass = colorMode === "dark" ? "border-slate-800" : "border-slate-200";
 
@@ -118,30 +201,60 @@ export const TierSimTable: FC<{
   return (
     <div className="flex flex-col gap-3 max-h-[75vh]">
       <div
-        className={`shrink-0 flex items-center justify-between flex-wrap gap-2 pb-3 border-b ${borderClass}`}
+        className={`shrink-0 flex flex-col gap-2 pb-3 border-b ${borderClass}`}
       >
-        <div className="flex gap-1">
-          {(Object.keys(COMPARISON_LABELS) as ComparisonView[]).map((key) => (
-            <button
-              key={key}
-              onClick={() => setView(key)}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-montserrat transition-colors ${
-                view === key
-                  ? "bg-cyan-500 text-white"
-                  : colorMode === "dark"
-                    ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-              }`}
-            >
-              {COMPARISON_LABELS[key].tab}
-            </button>
-          ))}
-        </div>
-        {lastUpdated && (
-          <span className={`text-xs font-montserrat ${headerTextClass}`}>
-            Tier sim data as of {new Date(lastUpdated).toLocaleDateString()}
-          </span>
+        {hasTransitionData && (
+          <div
+            className={`inline-flex self-start gap-1 p-0.5 rounded-lg border ${
+              colorMode === "dark" ? "border-slate-800 bg-slate-900/50" : "border-slate-200 bg-slate-100"
+            }`}
+          >
+            {(
+              [
+                { key: "current", label: "Current Tier" },
+                { key: "transition", label: "Tier Transition" },
+              ] as const
+            ).map(({ key, label }) => (
+              <button
+                key={key}
+                onClick={() => handleSetChange(key)}
+                className={`px-3 py-1 rounded-md text-xs font-bold font-montserrat transition-colors ${
+                  tierSet === key
+                    ? "bg-cyan-500 text-white"
+                    : colorMode === "dark"
+                      ? "text-slate-400 hover:text-slate-200"
+                      : "text-slate-500 hover:text-slate-800"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
         )}
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div className="flex gap-1">
+            {(Object.keys(activeSetLabels) as ComparisonView[]).map((key) => (
+              <button
+                key={key}
+                onClick={() => setView(key)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold font-montserrat transition-colors ${
+                  view === key
+                    ? "bg-cyan-500 text-white"
+                    : colorMode === "dark"
+                      ? "bg-slate-800 text-slate-300 hover:bg-slate-700"
+                      : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                }`}
+              >
+                {activeSetLabels[key].tab}
+              </button>
+            ))}
+          </div>
+          {lastUpdated && (
+            <span className={`text-xs font-montserrat ${headerTextClass}`}>
+              Tier sim data as of {new Date(lastUpdated).toLocaleDateString()}
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="flex-1 min-h-0 overflow-auto">
@@ -154,13 +267,13 @@ export const TierSimTable: FC<{
                 Spec
               </th>
               <th
-                title={`${labels.a} tier pieces, single-target sim`}
+                title={`${labels.a}, single-target sim`}
                 className={`sticky top-0 z-10 px-1.5 py-1.5 text-right text-xs font-medium font-montserrat uppercase tracking-wide ${stickyHeadBg} ${headerTextClass}`}
               >
                 {labels.a} ST
               </th>
               <th
-                title={`${labels.b} tier pieces, single-target sim`}
+                title={`${labels.b}, single-target sim`}
                 className={`sticky top-0 z-10 px-1.5 py-1.5 text-right text-xs font-medium font-montserrat uppercase tracking-wide ${stickyHeadBg} ${headerTextClass}`}
               >
                 {labels.b} ST
@@ -194,10 +307,11 @@ export const TierSimTable: FC<{
                 </tr>
                 {rows.map((entry) => {
                   const { a, b } = scoresForView(entry, view);
-                  const raw = b - a;
-                  const percent = (raw / a) * 100;
+                  const raw = computeRaw(a, b);
+                  const percent = computePercent(a, b);
                   const color = entry.specialization.class.color;
                   const isFocused = entry.specialization_id === focusedSpecializationId;
+                  const emptyCellClass = colorMode === "dark" ? "text-slate-600" : "text-slate-400";
                   return (
                     <tr
                       key={entry.id}
@@ -220,17 +334,17 @@ export const TierSimTable: FC<{
                           <div className={`text-[10px] font-normal ${headerTextClass}`}>{entry.build_label}</div>
                         )}
                       </td>
-                      <td className={`px-1.5 py-1.5 text-right text-xs font-montserrat ${colorMode === "dark" ? "text-slate-300" : "text-slate-700"}`}>
-                        {a.toLocaleString()}
+                      <td className={`px-1.5 py-1.5 text-right text-xs font-montserrat ${a != null ? (colorMode === "dark" ? "text-slate-300" : "text-slate-700") : emptyCellClass}`}>
+                        {a != null ? a.toLocaleString() : "—"}
                       </td>
-                      <td className={`px-1.5 py-1.5 text-right text-xs font-montserrat ${colorMode === "dark" ? "text-slate-300" : "text-slate-700"}`}>
-                        {b.toLocaleString()}
+                      <td className={`px-1.5 py-1.5 text-right text-xs font-montserrat ${b != null ? (colorMode === "dark" ? "text-slate-300" : "text-slate-700") : emptyCellClass}`}>
+                        {b != null ? b.toLocaleString() : "—"}
                       </td>
-                      <td className={`px-1.5 py-1.5 text-right text-xs font-semibold font-montserrat ${colorMode === "dark" ? "text-slate-200" : "text-slate-800"}`}>
-                        {raw.toLocaleString()}
+                      <td className={`px-1.5 py-1.5 text-right text-xs font-semibold font-montserrat ${raw != null ? (colorMode === "dark" ? "text-slate-200" : "text-slate-800") : emptyCellClass}`}>
+                        {raw != null ? raw.toLocaleString() : "—"}
                       </td>
-                      <td className={`px-1.5 py-1.5 text-right text-xs font-semibold font-montserrat ${colorMode === "dark" ? "text-slate-200" : "text-slate-800"}`}>
-                        {percent.toFixed(2)}%
+                      <td className={`px-1.5 py-1.5 text-right text-xs font-semibold font-montserrat ${percent != null ? (colorMode === "dark" ? "text-slate-200" : "text-slate-800") : emptyCellClass}`}>
+                        {percent != null ? `${percent.toFixed(2)}%` : "—"}
                       </td>
                     </tr>
                   );
