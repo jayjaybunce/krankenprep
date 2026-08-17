@@ -48,6 +48,20 @@ type CharacterTierSlot struct {
 // identically across comparison groups, so storing all 12 columns would just
 // be redundant, driftable data.
 //
+// Score4pcPrevTier/Score2pcMixed/Score4pcNewTier are different: they're NOT
+// derivable from the current season's own numbers, or from reusing Score4pc
+// — the transition spreadsheet is run under entirely different sim settings
+// than the plain 0/2/4pc spreadsheet (different fight length/target count),
+// so its "new tier 4pc" figure is its own number and can land nowhere near
+// Score4pc for the same spec/build. "2pc old + 2pc new" is likewise a
+// genuinely different equipped-set combination with no linear relationship
+// to the individual 2pc numbers. All three come from a second spreadsheet
+// the team owner receives alongside the usual one, only for seasons that
+// follow another season in the same expansion (nil for an expansion's first
+// season, or simply not entered yet) — nil, not zero, specifically so "no
+// transition data for this season" isn't confused with "a real, near-zero
+// gain."
+//
 // Read-only from the app's perspective: populated by hand directly in the
 // database each season by the team owner, not through any in-app import UI.
 //
@@ -65,6 +79,9 @@ type TierSimEntry struct {
 	Score0pc         float64        `json:"score_0pc"`
 	Score2pc         float64        `json:"score_2pc"`
 	Score4pc         float64        `json:"score_4pc"`
+	Score4pcPrevTier *float64       `json:"score_4pc_prev_tier"`
+	Score2pcMixed    *float64       `json:"score_2pc_mixed"`
+	Score4pcNewTier  *float64       `json:"score_4pc_new_tier"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
 }

@@ -657,6 +657,15 @@ export type TierSimEntry = {
     score_0pc: number
     score_2pc: number
     score_4pc: number
+    // Tier-transition comparison data — a second spreadsheet, only present
+    // for seasons that follow another season in the same expansion. Run
+    // under different sim settings than score_4pc, so score_4pc_new_tier is
+    // its own figure, not a duplicate of score_4pc. null (not 0) when not
+    // applicable/not entered yet, so it's never confused with a real
+    // near-zero gain.
+    score_4pc_prev_tier: number | null
+    score_2pc_mixed: number | null
+    score_4pc_new_tier: number | null
     updated_at: string
 }
 
