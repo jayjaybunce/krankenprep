@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -132,6 +133,50 @@ func doWowUtilsRequest(method, path, apiKey string, payload any) (*http.Response
 		return nil, nil, err
 	}
 	return resp, body, nil
+}
+
+var (
+	ogTitleRegex  = regexp.MustCompile(`<meta property="og:title" content="([^"]*)"`)
+	titleTagRegex = regexp.MustCompile(`<title>([^<]*)</title>`)
+	ogImageRegex  = regexp.MustCompile(`<meta property="og:image" content="([^"]*)"`)
+	previewClient = &http.Client{Timeout: 5 * time.Second}
+)
+
+// fetchReportPreview does a best-effort GET of the droptimizer report page
+// itself (Raidbots or QE Live — whichever the URL points at) and pulls the
+// title + preview image straight out of its Open Graph tags, e.g. Raidbots
+// serves `<title>Droptimizer • ... • Krankenmight - 1,060,584 DPS</title>`
+// and an `og:image` pointing at a rendered summary thumbnail. This is
+// display-only sugar for the upload result, never a hard dependency — any
+// failure (network, timeout, tags missing) just means no preview, not an
+// upload failure, so errors are swallowed rather than surfaced.
+func fetchReportPreview(url string) (title, imageUrl string) {
+	resp, err := previewClient.Get(url)
+	if err != nil {
+		return "", ""
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return "", ""
+	}
+
+	// The tags this cares about are always in <head>, well before the
+	// megabyte-plus of bundled JS these report pages ship — capping the
+	// read avoids downloading all of that just to throw it away.
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
+	if err != nil {
+		return "", ""
+	}
+
+	if m := ogTitleRegex.FindSubmatch(body); m != nil {
+		title = string(m[1])
+	} else if m := titleTagRegex.FindSubmatch(body); m != nil {
+		title = string(m[1])
+	}
+	if m := ogImageRegex.FindSubmatch(body); m != nil {
+		imageUrl = string(m[1])
+	}
+	return title, imageUrl
 }
 
 // TestWowUtilsPayload is the request body for POST /teams/wowutils/test.
@@ -278,11 +323,27 @@ func UploadDroptimizerToWowUtils(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{
+	response := gin.H{
 		"message":      "droptimizer uploaded successfully",
 		"character_id": result.CharacterId,
 		"source":       result.Source,
 		"imported_at":  result.ImportedAt,
 		"report_url":   result.ReportUrl,
-	})
+	}
+
+	// Best-effort — shown to the user so they have something to visually
+	// confirm this was the right report. payload.URL (what the user
+	// pasted) rather than result.ReportUrl since they should be the same
+	// report either way and this fetch doesn't need to wait on WowUtils'
+	// own echo of it.
+	if title, imageUrl := fetchReportPreview(payload.URL); title != "" || imageUrl != "" {
+		if title != "" {
+			response["report_title"] = title
+		}
+		if imageUrl != "" {
+			response["report_image_url"] = imageUrl
+		}
+	}
+
+	c.JSON(http.StatusOK, response)
 }
