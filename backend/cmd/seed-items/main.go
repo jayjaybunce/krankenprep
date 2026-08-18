@@ -31,7 +31,7 @@
 //
 // Usage:
 //
-//	go run ./cmd/seed-items -boss-items path/to/boss-items.json [-season "Season Name" -expansion "expansion-slug"]
+//	go run ./cmd/seed-items -boss-items path/to/boss-items.json [-season "Season Name" -expansion "expansion-slug"] [-skip-seed]
 //
 // boss-items.json shape:
 //
@@ -136,6 +136,7 @@ func main() {
 	bossItemsPath := flag.String("boss-items", "", "path to a JSON file mapping boss slugs to item IDs (see file header for shape)")
 	seasonFlag := flag.String("season", "", "season name to attach items to (defaults to the season with IsCurrent=true)")
 	expansionFlag := flag.String("expansion", "", "expansion slug the season belongs to (required if -season/season_name is set — season names aren't unique across expansions)")
+	skipSeed := flag.Bool("skip-seed", false, "skip running the app's full seed pipeline (servers/expansions/news/classes/specs) before importing — safe to pass whenever the target DB has already been booted against by the main server at least once")
 	flag.Parse()
 
 	if *bossItemsPath == "" {
@@ -148,11 +149,16 @@ func main() {
 	database.Connect()
 	db := database.DB
 
-	// Ensures Class/ArmorType/WeaponType/Specialization/Season/Boss
-	// reference data exists even if the main server has never been run
-	// against this database yet.
-	if err := seed.RunSeeders(db); err != nil {
-		log.Fatalf("running seeders: %v", err)
+	if *skipSeed {
+		log.Println("-skip-seed set, skipping the app seed pipeline")
+	} else {
+		// Ensures Class/ArmorType/WeaponType/Specialization/Season/Boss
+		// reference data exists even if the main server has never been run
+		// against this database yet. Unnecessary (and just extra writes
+		// against prod) once that's already happened — pass -skip-seed then.
+		if err := seed.RunSeeders(db); err != nil {
+			log.Fatalf("running seeders: %v", err)
+		}
 	}
 
 	data, err := os.ReadFile(*bossItemsPath)

@@ -21,6 +21,12 @@ type UploadResultRowProps = {
   successMessage?: string;
   errorMessage?: string;
   errorDetails?: string[];
+  // WowUtils-only, best-effort — pulled server-side from the report page's
+  // own Open Graph tags, so either/both may be missing (fetch failed, or
+  // the report host doesn't set these tags). Shown so the user can
+  // visually confirm this was the right report, not just an opaque key.
+  reportTitle?: string;
+  reportImageUrl?: string;
 };
 
 // One row per upload target, driven straight off that target's own
@@ -37,6 +43,8 @@ const UploadResultRow: FC<UploadResultRowProps> = ({
   successMessage,
   errorMessage,
   errorDetails,
+  reportTitle,
+  reportImageUrl,
 }) => {
   if (!isPending && !isSuccess && !isError) return null;
 
@@ -67,6 +75,19 @@ const UploadResultRow: FC<UploadResultRowProps> = ({
       </div>
       {isSuccess && successMessage && (
         <p className="text-[11px] text-slate-400">{successMessage}</p>
+      )}
+      {isSuccess && reportImageUrl && (
+        <img
+          src={reportImageUrl}
+          alt=""
+          className="w-full h-auto rounded border border-slate-700"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+          }}
+        />
+      )}
+      {isSuccess && reportTitle && (
+        <p className="text-[11px] text-slate-300 leading-snug">{reportTitle}</p>
       )}
       {isError &&
         (errorDetails && errorDetails.length > 0 ? (
@@ -269,6 +290,8 @@ export const DroptimizerUploadPopup: FC = () => {
               isSuccess={wowUtilsUpload.isSuccess}
               isError={wowUtilsUpload.isError}
               successMessage="Uploaded successfully."
+              reportTitle={wowUtilsUpload.data?.report_title}
+              reportImageUrl={wowUtilsUpload.data?.report_image_url}
               errorMessage={wowUtilsUpload.error?.message}
               errorDetails={
                 wowUtilsUpload.error instanceof DroptimizerUploadError

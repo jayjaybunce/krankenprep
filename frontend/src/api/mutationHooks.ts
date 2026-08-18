@@ -651,11 +651,25 @@ export type DroptimizerProvider = "wowaudit" | "wowutils"
 type UploadDroptimizerPayload = {
     url: string
     // wishlist_name is WowAudit-only (which wishlist config to validate/
-    // upload against). profile_key is WowUtils-only (which profile to pull
-    // out of a report with several) and unused for now — not surfaced in
-    // the UI yet.
+    // upload against). profile_key is WowUtils-only (targets a specific
+    // existing profile instead of creating a new one) — accepted by the
+    // backend but not currently surfaced anywhere in the UI for a user to
+    // set.
     wishlist_name?: string
     profile_key?: string
+}
+
+export type UploadDroptimizerResult = {
+    message: string
+    character_id?: string
+    source?: string
+    imported_at?: string
+    report_url?: string
+    // WowUtils-only, best-effort — pulled server-side from the report
+    // page's own Open Graph tags. Either/both may be absent (fetch failed,
+    // timed out, or the report host doesn't set these tags).
+    report_title?: string
+    report_image_url?: string
 }
 
 export class DroptimizerUploadError extends Error {
@@ -893,7 +907,7 @@ export const useUploadDroptimizer = (teamId: number, provider: DroptimizerProvid
     const { headers, url } = useKpApi(`/teams/${teamId}/${provider}/upload`)
     return useMutation({
         mutationKey: ["uploadDroptimizer", provider, teamId],
-        mutationFn: async (payload: UploadDroptimizerPayload) => {
+        mutationFn: async (payload: UploadDroptimizerPayload): Promise<UploadDroptimizerResult> => {
             const res = await fetch(url, {
                 method: "POST",
                 headers,
