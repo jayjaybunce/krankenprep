@@ -413,6 +413,22 @@ var MidnightData = models.Expansion{
 						},
 					},
 				},
+				{
+					Name:         "Tidebound Grotto",
+					Order:        2,
+					Slug:         "tidebound-grotto",
+					SplashImgUrl: "https://imagedelivery.net/CIR8y8W77F5MkiSF5jXvpg/86710a71-a5a4-4b14-e39d-b6eb84f37f00/public",
+					Bosses: []models.Boss{
+						{
+							Name:         "Nymrissa Wavecaller",
+							Order:        1,
+							Slug:         "nymrissa-wavecaller",
+							ShortName:    "Nymrissa",
+							IconImgUrl:   "https://imagedelivery.net/CIR8y8W77F5MkiSF5jXvpg/7bd2fe4d-2d52-47d4-4776-c07e9afe7300/icon",
+							SplashImgUrl: "https://imagedelivery.net/CIR8y8W77F5MkiSF5jXvpg/3ac51df4-08db-43b8-93d9-928a844d3b00/public",
+						},
+					},
+				},
 			},
 		},
 	},
