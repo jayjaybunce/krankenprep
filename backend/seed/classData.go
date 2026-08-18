@@ -124,6 +124,12 @@ type specSeed struct {
 	Role        string // Tank / Healer / DPS — see models.RoleTank etc.
 	IconUrl     string
 	WeaponTypes []string
+	// SheetLabel is this spec's abbreviated "<spec> <class>" prefix in the
+	// community tier-sim spreadsheet — see Specialization.SheetLabel.
+	// Blank for specs the sheet doesn't track (every Healer, plus
+	// Augmentation — the sheet only covers Tank/DPS specs that take a
+	// tier-token slot the same way).
+	SheetLabel string
 }
 
 // specSeeds is the full spec roster. See the REVIEW REQUIRED note above —
@@ -131,9 +137,9 @@ type specSeed struct {
 // Role is standard, stable WoW knowledge and should be reliable as drafted.
 var specSeeds = []specSeed{
 	// Death Knight — Plate, Strength, all specs share the same melee list.
-	{ClassName: "Death Knight", Name: "Blood", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "Tank", IconUrl: "/icons/classes/deathknight_blood.png", WeaponTypes: []string{WeaponAxe1H, WeaponAxe2H, WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponPolearm}},
-	{ClassName: "Death Knight", Name: "Frost", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "DPS", IconUrl: "/icons/classes/deathknight_frost.png", WeaponTypes: []string{WeaponAxe1H, WeaponAxe2H, WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponPolearm}},
-	{ClassName: "Death Knight", Name: "Unholy", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "DPS", IconUrl: "/icons/classes/deathknight_unholy.png", WeaponTypes: []string{WeaponAxe1H, WeaponAxe2H, WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponPolearm}},
+	{ClassName: "Death Knight", Name: "Blood", SheetLabel: "Blood DK", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "Tank", IconUrl: "/icons/classes/deathknight_blood.png", WeaponTypes: []string{WeaponAxe1H, WeaponAxe2H, WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponPolearm}},
+	{ClassName: "Death Knight", Name: "Frost", SheetLabel: "Frost DK", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "DPS", IconUrl: "/icons/classes/deathknight_frost.png", WeaponTypes: []string{WeaponAxe1H, WeaponAxe2H, WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponPolearm}},
+	{ClassName: "Death Knight", Name: "Unholy", SheetLabel: "UH DK", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "DPS", IconUrl: "/icons/classes/deathknight_unholy.png", WeaponTypes: []string{WeaponAxe1H, WeaponAxe2H, WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponPolearm}},
 
 	// Demon Hunter — Leather. Havoc/Vengeance are Agility; Devourer (this
 	// game's third, non-standard spec) is Intellect instead — confirmed.
@@ -141,70 +147,70 @@ var specSeeds = []specSeed{
 	// weapon type (Blizzard subclass 9). Fist Weapon/Axe/Sword are still an
 	// unconfirmed placeholder guess for the rest of the list — only the
 	// Warglaive addition and Devourer's stat are confirmed.
-	{ClassName: "Demon Hunter", Name: "Havoc", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/demonhunter_havoc.png", WeaponTypes: []string{WeaponFistWeapon, WeaponAxe1H, WeaponSword1H, WeaponWarglaive, WeaponDagger}},
-	{ClassName: "Demon Hunter", Name: "Vengeance", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "Tank", IconUrl: "/icons/classes/demonhunter_vengeance.png", WeaponTypes: []string{WeaponFistWeapon, WeaponAxe1H, WeaponSword1H, WeaponWarglaive}},
-	{ClassName: "Demon Hunter", Name: "Devourer", ArmorType: ArmorLeather, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/demonhunter_devourer.jpg", WeaponTypes: []string{WeaponFistWeapon, WeaponAxe1H, WeaponSword1H, WeaponWarglaive, WeaponDagger}},
+	{ClassName: "Demon Hunter", Name: "Havoc", SheetLabel: "Havoc DH", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/demonhunter_havoc.png", WeaponTypes: []string{WeaponFistWeapon, WeaponAxe1H, WeaponSword1H, WeaponWarglaive, WeaponDagger}},
+	{ClassName: "Demon Hunter", Name: "Vengeance", SheetLabel: "Veng DH", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "Tank", IconUrl: "/icons/classes/demonhunter_vengeance.png", WeaponTypes: []string{WeaponFistWeapon, WeaponAxe1H, WeaponSword1H, WeaponWarglaive}},
+	{ClassName: "Demon Hunter", Name: "Devourer", SheetLabel: "Devourer DH", ArmorType: ArmorLeather, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/demonhunter_devourer.jpg", WeaponTypes: []string{WeaponFistWeapon, WeaponAxe1H, WeaponSword1H, WeaponWarglaive, WeaponDagger}},
 
 	// Druid — Leather. Balance/Restoration Intellect, Feral/Guardian Agility.
-	{ClassName: "Druid", Name: "Balance", ArmorType: ArmorLeather, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/druid_balance.png", WeaponTypes: []string{WeaponDagger, WeaponFistWeapon, WeaponMace1H, WeaponStaff, WeaponPolearm}},
-	{ClassName: "Druid", Name: "Feral", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/druid_feral.png", WeaponTypes: []string{WeaponDagger, WeaponFistWeapon, WeaponMace1H, WeaponStaff, WeaponPolearm}},
-	{ClassName: "Druid", Name: "Guardian", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "Tank", IconUrl: "/icons/classes/druid_guardian.png", WeaponTypes: []string{WeaponDagger, WeaponFistWeapon, WeaponMace1H, WeaponStaff, WeaponPolearm}},
+	{ClassName: "Druid", Name: "Balance", SheetLabel: "Balance Druid", ArmorType: ArmorLeather, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/druid_balance.png", WeaponTypes: []string{WeaponDagger, WeaponFistWeapon, WeaponMace1H, WeaponStaff, WeaponPolearm}},
+	{ClassName: "Druid", Name: "Feral", SheetLabel: "Feral Druid", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/druid_feral.png", WeaponTypes: []string{WeaponDagger, WeaponFistWeapon, WeaponMace1H, WeaponStaff, WeaponPolearm}},
+	{ClassName: "Druid", Name: "Guardian", SheetLabel: "Guardian Druid", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "Tank", IconUrl: "/icons/classes/druid_guardian.png", WeaponTypes: []string{WeaponDagger, WeaponFistWeapon, WeaponMace1H, WeaponStaff, WeaponPolearm}},
 	{ClassName: "Druid", Name: "Restoration", ArmorType: ArmorLeather, PrimaryStat: "Intellect", Role: "Healer", IconUrl: "/icons/classes/druid_restoration.png", WeaponTypes: []string{WeaponDagger, WeaponFistWeapon, WeaponMace1H, WeaponStaff, WeaponPolearm}},
 
 	// Evoker — Mail, Intellect, all specs. LOW CONFIDENCE (newest class).
-	{ClassName: "Evoker", Name: "Devastation", ArmorType: ArmorMail, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/evoker_devastation.png", WeaponTypes: []string{WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponDagger, WeaponStaff}},
+	{ClassName: "Evoker", Name: "Devastation", SheetLabel: "Deva Evoker", ArmorType: ArmorMail, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/evoker_devastation.png", WeaponTypes: []string{WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponDagger, WeaponStaff}},
 	{ClassName: "Evoker", Name: "Preservation", ArmorType: ArmorMail, PrimaryStat: "Intellect", Role: "Healer", IconUrl: "/icons/classes/evoker_preservation.png", WeaponTypes: []string{WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponDagger, WeaponStaff}},
 	{ClassName: "Evoker", Name: "Augmentation", ArmorType: ArmorMail, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/evoker_augmentation.png", WeaponTypes: []string{WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponDagger, WeaponStaff}},
 
 	// Hunter — Mail, Agility, all specs share a broad ranged+melee list.
 	// Note: "marksmenship" is a typo in the actual icon filename — copied
 	// verbatim from PropertiesPanel.tsx since that's the real asset path.
-	{ClassName: "Hunter", Name: "Beast Mastery", ArmorType: ArmorMail, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/hunter_beastmastery.png", WeaponTypes: []string{WeaponBow, WeaponGun, WeaponCrossbow, WeaponAxe1H, WeaponAxe2H, WeaponSword1H, WeaponSword2H, WeaponFistWeapon, WeaponDagger, WeaponPolearm}},
-	{ClassName: "Hunter", Name: "Marksmanship", ArmorType: ArmorMail, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/hunter_marksmenship.png", WeaponTypes: []string{WeaponBow, WeaponGun, WeaponCrossbow, WeaponAxe1H, WeaponAxe2H, WeaponSword1H, WeaponSword2H, WeaponFistWeapon, WeaponDagger, WeaponPolearm}},
-	{ClassName: "Hunter", Name: "Survival", ArmorType: ArmorMail, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/hunter_survival.png", WeaponTypes: []string{WeaponBow, WeaponGun, WeaponCrossbow, WeaponAxe1H, WeaponAxe2H, WeaponSword1H, WeaponSword2H, WeaponFistWeapon, WeaponDagger, WeaponPolearm}},
+	{ClassName: "Hunter", Name: "Beast Mastery", SheetLabel: "BM Hunter", ArmorType: ArmorMail, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/hunter_beastmastery.png", WeaponTypes: []string{WeaponBow, WeaponGun, WeaponCrossbow, WeaponAxe1H, WeaponAxe2H, WeaponSword1H, WeaponSword2H, WeaponFistWeapon, WeaponDagger, WeaponPolearm}},
+	{ClassName: "Hunter", Name: "Marksmanship", SheetLabel: "MM Hunter", ArmorType: ArmorMail, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/hunter_marksmenship.png", WeaponTypes: []string{WeaponBow, WeaponGun, WeaponCrossbow, WeaponAxe1H, WeaponAxe2H, WeaponSword1H, WeaponSword2H, WeaponFistWeapon, WeaponDagger, WeaponPolearm}},
+	{ClassName: "Hunter", Name: "Survival", SheetLabel: "Survival Hunter", ArmorType: ArmorMail, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/hunter_survival.png", WeaponTypes: []string{WeaponBow, WeaponGun, WeaponCrossbow, WeaponAxe1H, WeaponAxe2H, WeaponSword1H, WeaponSword2H, WeaponFistWeapon, WeaponDagger, WeaponPolearm}},
 
 	// Mage — Cloth, Intellect, all specs.
-	{ClassName: "Mage", Name: "Arcane", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/mage_arcane.png", WeaponTypes: []string{WeaponSword1H, WeaponDagger, WeaponWand, WeaponStaff}},
-	{ClassName: "Mage", Name: "Fire", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/mage_fire.png", WeaponTypes: []string{WeaponSword1H, WeaponDagger, WeaponWand, WeaponStaff}},
-	{ClassName: "Mage", Name: "Frost", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/mage_frost.png", WeaponTypes: []string{WeaponSword1H, WeaponDagger, WeaponWand, WeaponStaff}},
+	{ClassName: "Mage", Name: "Arcane", SheetLabel: "Arcane Mage", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/mage_arcane.png", WeaponTypes: []string{WeaponSword1H, WeaponDagger, WeaponWand, WeaponStaff}},
+	{ClassName: "Mage", Name: "Fire", SheetLabel: "Fire Mage", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/mage_fire.png", WeaponTypes: []string{WeaponSword1H, WeaponDagger, WeaponWand, WeaponStaff}},
+	{ClassName: "Mage", Name: "Frost", SheetLabel: "Frost Mage", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/mage_frost.png", WeaponTypes: []string{WeaponSword1H, WeaponDagger, WeaponWand, WeaponStaff}},
 
 	// Monk — Leather. Mistweaver Intellect, Brewmaster/Windwalker Agility.
-	{ClassName: "Monk", Name: "Brewmaster", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "Tank", IconUrl: "/icons/classes/monk_brewmaster.png", WeaponTypes: []string{WeaponStaff, WeaponPolearm, WeaponFistWeapon, WeaponSword1H, WeaponMace1H, WeaponAxe1H}},
+	{ClassName: "Monk", Name: "Brewmaster", SheetLabel: "Brm Monk", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "Tank", IconUrl: "/icons/classes/monk_brewmaster.png", WeaponTypes: []string{WeaponStaff, WeaponPolearm, WeaponFistWeapon, WeaponSword1H, WeaponMace1H, WeaponAxe1H}},
 	{ClassName: "Monk", Name: "Mistweaver", ArmorType: ArmorLeather, PrimaryStat: "Intellect", Role: "Healer", IconUrl: "/icons/classes/monk_mistweaver.png", WeaponTypes: []string{WeaponStaff, WeaponPolearm, WeaponFistWeapon, WeaponSword1H, WeaponMace1H, WeaponAxe1H}},
-	{ClassName: "Monk", Name: "Windwalker", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/monk_windwalker.png", WeaponTypes: []string{WeaponStaff, WeaponPolearm, WeaponFistWeapon, WeaponSword1H, WeaponMace1H, WeaponAxe1H}},
+	{ClassName: "Monk", Name: "Windwalker", SheetLabel: "WW Monk", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/monk_windwalker.png", WeaponTypes: []string{WeaponStaff, WeaponPolearm, WeaponFistWeapon, WeaponSword1H, WeaponMace1H, WeaponAxe1H}},
 
 	// Paladin — Plate. Holy Intellect, Protection/Retribution Strength.
 	// Holy and Protection are both shield-capable (confirmed).
 	{ClassName: "Paladin", Name: "Holy", ArmorType: ArmorPlate, PrimaryStat: "Intellect", Role: "Healer", IconUrl: "/icons/classes/paladin_holy.png", WeaponTypes: []string{WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponAxe1H, WeaponAxe2H, WeaponPolearm, WeaponShield}},
-	{ClassName: "Paladin", Name: "Protection", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "Tank", IconUrl: "/icons/classes/paladin_protection.png", WeaponTypes: []string{WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponAxe1H, WeaponAxe2H, WeaponPolearm, WeaponShield}},
-	{ClassName: "Paladin", Name: "Retribution", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "DPS", IconUrl: "/icons/classes/paladin_retribution.png", WeaponTypes: []string{WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponAxe1H, WeaponAxe2H, WeaponPolearm}},
+	{ClassName: "Paladin", Name: "Protection", SheetLabel: "Prot Paladin", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "Tank", IconUrl: "/icons/classes/paladin_protection.png", WeaponTypes: []string{WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponAxe1H, WeaponAxe2H, WeaponPolearm, WeaponShield}},
+	{ClassName: "Paladin", Name: "Retribution", SheetLabel: "Ret Paladin", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "DPS", IconUrl: "/icons/classes/paladin_retribution.png", WeaponTypes: []string{WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponAxe1H, WeaponAxe2H, WeaponPolearm}},
 
 	// Priest — Cloth, Intellect, all specs.
 	{ClassName: "Priest", Name: "Discipline", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "Healer", IconUrl: "/icons/classes/priest_discipline.png", WeaponTypes: []string{WeaponWand, WeaponDagger, WeaponStaff, WeaponMace1H}},
 	{ClassName: "Priest", Name: "Holy", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "Healer", IconUrl: "/icons/classes/priest_holy.png", WeaponTypes: []string{WeaponWand, WeaponDagger, WeaponStaff, WeaponMace1H}},
-	{ClassName: "Priest", Name: "Shadow", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/priest_shadow.png", WeaponTypes: []string{WeaponWand, WeaponDagger, WeaponStaff, WeaponMace1H}},
+	{ClassName: "Priest", Name: "Shadow", SheetLabel: "Shadow Priest", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/priest_shadow.png", WeaponTypes: []string{WeaponWand, WeaponDagger, WeaponStaff, WeaponMace1H}},
 
 	// Rogue — Leather, Agility, all specs.
-	{ClassName: "Rogue", Name: "Assassination", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/rogue_assassination.png", WeaponTypes: []string{WeaponDagger, WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponFistWeapon}},
-	{ClassName: "Rogue", Name: "Outlaw", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/rogue_outlaw.png", WeaponTypes: []string{WeaponDagger, WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponFistWeapon}},
-	{ClassName: "Rogue", Name: "Subtlety", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/rogue_subtlety.png", WeaponTypes: []string{WeaponDagger, WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponFistWeapon}},
+	{ClassName: "Rogue", Name: "Assassination", SheetLabel: "Assa Rogue", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/rogue_assassination.png", WeaponTypes: []string{WeaponDagger, WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponFistWeapon}},
+	{ClassName: "Rogue", Name: "Outlaw", SheetLabel: "Outlaw Rogue", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/rogue_outlaw.png", WeaponTypes: []string{WeaponDagger, WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponFistWeapon}},
+	{ClassName: "Rogue", Name: "Subtlety", SheetLabel: "Sub Rogue", ArmorType: ArmorLeather, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/rogue_subtlety.png", WeaponTypes: []string{WeaponDagger, WeaponSword1H, WeaponAxe1H, WeaponMace1H, WeaponFistWeapon}},
 
 	// Shaman — Mail. Elemental/Restoration Intellect (staff-capable),
 	// Enhancement Agility (no staff) — confirmed by user during planning.
 	// Elemental and Restoration are both shield-capable (confirmed);
 	// Enhancement is not (dual-wields).
-	{ClassName: "Shaman", Name: "Elemental", ArmorType: ArmorMail, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/shaman_elemental.png", WeaponTypes: []string{WeaponMace1H, WeaponAxe1H, WeaponSword1H, WeaponDagger, WeaponStaff, WeaponShield}},
-	{ClassName: "Shaman", Name: "Enhancement", ArmorType: ArmorMail, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/shaman_enhancement.png", WeaponTypes: []string{WeaponMace1H, WeaponAxe1H, WeaponSword1H, WeaponDagger, WeaponFistWeapon}},
+	{ClassName: "Shaman", Name: "Elemental", SheetLabel: "Ele Shaman", ArmorType: ArmorMail, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/shaman_elemental.png", WeaponTypes: []string{WeaponMace1H, WeaponAxe1H, WeaponSword1H, WeaponDagger, WeaponStaff, WeaponShield}},
+	{ClassName: "Shaman", Name: "Enhancement", SheetLabel: "Enh Shaman", ArmorType: ArmorMail, PrimaryStat: "Agility", Role: "DPS", IconUrl: "/icons/classes/shaman_enhancement.png", WeaponTypes: []string{WeaponMace1H, WeaponAxe1H, WeaponSword1H, WeaponDagger, WeaponFistWeapon}},
 	{ClassName: "Shaman", Name: "Restoration", ArmorType: ArmorMail, PrimaryStat: "Intellect", Role: "Healer", IconUrl: "/icons/classes/shaman_restoration.png", WeaponTypes: []string{WeaponMace1H, WeaponAxe1H, WeaponSword1H, WeaponDagger, WeaponStaff, WeaponShield}},
 
 	// Warlock — Cloth, Intellect, all specs.
-	{ClassName: "Warlock", Name: "Affliction", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/warlock_affliction.png", WeaponTypes: []string{WeaponWand, WeaponDagger, WeaponStaff, WeaponSword1H}},
-	{ClassName: "Warlock", Name: "Demonology", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/warlock_demonology.png", WeaponTypes: []string{WeaponWand, WeaponDagger, WeaponStaff, WeaponSword1H}},
-	{ClassName: "Warlock", Name: "Destruction", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/warlock_destruction.png", WeaponTypes: []string{WeaponWand, WeaponDagger, WeaponStaff, WeaponSword1H}},
+	{ClassName: "Warlock", Name: "Affliction", SheetLabel: "Aff Wlock", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/warlock_affliction.png", WeaponTypes: []string{WeaponWand, WeaponDagger, WeaponStaff, WeaponSword1H}},
+	{ClassName: "Warlock", Name: "Demonology", SheetLabel: "Demo Wlock", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/warlock_demonology.png", WeaponTypes: []string{WeaponWand, WeaponDagger, WeaponStaff, WeaponSword1H}},
+	{ClassName: "Warlock", Name: "Destruction", SheetLabel: "Destro Wlock", ArmorType: ArmorCloth, PrimaryStat: "Intellect", Role: "DPS", IconUrl: "/icons/classes/warlock_destruction.png", WeaponTypes: []string{WeaponWand, WeaponDagger, WeaponStaff, WeaponSword1H}},
 
 	// Warrior — Plate, Strength, all specs share the broadest melee list.
 	// Protection is shield-capable (confirmed); Arms/Fury are not (two-handers).
-	{ClassName: "Warrior", Name: "Arms", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "DPS", IconUrl: "/icons/classes/warrior_arms.png", WeaponTypes: []string{WeaponAxe1H, WeaponAxe2H, WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponPolearm, WeaponDagger, WeaponFistWeapon, WeaponStaff}},
-	{ClassName: "Warrior", Name: "Fury", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "DPS", IconUrl: "/icons/classes/warrior_fury.png", WeaponTypes: []string{WeaponAxe1H, WeaponAxe2H, WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponPolearm, WeaponDagger, WeaponFistWeapon, WeaponStaff}},
-	{ClassName: "Warrior", Name: "Protection", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "Tank", IconUrl: "/icons/classes/warrior_protection.png", WeaponTypes: []string{WeaponAxe1H, WeaponAxe2H, WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponPolearm, WeaponDagger, WeaponFistWeapon, WeaponStaff, WeaponShield}},
+	{ClassName: "Warrior", Name: "Arms", SheetLabel: "Arms Warrior", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "DPS", IconUrl: "/icons/classes/warrior_arms.png", WeaponTypes: []string{WeaponAxe1H, WeaponAxe2H, WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponPolearm, WeaponDagger, WeaponFistWeapon, WeaponStaff}},
+	{ClassName: "Warrior", Name: "Fury", SheetLabel: "Fury Warrior", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "DPS", IconUrl: "/icons/classes/warrior_fury.png", WeaponTypes: []string{WeaponAxe1H, WeaponAxe2H, WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponPolearm, WeaponDagger, WeaponFistWeapon, WeaponStaff}},
+	{ClassName: "Warrior", Name: "Protection", SheetLabel: "Prot Warrior", ArmorType: ArmorPlate, PrimaryStat: "Strength", Role: "Tank", IconUrl: "/icons/classes/warrior_protection.png", WeaponTypes: []string{WeaponAxe1H, WeaponAxe2H, WeaponMace1H, WeaponMace2H, WeaponSword1H, WeaponSword2H, WeaponPolearm, WeaponDagger, WeaponFistWeapon, WeaponStaff, WeaponShield}},
 }

@@ -46,6 +46,7 @@ import { WowheadItemIcon } from "../Loot/WowheadItemIcon";
 import { FixPrioritiesModal, type PriorityBoss } from "../Loot/FixPrioritiesModal";
 import { TierTrackerGrid } from "../Loot/TierTrackerGrid";
 import { TierSimTable } from "../Loot/TierSimTable";
+import { TierSimRefreshControls } from "../Loot/TierSimRefreshControls";
 import { BoeSalesTable } from "../Loot/BoeSalesTable";
 import { BoeSaleModal } from "../Loot/BoeSaleModal";
 import { getClassColor } from "../../data/classes";
@@ -711,6 +712,9 @@ export const Loot: FC = () => {
   const isLootCouncilOrAdmin = ["owner", "admin", "loot_council"].includes(
     team?.name ?? "",
   );
+  // Stricter than the above — tier sim data is shared platform-wide (not
+  // per-team), so refreshing it is scoped to just owners, not admin/LC too.
+  const isOwner = team?.name === "owner";
 
   const charactersById = new Map<number, Character>(
     (teamData?.players ?? [])
@@ -1391,6 +1395,9 @@ export const Loot: FC = () => {
                     <ChevronsRight className="w-4 h-4" />
                   </button>
                 </div>
+                {isOwner && (
+                  <TierSimRefreshControls teamId={teamId} colorMode={colorMode} />
+                )}
                 <TierSimTable
                   entries={tierSimData?.tier_sim_entries ?? []}
                   lastUpdated={tierSimData?.last_updated ?? null}
