@@ -10,7 +10,19 @@
     {
       "max_instances": 10,
       "class_name": "KrankenPrepBackend",
-      "image": "./Dockerfile"
+      "image": "./Dockerfile",
+      // Bumped from the account default ("lite": 1/16 vCPU, 256 MiB) ahead
+      // of the tier launch — confirmed via direct testing that a Go
+      // backend doing several sequential DB round trips per request on
+      // 1/16 vCPU was a real bottleneck (GetTeamById: 1.4-2.4s / 2.3MB on
+      // a near-idle prod, before the same-day bnet_profile_data +
+      // reference-data-caching fixes). "standard-1" (1/2 vCPU, 4 GiB) is a
+      // reasonable middle ground for launch-day concurrency headroom
+      // without jumping straight to the priciest tier — see
+      // CLOUDFLARE_DEPLOYMENT_NOTES.md for the full cost breakdown per
+      // tier. Revisit after launch week: step back down if sustained
+      // traffic doesn't justify the recurring cost, or up if it does.
+      "instance_type": "standard-1"
     }
   ],
   "durable_objects": {

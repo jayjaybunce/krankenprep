@@ -261,8 +261,27 @@ func GetTeamById(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "user unauthorized for team"})
 		return
 	}
+	// BnetProfileData is omitted on every nested User here (Roles.User,
+	// Players.User) — it's the raw Battle.net API profile blob, ~28KB per
+	// user, and nothing in the frontend ever reads it off a nested user
+	// (confirmed: no `.bnet_profile_data` access anywhere outside the
+	// current-user's own /me response). With a full roster this was
+	// ~1.6MB of the ~2.3MB response on its own, and it's fetched from
+	// Postgres per row regardless of whether anything JSON-marshals it —
+	// omitting it at the query level cuts both the DB transfer and the
+	// response size, not just the JSON payload.
+	omitBnetProfileData := func(db *gorm.DB) *gorm.DB { return db.Omit("bnet_profile_data") }
 	team := models.Team{}
-	if err := database.DB.Preload("WishlistConfigs").Preload("InviteLinks").Preload("Roles").Preload("Roles.User").Preload("Players").Preload("Players.User").Preload("Players.Characters").Preload("Players.Characters.Specialization").Where("id = ?", teamId).Find(&team).Error; err != nil {
+	if err := database.DB.
+		Preload("WishlistConfigs").
+		Preload("InviteLinks").
+		Preload("Roles").
+		Preload("Roles.User", omitBnetProfileData).
+		Preload("Players").
+		Preload("Players.User", omitBnetProfileData).
+		Preload("Players.Characters").
+		Preload("Players.Characters.Specialization").
+		Where("id = ?", teamId).Find(&team).Error; err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "team not found"})
 		return
 	}
