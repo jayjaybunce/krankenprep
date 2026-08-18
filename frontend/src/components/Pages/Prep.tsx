@@ -154,6 +154,31 @@ const BossDisplay: FC<BossProps> = ({
     id: number;
     content: string;
   } | null>(null);
+
+  // Memoized so these stay referentially stable across re-renders that
+  // don't actually change editingSection/editingNote (e.g. a Descope token
+  // refresh re-rendering this page). AddSectionModal/AddNoteModal reset
+  // their in-progress form state whenever the initialValues object they're
+  // passed changes identity — an inline object literal here would be a new
+  // reference on every render and silently wipe whatever the user was
+  // mid-typing.
+  const editSectionInitialValues = useMemo(
+    () =>
+      editingSection
+        ? {
+            sectionName: editingSection.name,
+            variant: editingSection.variant,
+            tags: editingSection.tags.split("-$-").filter(Boolean),
+            description: editingSection.description,
+            tagInput: "",
+          }
+        : undefined,
+    [editingSection],
+  );
+  const editNoteInitialValues = useMemo(
+    () => (editingNote ? { content: editingNote.content } : undefined),
+    [editingNote],
+  );
   const [pendingDeleteSectionId, setPendingDeleteSectionId] = useState<
     number | null
   >(null);
@@ -764,17 +789,7 @@ const BossDisplay: FC<BossProps> = ({
           setEditingSection(null);
         }}
         title={`${boss?.name} for ${team?.team?.name}`}
-        initialValues={
-          editingSection
-            ? {
-                sectionName: editingSection.name,
-                variant: editingSection.variant,
-                tags: editingSection.tags.split("-$-").filter(Boolean),
-                description: editingSection.description,
-                tagInput: "",
-              }
-            : undefined
-        }
+        initialValues={editSectionInitialValues}
         onSave={(form) => {
           setActionError(null);
           const variant = Array.isArray(form.variant)
@@ -821,9 +836,7 @@ const BossDisplay: FC<BossProps> = ({
           setEditingNote(null);
         }}
         title={`${selectedSection?.name}`}
-        initialValues={
-          editingNote ? { content: editingNote.content } : undefined
-        }
+        initialValues={editNoteInitialValues}
         urlBossId={boss?.id?.toString()}
         urlSectionId={selectedSection?.id?.toString()}
         onSave={(formState) => {
