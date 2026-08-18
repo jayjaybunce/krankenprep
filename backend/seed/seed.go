@@ -210,6 +210,7 @@ func SeedSpecializations(db *gorm.DB) error {
 				PrimaryStat: s.PrimaryStat,
 				Role:        s.Role,
 				IconUrl:     s.IconUrl,
+				SheetLabel:  s.SheetLabel,
 			}
 			if err := db.Create(&spec).Error; err != nil {
 				return fmt.Errorf("creating spec %s: %w", s.Name, err)
@@ -222,11 +223,13 @@ func SeedSpecializations(db *gorm.DB) error {
 			spec.PrimaryStat = s.PrimaryStat
 			spec.Role = s.Role
 			spec.IconUrl = s.IconUrl
+			spec.SheetLabel = s.SheetLabel
 			if err := db.Model(&spec).Updates(map[string]any{
 				"armor_type_id": spec.ArmorTypeID,
 				"primary_stat":  spec.PrimaryStat,
 				"role":          spec.Role,
 				"icon_url":      spec.IconUrl,
+				"sheet_label":   spec.SheetLabel,
 			}).Error; err != nil {
 				return fmt.Errorf("updating spec %s: %w", s.Name, err)
 			}

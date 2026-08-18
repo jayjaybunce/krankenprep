@@ -58,6 +58,15 @@ type Specialization struct {
 	PrimaryStat string       `json:"primary_stat"`
 	Role        string       `json:"role"`
 	WeaponTypes []WeaponType `json:"weapon_types" gorm:"many2many:specialization_weapon_types;"`
+	// SheetLabel is the abbreviated "<spec> <class>" prefix this spec is
+	// named with in the community tier-sim spreadsheet (e.g. "Aff Wlock"
+	// for Affliction Warlock, "UH DK" for Unholy Death Knight) — a
+	// spreadsheet row's full name is SheetLabel + " " + build label (e.g.
+	// "Aff Wlock Soul Harvester"). Used only to match spreadsheet rows back
+	// to a spec during a tier-sim refresh (see TierSimRefreshConfig); blank
+	// for specs that never appear in that spreadsheet (healers/tanks-only
+	// specs the sheet doesn't track).
+	SheetLabel string `json:"sheet_label"`
 }
 
 // Item eligibility is computed, not stored: if ArmorTypeID is set, match it
@@ -237,18 +246,18 @@ const (
 // after a character is renamed or removed later — standard audit-log
 // practice, and it means the read side needs zero preload chains.
 type LootAuditLog struct {
-	ID             uint      `json:"id" gorm:"primaryKey"`
-	TeamID         uint      `json:"team_id" gorm:"index"`
-	EventType      string    `json:"event_type"`
-	ActingUserID   uint      `json:"acting_user_id"`
-	ActingUserBTag string    `json:"acting_user_btag"`
-	CharacterID    uint      `json:"character_id" gorm:"index"`
-	CharacterName  string    `json:"character_name"`
-	BossID         uint      `json:"boss_id" gorm:"index"`
-	BossName       string    `json:"boss_name"`
-	Difficulty     string    `json:"difficulty"`
-	ItemID         *uint     `json:"item_id"`
-	ItemName       *string   `json:"item_name"`
+	ID             uint    `json:"id" gorm:"primaryKey"`
+	TeamID         uint    `json:"team_id" gorm:"index"`
+	EventType      string  `json:"event_type"`
+	ActingUserID   uint    `json:"acting_user_id"`
+	ActingUserBTag string  `json:"acting_user_btag"`
+	CharacterID    uint    `json:"character_id" gorm:"index"`
+	CharacterName  string  `json:"character_name"`
+	BossID         uint    `json:"boss_id" gorm:"index"`
+	BossName       string  `json:"boss_name"`
+	Difficulty     string  `json:"difficulty"`
+	ItemID         *uint   `json:"item_id"`
+	ItemName       *string `json:"item_name"`
 	// Value is the new priority (priority_set) or resulting total
 	// (bonus_roll_added/bonus_roll_removed) — unused for the other event
 	// types.

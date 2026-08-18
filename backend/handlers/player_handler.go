@@ -25,6 +25,15 @@ func isTeamAdmin(teamId uint, userId uint) bool {
 	return err == nil
 }
 
+// isTeamOwner checks whether the given user holds specifically the owner
+// role on the team — stricter than isTeamAdmin, for actions scoped to just
+// the owner (e.g. triggering a global tier-sim data refresh).
+func isTeamOwner(teamId uint, userId uint) bool {
+	role := models.Role{}
+	err := database.DB.Where("team_id = ? AND user_id = ? AND name = ?", teamId, userId, models.RoleOwner).First(&role).Error
+	return err == nil
+}
+
 // isLootCouncilOrAdmin checks whether the given user can edit any team
 // member's loot sheet — owners/admins already have full edit rights
 // everywhere else in the app, so this accepts that same set rather than

@@ -62,8 +62,10 @@ type CharacterTierSlot struct {
 // transition data for this season" isn't confused with "a real, near-zero
 // gain."
 //
-// Read-only from the app's perspective: populated by hand directly in the
-// database each season by the team owner, not through any in-app import UI.
+// Populated either by hand directly in the database, or via a team owner
+// triggering a refresh (see TierSimRefreshConfig) that pulls current values
+// from the community spreadsheet and only touches rows that actually
+// changed.
 //
 // A spec can have more than one row per season — most specs have 2
 // competitively viable hero-talent builds with meaningfully different
@@ -84,4 +86,42 @@ type TierSimEntry struct {
 	Score4pcNewTier  *float64       `json:"score_4pc_new_tier"`
 	CreatedAt        time.Time      `json:"created_at"`
 	UpdatedAt        time.Time      `json:"updated_at"`
+}
+
+// TierSimRefreshConfig is a singleton (always exactly one row — the handler
+// layer enforces this, not a DB constraint, same pattern as any other
+// "there's only ever one of these" table in this codebase) pointing at the
+// live community tier-sim spreadsheet, so a team owner can trigger a refresh
+// without anyone hand-running SQL.
+//
+// The two URLs are stored exactly as pasted from the browser's address bar
+// while viewing that specific tab in Google Sheets (e.g.
+// ".../d/{sheetId}/edit#gid={tabId}") — the refresh handler extracts the
+// sheet ID and gid out of each at request time rather than asking whoever's
+// configuring this to hand-split those out themselves. This is deliberately
+// "hot-swappable": updating a URL here and clicking refresh is the entire
+// workflow for pointing at a new season's spreadsheet, no deploy required.
+//
+// TransitionSheetUrl is blank for an expansion's first season (no prior
+// tier to compare against — see TierSimEntry.Score4pcPrevTier) or simply
+// not entered yet; a refresh skips fetching it entirely when blank rather
+// than erroring.
+//
+// LastRefreshedAt backs the global cooldown (enforced in the refresh
+// handler, not here) and is set on any successful fetch+parse, regardless
+// of whether it actually changed any rows — it does NOT get bumped on a
+// hard failure (unreachable sheet, config missing), so a broken config
+// doesn't burn someone's only refresh attempt for the next 20 minutes.
+//
+// No requester identity is stored anywhere on this — deliberately, since
+// this is a global action rather than a per-team one, and logging who
+// triggered it would mean persisting a player's real account identity
+// (battletag-linked) for something that isn't actually sensitive enough to
+// justify that.
+type TierSimRefreshConfig struct {
+	ID                  uint       `json:"id" gorm:"primaryKey"`
+	CurrentTierSheetUrl string     `json:"current_tier_sheet_url"`
+	TransitionSheetUrl  string     `json:"transition_sheet_url"`
+	LastRefreshedAt     *time.Time `json:"last_refreshed_at"`
+	UpdatedAt           time.Time  `json:"updated_at"`
 }

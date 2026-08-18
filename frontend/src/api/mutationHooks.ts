@@ -1,7 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useKpApi } from "../hooks"
 import type { Tab } from "../components/Planner/Planner"
-import type { BossLoot, TierSlotEntry } from "./queryHooks"
+import type { BossLoot, TierSimRefreshConfig, TierSlotEntry } from "./queryHooks"
 
 type CreateTeamPayload = {
     name: string,
@@ -975,6 +975,75 @@ export const useSetCharacterTierSlot = (teamId: number, characterId: number) => 
         },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey })
+        }
+    })
+}
+
+type UpdateTierSimRefreshConfigPayload = {
+    current_tier_sheet_url: string
+    // Blank clears it.
+    transition_sheet_url: string
+}
+
+export const useUpdateTierSimRefreshConfig = (teamId: number) => {
+    const { headers, url } = useKpApi(`/teams/${teamId}/loot/tier-sim/refresh-config`)
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationKey: ["updateTierSimRefreshConfig", teamId],
+        mutationFn: async (payload: UpdateTierSimRefreshConfigPayload): Promise<TierSimRefreshConfig> => {
+            const res = await fetch(url, { method: "PUT", headers, body: JSON.stringify(payload) })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error ?? "Failed to save tier sim data source")
+            return data
+        },
+        onSuccess: (data) => {
+            queryClient.setQueryData(["tier_sim_refresh_config", teamId], data)
+        }
+    })
+}
+
+export type TierSimRowValues = {
+    score_0pc: number
+    score_2pc: number
+    score_4pc: number
+    score_4pc_prev_tier: number | null
+    score_2pc_mixed: number | null
+    score_4pc_new_tier: number | null
+}
+
+export type TierSimRefreshResult = {
+    changed: { label: string; old: TierSimRowValues | null; new: TierSimRowValues }[]
+    unmatched_sheet_rows: string[]
+    last_refreshed_at: string
+}
+
+export class TierSimRefreshError extends Error {
+    retryAfterSeconds?: number
+    constructor(message: string, retryAfterSeconds?: number) {
+        super(message)
+        this.retryAfterSeconds = retryAfterSeconds
+    }
+}
+
+// Owner-only, globally rate-limited on the backend (one successful refresh
+// per 20 minutes across the whole app, not per-team) — a 429 comes back as
+// a TierSimRefreshError carrying how long until the cooldown clears.
+export const useRefreshTierSimData = (teamId: number) => {
+    const { headers, url } = useKpApi(`/teams/${teamId}/loot/tier-sim/refresh`)
+    const queryClient = useQueryClient()
+    return useMutation({
+        mutationKey: ["refreshTierSimData", teamId],
+        mutationFn: async (): Promise<TierSimRefreshResult> => {
+            const res = await fetch(url, { method: "POST", headers })
+            const data = await res.json()
+            if (!res.ok) {
+                throw new TierSimRefreshError(data.error ?? "Refresh failed", data.retry_after_seconds)
+            }
+            return data
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["tier_sim_data", teamId] })
+            queryClient.invalidateQueries({ queryKey: ["tier_sim_refresh_config", teamId] })
         }
     })
 }

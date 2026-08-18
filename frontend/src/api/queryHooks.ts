@@ -679,6 +679,32 @@ export const useGetTierSimData = (teamId: number, enabled = true) => {
     })
 }
 
+export type TierSimRefreshConfig = {
+    id: number
+    current_tier_sheet_url: string
+    // Blank means no transition data configured this season (either an
+    // expansion's first season, or just not entered yet).
+    transition_sheet_url: string
+    last_refreshed_at: string | null
+    updated_at: string
+}
+
+// Owner-only (backend enforces it too) — no reason to fetch this for
+// members who can't act on it anyway.
+export const useGetTierSimRefreshConfig = (teamId: number, enabled = true) => {
+    const { url, headers, enabled: kpEnabled } = useKpApi(`/teams/${teamId}/loot/tier-sim/refresh-config`)
+    return useQuery({
+        queryKey: ["tier_sim_refresh_config", teamId],
+        enabled: enabled && kpEnabled,
+        queryFn: async (): Promise<TierSimRefreshConfig> => {
+            const res = await fetch(url, { method: "GET", headers })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error ?? "Failed to load tier sim data source")
+            return data
+        }
+    })
+}
+
 export type BoeSale = {
     id: number
     team_id: number

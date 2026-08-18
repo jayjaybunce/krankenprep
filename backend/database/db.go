@@ -76,6 +76,7 @@ func Connect() {
 		&models.LootAuditLog{},
 		&models.CharacterTierSlot{},
 		&models.TierSimEntry{},
+		&models.TierSimRefreshConfig{},
 		&models.BoeSale{},
 	); err != nil {
 		log.Fatalf("Failed to migrate database: %v", err)
