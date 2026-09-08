@@ -7,6 +7,31 @@ import { useTheme } from "../hooks";
 import { X } from "lucide-react";
 import { Link } from "react-router-dom";
 
+// Turn a raidstrats.gg view link (e.g.
+// https://raidstrats.gg/planner?view=<id>) into an embeddable planner URL.
+const buildRaidStratEmbedUrl = (href: string): string | null => {
+  let parsed: URL;
+  try {
+    parsed = new URL(href);
+  } catch {
+    return null;
+  }
+
+  const raidplanId =
+    parsed.searchParams.get("view") ?? parsed.searchParams.get("id");
+  if (!raidplanId) return null;
+
+  const url = new URL("https://raidstrats.gg/planner");
+  url.searchParams.set("embed", "true");
+  url.searchParams.set("id", raidplanId);
+  url.searchParams.set("animation", "true");
+  url.searchParams.set("hidetrails", "true");
+  url.searchParams.set("circleMode", "true");
+  url.searchParams.set("maxCharacters", "4");
+  url.searchParams.set("loop", "false");
+  return url.toString();
+};
+
 type MarkdownSize = "small" | "medium" | "large";
 type MarkdownColor = "cyan" | "emerald" | "amber" | "rose";
 
@@ -382,6 +407,17 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     a: ({ href, children }) => {
       const match = href?.match(/spell:(\d+)\/name:([^|]+)/);
 
+      const isRaidStratLink = /\/raidstrats\.gg\//.test(href ?? "");
+      if (isRaidStratLink) {
+        const embedSrc = buildRaidStratEmbedUrl(href ?? "");
+        if (embedSrc) {
+          return (
+            <div className="relative shrink-0 aspect-video rounded-xl overflow-hidden border border-slate-800/50 bg-slate-900/40">
+              <iframe src={embedSrc} className="w-full h-full" />
+            </div>
+          )
+        }
+      }
       const isRaidplanLink = /\/raidplan\//.test(href ?? "");
       if (isRaidplanLink) {
         return (
