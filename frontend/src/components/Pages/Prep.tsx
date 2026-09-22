@@ -901,7 +901,6 @@ const BossDisplay: FC<BossProps> = ({
         planData={planData}
         tabId={tabId}
         onClose={closeRaidplan}
-        onTabChange={changeRaidplanTab}
       />
     </>
   );
