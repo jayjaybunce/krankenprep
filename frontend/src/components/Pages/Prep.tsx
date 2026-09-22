@@ -902,6 +902,27 @@ const BossDisplay: FC<BossProps> = ({
         tabId={tabId}
         onClose={closeRaidplan}
       />
+
+      {/*
+        Notes Fullscreen hides the sections column on desktop, which is
+        where the Assignments button normally lives (below the raidplan
+        hero image) — same gap the raidplan drawer/floating-viewer fixed
+        earlier, same fix shape: a floating trigger for just this layout.
+        Top-right rather than bottom-right/bottom-left: the raidplan pill
+        and the app-wide Droptimizer popup already claim those corners.
+      */}
+      {layoutMode === "notes" && (
+        <button
+          onClick={() => setShowAssignments(true)}
+          className="hidden lg:flex fixed top-6 right-6 z-40 items-center gap-2 px-4 py-2 rounded-lg font-semibold font-montserrat text-sm bg-slate-800/70 hover:bg-slate-700/80 border border-slate-700 text-slate-300 hover:text-white shadow-lg transition-all duration-200"
+        >
+          <ClipboardList className="w-4 h-4" />
+          Assignments
+          <span className="text-[9px] font-bold font-montserrat px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 uppercase tracking-wider leading-none">
+            Beta
+          </span>
+        </button>
+      )}
     </>
   );
 };
