@@ -308,9 +308,16 @@ export const TierTrackerGrid: FC<{
     <div className="overflow-x-auto">
       <table className="border-separate border-spacing-0">
         <thead>
+          {/* Sticky against the page's own scroll (no internal scroll
+              container needed) — same technique TierSimTable already uses
+              successfully right next to this. z-30 on the corner cell
+              (sticky on both axes) beats z-20 on the rest of the header row
+              (top only), which in turn beats z-10 on the body's sticky
+              character column (left only), so all three stack correctly
+              regardless of scroll direction. */}
           <tr>
             <th
-              className={`sticky left-0 z-10 px-3 py-1.5 text-left text-xs font-medium font-montserrat uppercase tracking-wide ${stickyColClass} ${
+              className={`sticky left-0 top-0 z-30 px-3 py-1.5 text-left text-xs font-medium font-montserrat uppercase tracking-wide ${stickyColClass} ${
                 colorMode === "dark" ? "text-slate-400" : "text-slate-600"
               }`}
             >
@@ -319,7 +326,7 @@ export const TierTrackerGrid: FC<{
             {TIER_SLOTS.map((slot) => (
               <th
                 key={slot}
-                className={`px-1 py-1.5 min-w-28 text-xs font-medium font-montserrat uppercase tracking-wide ${
+                className={`sticky top-0 z-20 px-1 py-1.5 min-w-28 text-xs font-medium font-montserrat uppercase tracking-wide ${stickyColClass} ${
                   colorMode === "dark" ? "text-slate-400" : "text-slate-600"
                 }`}
               >
@@ -327,7 +334,7 @@ export const TierTrackerGrid: FC<{
               </th>
             ))}
             <th
-              className={`px-2 py-1.5 text-xs font-medium font-montserrat uppercase tracking-wide ${
+              className={`sticky top-0 z-20 px-2 py-1.5 text-xs font-medium font-montserrat uppercase tracking-wide ${stickyColClass} ${
                 colorMode === "dark" ? "text-slate-400" : "text-slate-600"
               }`}
             >

@@ -52,6 +52,7 @@ import { BossDropdown } from "../BossSelection";
 import PlanViewer from "./PlanViewer";
 import { NoteDiffView } from "../NoteDiffView";
 import { AssignmentsModal } from "../modals/AssignmentsModal";
+import { RaidplanFloatingViewer } from "../RaidplanFloatingViewer";
 
 export const Prep: FC = () => {
   const { boss, setBoss } = useTeam();
@@ -294,6 +295,21 @@ const BossDisplay: FC<BossProps> = ({
     });
   }, [urlNoteId, selectedSection]);
 
+  const closeRaidplan = () => {
+    navigate(`/prep/${urlBossId}/section/${urlSectionId}`);
+  };
+  const changeRaidplanTab = (newTabId: string) => {
+    navigate(
+      `/prep/${urlBossId}/section/${urlSectionId}/raidplan/${raidplanShareId}/tab/${newTabId}`,
+      { replace: true },
+    );
+  };
+
+  // Notes Fullscreen hides the sections column on desktop, which is where
+  // the sticky raidplan viewer normally lives — fall back to a floating
+  // window so raidplan links in notes still have somewhere to render.
+  const showRaidplanFloating = layoutMode === "notes" && !!raidplanShareId;
+
   const raidplanJsx = (
     <div className="sticky top-0 z-10 pb-3">
       {raidplanShareId && isPlanLoading ? (
@@ -315,15 +331,8 @@ const BossDisplay: FC<BossProps> = ({
         <div className="w-full">
           <PlanViewer
             viewUrl={`${planData?.sequence}/${planData?.share_id}`}
-            onClose={() => {
-              navigate(`/prep/${urlBossId}/section/${urlSectionId}`);
-            }}
-            onTabChange={(newTabId) => {
-              navigate(
-                `/prep/${urlBossId}/section/${urlSectionId}/raidplan/${raidplanShareId}/tab/${newTabId}`,
-                { replace: true },
-              );
-            }}
+            onClose={closeRaidplan}
+            onTabChange={changeRaidplanTab}
             tabs={planData?.content}
             startingId={tabId}
           />
@@ -878,6 +887,16 @@ const BossDisplay: FC<BossProps> = ({
         teamId={team?.team_id?.toString()}
         bossId={boss?.id?.toString()}
         isAdmin={isUserAdmin}
+      />
+
+      <RaidplanFloatingViewer
+        isVisible={showRaidplanFloating}
+        raidplanShareId={raidplanShareId}
+        isLoading={isPlanLoading}
+        planData={planData}
+        tabId={tabId}
+        onClose={closeRaidplan}
+        onTabChange={changeRaidplanTab}
       />
     </>
   );
