@@ -1,16 +1,17 @@
 import {
   useState,
+  type CSSProperties,
   type FC,
   useRef,
   useLayoutEffect,
   useEffect,
   useMemo,
 } from "react";
-import { Card } from "../Card";
-import { useTheme } from "../../hooks";
+import { useTheme, usePrepPreferences } from "../../hooks";
 import { PlanTab } from "../Planner/PlanTab";
 import type { Tab } from "../Planner/Planner";
 import { ExternalLink, XIcon } from "lucide-react";
+import { noteThemes, themeCssVars } from "../../data/noteThemes";
 
 type PlanViewerProps = {
   viewUrl: string;
@@ -39,6 +40,10 @@ const PlanViewer: FC<PlanViewerProps> = ({
   }, [tabs, startingId]);
   const [activeTab, setActiveTab] = useState(index);
   const { colorMode } = useTheme();
+  const { markdownTheme } = usePrepPreferences();
+  const noteTheme = noteThemes[markdownTheme];
+  const isDark = colorMode === "dark";
+  const palette = isDark ? noteTheme.dark : noteTheme.light;
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(0.5); // Start with a reasonable default
 
@@ -85,7 +90,10 @@ const PlanViewer: FC<PlanViewerProps> = ({
   return (
     <div className="flex justify-center items-start w-full">
       <div className="w-full max-w-[95vw]" ref={containerRef}>
-        <Card variant="elevated" hover={false}>
+        <div
+          style={{ ...themeCssVars(palette), fontFamily: noteTheme.fonts.body } as CSSProperties}
+          className={`bg-(--nt-card-bg) border border-(--nt-card-border) ${noteTheme.card.radius} ${noteTheme.card.shadow} p-3`}
+        >
           <div className="flex flex-col gap-1">
             {/* Tabs Overlay - rendered after PlanTabs so it paints on top */}
             <div className=" left-4 z-20 flex flex-row gap-2 items-center flex-wrap max-w-[calc(100%-2rem)]">
@@ -99,12 +107,8 @@ const PlanViewer: FC<PlanViewerProps> = ({
                             backdrop-blur-md shadow-lg
                             ${
                               activeTab === index
-                                ? colorMode === "dark"
-                                  ? "bg-cyan-500/30 border-cyan-500 text-cyan-400 shadow-cyan-500/20"
-                                  : "bg-cyan-50/90 border-cyan-500 text-cyan-700"
-                                : colorMode === "dark"
-                                  ? "bg-slate-900/70 border-slate-800 text-slate-300 hover:bg-slate-900/90 hover:border-slate-700"
-                                  : "bg-white/70 border-slate-200 text-slate-700 hover:bg-white/90 hover:border-slate-300"
+                                ? "bg-(--nt-link)/20 border-(--nt-link) text-(--nt-link)"
+                                : "bg-(--nt-card-bg) border-(--nt-card-border) text-(--nt-muted) hover:text-(--nt-body) hover:border-(--nt-link)"
                             }
                           `}
                     onClick={() => handleTabClick(index)}
@@ -188,7 +192,7 @@ const PlanViewer: FC<PlanViewerProps> = ({
               </div>
             </div>
           </div>
-        </Card>
+        </div>
       </div>
     </div>
   );

@@ -111,7 +111,7 @@ export type MarginElement =
   | "h1" | "h2" | "h3" | "h4" | "h5" | "h6"
   | "p" | "ul" | "ol" | "blockquote" | "hr" | "table" | "img" | "codeBlock";
 
-type MarginRem = { mt?: number; mb?: number; py?: number };
+type MarginRem = { mt?: number; mb?: number; py?: number; pl?: number };
 
 // rem values, extracted 1:1 from what used to be fixed Tailwind spacing
 // classes (mb-2 = 0.5rem, etc) — the baseline a theme's spacingScale
@@ -127,7 +127,7 @@ export const noteMarginScale: Record<MarkdownSize, Record<MarginElement, MarginR
     p: { mb: 0.375 },
     ul: { mb: 0.375 },
     ol: { mb: 0.375 },
-    blockquote: { py: 0.125, mb: 0.375 },
+    blockquote: { mt: 0.25, py: 0.25, mb: 0.5, pl: 0.5 },
     hr: { mt: 0.5, mb: 0.5 },
     table: { mb: 0.5 },
     img: { mb: 0.5 },
@@ -143,7 +143,7 @@ export const noteMarginScale: Record<MarkdownSize, Record<MarginElement, MarginR
     p: { mb: 0.5 },
     ul: { mb: 0.5 },
     ol: { mb: 0.5 },
-    blockquote: { py: 0.25, mb: 0.5 },
+    blockquote: { mt: 0.375, py: 0.375, mb: 0.75, pl: 0.75 },
     hr: { mt: 1, mb: 1 },
     table: { mb: 0.75 },
     img: { mb: 0.75 },
@@ -159,7 +159,7 @@ export const noteMarginScale: Record<MarkdownSize, Record<MarginElement, MarginR
     p: { mb: 1 },
     ul: { mb: 1 },
     ol: { mb: 1 },
-    blockquote: { py: 0.5, mb: 1 },
+    blockquote: { mt: 0.625, py: 0.625, mb: 1.25, pl: 1 },
     hr: { mt: 1.5, mb: 1.5 },
     table: { mb: 1 },
     img: { mb: 1 },
@@ -180,5 +180,6 @@ export const marginStyle = (
   if (base.mt !== undefined) style.marginTop = `${base.mt * spacingScale}rem`;
   if (base.mb !== undefined) style.marginBottom = `${base.mb * spacingScale}rem`;
   if (base.py !== undefined) style.paddingTop = style.paddingBottom = `${base.py * spacingScale}rem`;
+  if (base.pl !== undefined) style.paddingLeft = `${base.pl * spacingScale}rem`;
   return style;
 };

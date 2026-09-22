@@ -242,7 +242,13 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
 
   return (
     <div
-      className={`fixed inset-0 z-10 flex items-center justify-center ${isScreen ? "p-0" : "p-4"}`}
+      // z-60: other floating/fixed UI in the app tops out at z-50
+      // (dropdowns, search popups, the mobile menu) or z-40 (toolbars,
+      // the raidplan floating viewer) — a blocking modal needs to
+      // unambiguously outrank all of it, not just whichever happened to
+      // prompt this. The image lightbox (z-9999) stays above even this,
+      // since it can be opened from within a modal's own content.
+      className={`fixed inset-0 z-60 flex items-center justify-center ${isScreen ? "p-0" : "p-4"}`}
       onClick={handleOverlayClick}
     >
       {/* Backdrop */}
@@ -257,7 +263,7 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
 
       {/* Modal */}
       <div
-        className={`relative ${sizeStyles[size]} ${isScreen ? "h-screen max-h-screen" : "max-h-[90vh]"} flex flex-col animate-in fade-in zoom-in-95 z-10 duration-300`}
+        className={`relative ${sizeStyles[size]} ${isScreen ? "h-screen max-h-screen" : "max-h-[90vh]"} flex flex-col animate-in fade-in zoom-in-95 z-60 duration-300`}
       >
         {renderContent()}
       </div>
