@@ -1,137 +1,73 @@
-import type { FC } from "react";
+import type { CSSProperties, FC } from "react";
 import Markdown from "react-markdown";
 import type { Components } from "react-markdown";
 import { defaultUrlTransform } from "react-markdown";
 import { Link } from "react-router-dom";
 import { useTheme } from "../hooks";
 import type { DiffOp } from "../api/queryHooks";
-
-type MarkdownColor = "cyan" | "emerald" | "amber" | "rose";
-type MarkdownSize = "small" | "medium" | "large";
+import { noteFontScale, marginStyle, type MarkdownSize } from "../data/noteTypography";
+import { noteThemes, themeCssVars, DEFAULT_THEME_ID, type ThemeId } from "../data/noteThemes";
 
 type NoteDiffViewProps = {
   diffs: DiffOp[];
-  color?: MarkdownColor;
+  theme?: ThemeId;
   size?: MarkdownSize;
 };
 
-const sizeConfig = {
-  small: {
-    h1: "text-lg font-bold mb-1 mt-2",
-    h2: "text-base font-bold mb-1 mt-2",
-    h3: "text-sm font-semibold mb-1 mt-1.5",
-    p: "mb-1.5 leading-snug text-xs",
-    ul: "list-disc list-inside mb-1.5 space-y-0.5 text-xs",
-    ol: "list-decimal list-inside mb-1.5 space-y-0.5 text-xs",
-    li: "ml-2",
-    strong: "text-xs font-bold",
-    em: "text-xs italic",
-  },
-  medium: {
-    h1: "text-2xl font-bold mb-2 mt-4",
-    h2: "text-xl font-bold mb-2 mt-3",
-    h3: "text-lg font-semibold mb-1.5 mt-2.5",
-    p: "mb-2 leading-normal text-sm",
-    ul: "list-disc list-inside mb-2 space-y-1 text-sm",
-    ol: "list-decimal list-inside mb-2 space-y-1 text-sm",
-    li: "ml-3",
-    strong: "text-sm font-bold",
-    em: "text-sm italic",
-  },
-  large: {
-    h1: "text-4xl font-bold mb-4 mt-6",
-    h2: "text-3xl font-bold mb-3 mt-5",
-    h3: "text-2xl font-semibold mb-3 mt-4",
-    p: "mb-4 leading-relaxed",
-    ul: "list-disc list-inside mb-4 space-y-2",
-    ol: "list-decimal list-inside mb-4 space-y-2",
-    li: "ml-4",
-    strong: "font-bold",
-    em: "italic",
-  },
-} as const;
-
-const colorConfig = {
-  cyan: {
-    h1: "from-cyan-400 to-blue-500",
-    h2: { dark: "text-cyan-300", light: "text-cyan-600" },
-    h3: { dark: "text-blue-300", light: "text-blue-600" },
-    strong: { dark: "text-cyan-300", light: "text-cyan-700" },
-    em: { dark: "text-blue-300", light: "text-blue-600" },
-    link: { dark: "text-cyan-400 hover:text-cyan-300", light: "text-cyan-600 hover:text-cyan-700" },
-  },
-  emerald: {
-    h1: "from-emerald-400 to-teal-500",
-    h2: { dark: "text-emerald-300", light: "text-emerald-600" },
-    h3: { dark: "text-teal-300", light: "text-teal-600" },
-    strong: { dark: "text-emerald-300", light: "text-emerald-700" },
-    em: { dark: "text-teal-300", light: "text-teal-600" },
-    link: { dark: "text-emerald-400 hover:text-emerald-300", light: "text-emerald-600 hover:text-emerald-700" },
-  },
-  amber: {
-    h1: "from-amber-400 to-orange-500",
-    h2: { dark: "text-amber-300", light: "text-amber-600" },
-    h3: { dark: "text-orange-300", light: "text-orange-600" },
-    strong: { dark: "text-amber-300", light: "text-amber-700" },
-    em: { dark: "text-orange-300", light: "text-orange-600" },
-    link: { dark: "text-amber-400 hover:text-amber-300", light: "text-amber-600 hover:text-amber-700" },
-  },
-  rose: {
-    h1: "from-rose-400 to-pink-500",
-    h2: { dark: "text-rose-300", light: "text-rose-600" },
-    h3: { dark: "text-pink-300", light: "text-pink-600" },
-    strong: { dark: "text-rose-300", light: "text-rose-700" },
-    em: { dark: "text-pink-300", light: "text-pink-600" },
-    link: { dark: "text-rose-400 hover:text-rose-300", light: "text-rose-600 hover:text-rose-700" },
-  },
-} as const;
-
 function buildComponents(
-  color: MarkdownColor,
   size: MarkdownSize,
-  isDark: boolean,
+  headingFont: CSSProperties,
+  spacingScale: number,
 ): Components {
-  const s = sizeConfig[size];
-  const c = colorConfig[color];
-  const text = isDark ? "text-slate-300" : "text-slate-700";
+  const s = noteFontScale[size];
+  const margin = (el: Parameters<typeof marginStyle>[1]) => marginStyle(size, el, spacingScale);
+  const linkClass =
+    "font-medium underline decoration-2 underline-offset-2 transition-colors text-(--nt-link) hover:text-(--nt-link-hover)";
 
   return {
     h1: ({ children }) => (
-      <h1 className={`${s.h1} font-montserrat bg-linear-to-r ${c.h1} bg-clip-text text-transparent`}>
+      <h1
+        className={`${s.h1} bg-clip-text text-transparent`}
+        style={{
+          ...headingFont,
+          ...margin("h1"),
+          backgroundImage: `linear-gradient(to right, var(--nt-heading-from), var(--nt-heading-to))`,
+        }}
+      >
         {children}
       </h1>
     ),
     h2: ({ children }) => (
-      <h2 className={`${s.h2} font-montserrat ${isDark ? c.h2.dark : c.h2.light}`}>
+      <h2 className={`${s.h2} text-(--nt-heading)`} style={{ ...headingFont, ...margin("h2") }}>
         {children}
       </h2>
     ),
     h3: ({ children }) => (
-      <h3 className={`${s.h3} font-montserrat ${isDark ? c.h3.dark : c.h3.light}`}>
+      <h3 className={`${s.h3} text-(--nt-heading)`} style={{ ...headingFont, ...margin("h3") }}>
         {children}
       </h3>
     ),
     p: ({ children }) => (
-      <p className={`${s.p} ${text}`}>{children}</p>
+      <p className={`${s.p} text-(--nt-body)`} style={margin("p")}>
+        {children}
+      </p>
     ),
     ul: ({ children }) => (
-      <ul className={`${s.ul} ${text}`}>{children}</ul>
+      <ul className={`${s.ul} text-(--nt-body)`} style={margin("ul")}>
+        {children}
+      </ul>
     ),
     ol: ({ children }) => (
-      <ol className={`${s.ol} ${text}`}>{children}</ol>
-    ),
-    li: ({ children }) => (
-      <li className={s.li}>{children}</li>
-    ),
-    strong: ({ children }) => (
-      <strong className={`${s.strong} ${isDark ? c.strong.dark : c.strong.light}`}>
+      <ol className={`${s.ol} text-(--nt-body)`} style={margin("ol")}>
         {children}
-      </strong>
+      </ol>
+    ),
+    li: ({ children }) => <li className={s.li}>{children}</li>,
+    strong: ({ children }) => (
+      <strong className={`font-bold ${s.strong} text-(--nt-strong)`}>{children}</strong>
     ),
     em: ({ children }) => (
-      <em className={`${s.em} ${isDark ? c.em.dark : c.em.light}`}>
-        {children}
-      </em>
+      <em className={`italic ${s.em} text-(--nt-em)`}>{children}</em>
     ),
     a: ({ href, children }) => {
       const match = href?.match(/spell:(\d+)\/name:([^|]+)/);
@@ -139,10 +75,7 @@ function buildComponents(
 
       if (isRaidplanLink) {
         return (
-          <Link
-            to={href ?? ""}
-            className={`inline-flex items-center gap-1 font-medium underline decoration-2 underline-offset-2 transition-all duration-200 ${isDark ? c.link.dark : c.link.light}`}
-          >
+          <Link to={href ?? ""} className={`inline-flex items-center gap-1 ${linkClass}`}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -168,7 +101,7 @@ function buildComponents(
             target="_blank"
             rel="noopener noreferrer"
             data-wh-icon-size="small"
-            className={`font-medium underline decoration-2 underline-offset-2 transition-all duration-200 inline-block w-auto ${isDark ? c.link.dark : c.link.light}`}
+            className={`inline-block w-auto ${linkClass}`}
           >
             {spellName ? (
               <img
@@ -183,19 +116,12 @@ function buildComponents(
         );
       }
       return (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`underline decoration-2 underline-offset-2 transition-colors ${isDark ? c.link.dark : c.link.light}`}
-        >
+        <a href={href} target="_blank" rel="noopener noreferrer" className={linkClass}>
           {children}
         </a>
       );
     },
-    hr: () => (
-      <hr className={`my-2 border-0 h-px ${isDark ? "bg-slate-700" : "bg-slate-300"}`} />
-    ),
+    hr: () => <hr className="border-0 h-px bg-(--nt-hr)" style={margin("hr")} />,
   };
 }
 
@@ -237,18 +163,34 @@ function buildContent(lines: string[]): string {
 
 export const NoteDiffView: FC<NoteDiffViewProps> = ({
   diffs,
-  color = "cyan",
+  theme: themeId = DEFAULT_THEME_ID,
   size = "medium",
 }) => {
   const { colorMode } = useTheme();
   const isDark = colorMode === "dark";
-  const components = buildComponents(color, size, isDark);
+  const theme = noteThemes[themeId];
+  const palette = isDark ? theme.dark : theme.light;
+  const headingFont = { fontFamily: theme.fonts.heading };
+  const bodyFont = { fontFamily: theme.fonts.body };
+  const components = buildComponents(size, headingFont, theme.typography.spacingScale);
 
   const urlTransform = (url: string) =>
     url.startsWith("spell:") ? url : defaultUrlTransform(url);
 
+  // Insert/delete highlight colors are a fixed green/red git-diff
+  // convention, not part of the note theme — they mean the same thing
+  // regardless of which typography theme is active.
   return (
-    <div>
+    <div
+      style={
+        {
+          ...themeCssVars(palette),
+          ...bodyFont,
+          lineHeight: theme.typography.lineHeight,
+          letterSpacing: theme.typography.letterSpacing,
+        } as CSSProperties
+      }
+    >
       {diffs.map((op, index) => {
         const groups = splitAtIndentResets(op.lines);
 

@@ -6,9 +6,36 @@ import { UserContext } from "./context/UserContext";
 import { TeamContext } from "./context/TeamContext";
 import { PrepPreferencesContext } from "./context/PrepPreferencesContext";
 import { manaforge, midnight, nerubarpalace, undermine } from "./data/raids";
+import { buildGoogleFontsHref, type GoogleFontSpec } from "./data/noteThemes";
 import type { User } from "./types/api/user";
-  
+
 export const useTheme = () => useContext(ThemeContext);
+
+const NOTE_THEME_FONT_LINK_ID = "kp-note-theme-font";
+
+// Swaps a single <link> tag's href to the active note theme's Google Fonts
+// stylesheet, so only one theme's webfont is ever loaded at a time (never
+// accumulates a tag per theme visited). A theme with an empty `fonts` list
+// (system stack only, e.g. Minimal) removes the tag entirely.
+export const useGoogleFont = (fonts: GoogleFontSpec[]) => {
+  useEffect(() => {
+    const href = buildGoogleFontsHref(fonts);
+    const existing = document.getElementById(
+      NOTE_THEME_FONT_LINK_ID,
+    ) as HTMLLinkElement | null;
+
+    if (!href) {
+      existing?.remove();
+      return;
+    }
+
+    const link = existing ?? document.createElement("link");
+    link.id = NOTE_THEME_FONT_LINK_ID;
+    link.rel = "stylesheet";
+    link.href = href;
+    if (!existing) document.head.appendChild(link);
+  }, [fonts]);
+};
 
 export const useUser = () => useContext(UserContext)
 

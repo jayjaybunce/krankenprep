@@ -1,14 +1,15 @@
 import { createContext } from "react";
+import type { MarkdownSize } from "../data/noteTypography";
+import { DEFAULT_THEME_ID, type ThemeId } from "../data/noteThemes";
 
-export type MarkdownSize = "small" | "medium" | "large";
-export type MarkdownColor = "cyan" | "emerald" | "amber" | "rose";
+export type { MarkdownSize };
 export type LayoutMode = "split" | "notes";
 
 export type PrepPreferencesState = {
   markdownSize: MarkdownSize;
   setMarkdownSize: (size: MarkdownSize) => void;
-  markdownColor: MarkdownColor;
-  setMarkdownColor: (color: MarkdownColor) => void;
+  markdownTheme: ThemeId;
+  setMarkdownTheme: (theme: ThemeId) => void;
   layoutMode: LayoutMode;
   setLayoutMode: (mode: LayoutMode) => void;
 };
@@ -16,8 +17,8 @@ export type PrepPreferencesState = {
 export const PrepPreferencesContext = createContext<PrepPreferencesState>({
   markdownSize: "medium",
   setMarkdownSize: () => {},
-  markdownColor: "cyan",
-  setMarkdownColor: () => {},
+  markdownTheme: DEFAULT_THEME_ID,
+  setMarkdownTheme: () => {},
   layoutMode: "split",
   setLayoutMode: () => {},
 });
