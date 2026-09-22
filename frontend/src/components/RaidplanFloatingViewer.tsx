@@ -26,6 +26,13 @@ type Rect = { x: number; y: number; width: number; height: number };
 const clamp = (val: number, min: number, max: number) =>
   Math.min(Math.max(val, min), max);
 
+const computeDefaultRect = (): Rect => ({
+  width: DEFAULT_WIDTH,
+  height: DEFAULT_HEIGHT,
+  x: Math.max(24, window.innerWidth - DEFAULT_WIDTH - 24),
+  y: Math.max(24, window.innerHeight - DEFAULT_HEIGHT - 96),
+});
+
 // Desktop-only picture-in-picture style viewer. Notes Fullscreen hides the
 // sections column on desktop, which is where the sticky raidplan viewer
 // normally lives, so raidplan links have nowhere to render. This gives them
@@ -43,12 +50,7 @@ export const RaidplanFloatingViewer: FC<RaidplanFloatingViewerProps> = ({
   const { colorMode } = useTheme();
   const isDark = colorMode === "dark";
   const [open, setOpen] = useState(true);
-  const [rect, setRect] = useState<Rect>(() => ({
-    width: DEFAULT_WIDTH,
-    height: DEFAULT_HEIGHT,
-    x: Math.max(24, window.innerWidth - DEFAULT_WIDTH - 24),
-    y: Math.max(24, window.innerHeight - DEFAULT_HEIGHT - 96),
-  }));
+  const [rect, setRect] = useState<Rect>(computeDefaultRect);
   const dragState = useRef<{
     startX: number;
     startY: number;
@@ -64,6 +66,17 @@ export const RaidplanFloatingViewer: FC<RaidplanFloatingViewerProps> = ({
   if (raidplanShareId !== prevShareId) {
     setPrevShareId(raidplanShareId);
     if (raidplanShareId) setOpen(true);
+  }
+
+  // The component stays mounted (just rendering null) while hidden — e.g.
+  // switching from Notes Fullscreen to Split layout — so a manual
+  // drag/resize would otherwise persist indefinitely across layout
+  // switches. Snap back to the default size/position each time it
+  // reappears, same render-time-comparison pattern as prevShareId above.
+  const [wasVisible, setWasVisible] = useState(isVisible);
+  if (isVisible !== wasVisible) {
+    setWasVisible(isVisible);
+    if (isVisible) setRect(computeDefaultRect());
   }
 
   useEffect(() => {

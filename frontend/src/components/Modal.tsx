@@ -212,12 +212,12 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
     if (variant === "neon-gradient") {
       return (
         <div
-          className={`${variants[variant]} rounded-2xl transition-all duration-500 flex flex-col h-full`}
+          className={`${variants[variant]} rounded-2xl transition-all duration-500 flex flex-col h-full min-h-0`}
         >
           <div
             className={`${
               colorMode === "dark" ? "bg-slate-950" : "bg-white"
-            } rounded-[14px] w-full h-full transition-colors duration-500 flex flex-col`}
+            } rounded-[14px] w-full h-full transition-colors duration-500 flex flex-col min-h-0`}
           >
             {content}
           </div>
@@ -227,7 +227,11 @@ export const Modal: FC<PropsWithChildren<ModalProps>> = ({
 
     return (
       <div
-        className={`${variants[variant]} border rounded-2xl transition-all duration-500 flex flex-col h-full`}
+        // min-h-0: without it, this flex item refuses to shrink below its
+        // content's natural height, so the max-h-[90vh] clamp on the box
+        // below never actually reaches the overflow-y-auto body — content
+        // just overflows past the modal's edge unscrollably instead.
+        className={`${variants[variant]} border rounded-2xl transition-all duration-500 flex flex-col h-full min-h-0`}
       >
         {content}
       </div>

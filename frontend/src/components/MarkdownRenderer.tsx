@@ -1,11 +1,19 @@
-import type { FC } from "react";
+import type { CSSProperties, FC } from "react";
 import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import Markdown, { defaultUrlTransform } from "react-markdown";
 import type { Components } from "react-markdown";
+import { PrismAsync as SyntaxHighlighter } from "react-syntax-highlighter";
 import { useTheme } from "../hooks";
 import { X } from "lucide-react";
 import { Link } from "react-router-dom";
+import {
+  noteFontScale,
+  noteMarginScale,
+  marginStyle,
+  type MarkdownSize,
+} from "../data/noteTypography";
+import { noteThemes, themeCssVars, DEFAULT_THEME_ID, type ThemeId } from "../data/noteThemes";
 
 // Turn a raidstrats.gg view link (e.g.
 // https://raidstrats.gg/planner?view=<id>) into an embeddable planner URL.
@@ -32,174 +40,18 @@ const buildRaidStratEmbedUrl = (href: string): string | null => {
   return url.toString();
 };
 
-type MarkdownSize = "small" | "medium" | "large";
-type MarkdownColor = "cyan" | "emerald" | "amber" | "rose";
-
 interface MarkdownRendererProps {
   children: string;
   className?: string;
   size?: MarkdownSize;
-  color?: MarkdownColor;
+  theme?: ThemeId;
 }
-
-const sizeConfig = {
-  small: {
-    h1: "text-lg font-bold mb-1 mt-2",
-    h2: "text-base font-bold mb-1 mt-2",
-    h3: "text-sm font-semibold mb-1 mt-1.5",
-    h4: "text-sm font-semibold mb-0.5 mt-1",
-    h5: "text-xs font-semibold mb-0.5 mt-1",
-    h6: "text-xs font-semibold mb-0.5 mt-1",
-    p: "mb-1.5 leading-snug text-xs",
-    ul: "list-disc list-inside mb-1.5 space-y-0.5 text-xs",
-    ol: "list-decimal list-inside mb-1.5 space-y-0.5 text-xs",
-    li: "ml-2",
-    blockquote: "border-l-2 pl-2 py-0.5 mb-1.5 italic text-xs",
-    codeBlock: "mb-2",
-    codePadding: "0.5rem",
-    inlineCode: "px-1 py-0.5 rounded text-xs",
-    hr: "my-2",
-    table: "mb-2",
-    thTd: "px-2 py-1 text-xs",
-    strong: "text-xs",
-    em: "text-xs",
-    del: "text-xs",
-    img: "mb-2",
-    prose: "prose-xs",
-  },
-  medium: {
-    h1: "text-2xl font-bold mb-2 mt-4",
-    h2: "text-xl font-bold mb-2 mt-3",
-    h3: "text-lg font-semibold mb-1.5 mt-2.5",
-    h4: "text-base font-semibold mb-1 mt-2",
-    h5: "text-sm font-semibold mb-1 mt-2",
-    h6: "text-sm font-semibold mb-1 mt-1.5",
-    p: "mb-2 leading-normal text-sm",
-    ul: "list-disc list-inside mb-2 space-y-1 text-sm",
-    ol: "list-decimal list-inside mb-2 space-y-1 text-sm",
-    li: "ml-3",
-    blockquote: "border-l-3 pl-3 py-1 mb-2 italic text-sm",
-    codeBlock: "mb-3",
-    codePadding: "0.75rem",
-    inlineCode: "px-1.5 py-0.5 rounded-md text-xs",
-    hr: "my-4",
-    table: "mb-3",
-    thTd: "px-3 py-1.5 text-sm",
-    strong: "text-sm",
-    em: "text-sm",
-    del: "text-sm",
-    img: "mb-3",
-    prose: "prose-sm",
-  },
-  large: {
-    h1: "text-4xl font-bold mb-4 mt-6",
-    h2: "text-3xl font-bold mb-3 mt-5",
-    h3: "text-2xl font-semibold mb-3 mt-4",
-    h4: "text-xl font-semibold mb-2 mt-3",
-    h5: "text-lg font-semibold mb-2 mt-3",
-    h6: "text-base font-semibold mb-2 mt-2",
-    p: "mb-4 leading-relaxed",
-    ul: "list-disc list-inside mb-4 space-y-2",
-    ol: "list-decimal list-inside mb-4 space-y-2",
-    li: "ml-4",
-    blockquote: "border-l-4 pl-4 py-2 mb-4 italic",
-    codeBlock: "mb-4",
-    codePadding: "1rem",
-    inlineCode: "px-2 py-1 rounded-md font-mono text-sm",
-    hr: "my-6",
-    table: "mb-4",
-    thTd: "px-4 py-2",
-    strong: "",
-    em: "",
-    del: "",
-    img: "mb-4",
-    prose: "prose-sm",
-  },
-} as const;
-
-const colorConfig = {
-  cyan: {
-    h1Gradient: "from-cyan-400 to-blue-500",
-    h2: { dark: "text-cyan-300", light: "text-cyan-600" },
-    h3: { dark: "text-blue-300", light: "text-blue-600" },
-    strong: { dark: "text-cyan-300", light: "text-cyan-700" },
-    em: { dark: "text-blue-300", light: "text-blue-600" },
-    link: {
-      dark: "text-cyan-400 hover:text-cyan-300 decoration-cyan-500/50 hover:decoration-cyan-400",
-      light:
-        "text-cyan-600 hover:text-cyan-700 decoration-cyan-300 hover:decoration-cyan-500",
-    },
-    blockquoteBorder: { dark: "border-cyan-500", light: "border-cyan-400" },
-    inlineCode: { dark: "text-cyan-300", light: "text-cyan-700" },
-    imgHoverBorder: {
-      dark: "hover:border-cyan-500",
-      light: "hover:border-cyan-400",
-    },
-  },
-  emerald: {
-    h1Gradient: "from-emerald-400 to-teal-500",
-    h2: { dark: "text-emerald-300", light: "text-emerald-600" },
-    h3: { dark: "text-teal-300", light: "text-teal-600" },
-    strong: { dark: "text-emerald-300", light: "text-emerald-700" },
-    em: { dark: "text-teal-300", light: "text-teal-600" },
-    link: {
-      dark: "text-emerald-400 hover:text-emerald-300 decoration-emerald-500/50 hover:decoration-emerald-400",
-      light:
-        "text-emerald-600 hover:text-emerald-700 decoration-emerald-300 hover:decoration-emerald-500",
-    },
-    blockquoteBorder: {
-      dark: "border-emerald-500",
-      light: "border-emerald-400",
-    },
-    inlineCode: { dark: "text-emerald-300", light: "text-emerald-700" },
-    imgHoverBorder: {
-      dark: "hover:border-emerald-500",
-      light: "hover:border-emerald-400",
-    },
-  },
-  amber: {
-    h1Gradient: "from-amber-400 to-orange-500",
-    h2: { dark: "text-amber-300", light: "text-amber-600" },
-    h3: { dark: "text-orange-300", light: "text-orange-600" },
-    strong: { dark: "text-amber-300", light: "text-amber-700" },
-    em: { dark: "text-orange-300", light: "text-orange-600" },
-    link: {
-      dark: "text-amber-400 hover:text-amber-300 decoration-amber-500/50 hover:decoration-amber-400",
-      light:
-        "text-amber-600 hover:text-amber-700 decoration-amber-300 hover:decoration-amber-500",
-    },
-    blockquoteBorder: { dark: "border-amber-500", light: "border-amber-400" },
-    inlineCode: { dark: "text-amber-300", light: "text-amber-700" },
-    imgHoverBorder: {
-      dark: "hover:border-amber-500",
-      light: "hover:border-amber-400",
-    },
-  },
-  rose: {
-    h1Gradient: "from-rose-400 to-pink-500",
-    h2: { dark: "text-rose-300", light: "text-rose-600" },
-    h3: { dark: "text-pink-300", light: "text-pink-600" },
-    strong: { dark: "text-rose-300", light: "text-rose-700" },
-    em: { dark: "text-pink-300", light: "text-pink-600" },
-    link: {
-      dark: "text-rose-400 hover:text-rose-300 decoration-rose-500/50 hover:decoration-rose-400",
-      light:
-        "text-rose-600 hover:text-rose-700 decoration-rose-300 hover:decoration-rose-500",
-    },
-    blockquoteBorder: { dark: "border-rose-500", light: "border-rose-400" },
-    inlineCode: { dark: "text-rose-300", light: "text-rose-700" },
-    imgHoverBorder: {
-      dark: "hover:border-rose-500",
-      light: "hover:border-rose-400",
-    },
-  },
-} as const;
 
 export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
   children,
   className = "",
   size = "medium",
-  color = "cyan",
+  theme: themeId = DEFAULT_THEME_ID,
 }) => {
   const { colorMode } = useTheme();
   const [selectedImage, setSelectedImage] = useState<{
@@ -289,9 +141,16 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     window.addEventListener("mouseup", onUp);
   };
 
-  const s = sizeConfig[size];
-  const c = colorConfig[color];
+  const s = noteFontScale[size];
+  const theme = noteThemes[themeId];
   const isDark = colorMode === "dark";
+  const palette = isDark ? theme.dark : theme.light;
+  const headingFont = { fontFamily: theme.fonts.heading };
+  const bodyFont = { fontFamily: theme.fonts.body };
+  const spacingScale = theme.typography.spacingScale;
+  const margin = (el: Parameters<typeof marginStyle>[1]) => marginStyle(size, el, spacingScale);
+  const codeBlockPadY = `${noteMarginScale[size].codeBlock.mb! * spacingScale}rem`;
+  const codeBlockPadX = `${noteMarginScale[size].codeBlock.mb! * 2 * spacingScale}rem`;
 
   // Intentionally runs after every render; the cleanup auto-debounces rapid
   // re-renders (e.g. typing in preview)
@@ -309,95 +168,57 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     // Headings
     h1: ({ children }) => (
       <h1
-        className={`
-          ${s.h1} font-montserrat
-          bg-gradient-to-r ${c.h1Gradient} bg-clip-text text-transparent
-        `}
+        className={`${s.h1} bg-clip-text text-transparent`}
+        style={{
+          ...headingFont,
+          ...margin("h1"),
+          backgroundImage: `linear-gradient(to right, var(--nt-heading-from), var(--nt-heading-to))`,
+        }}
       >
         {children}
       </h1>
     ),
     h2: ({ children }) => (
-      <h2
-        className={`
-          ${s.h2} font-montserrat
-          ${isDark ? c.h2.dark : c.h2.light}
-        `}
-      >
+      <h2 className={`${s.h2} text-(--nt-heading)`} style={{ ...headingFont, ...margin("h2") }}>
         {children}
       </h2>
     ),
     h3: ({ children }) => (
-      <h3
-        className={`
-          ${s.h3} font-montserrat
-          ${isDark ? c.h3.dark : c.h3.light}
-        `}
-      >
+      <h3 className={`${s.h3} text-(--nt-heading)`} style={{ ...headingFont, ...margin("h3") }}>
         {children}
       </h3>
     ),
     h4: ({ children }) => (
-      <h4
-        className={`
-          ${s.h4} font-montserrat
-          ${isDark ? "text-slate-300" : "text-slate-700"}
-        `}
-      >
+      <h4 className={`${s.h4} text-(--nt-muted)`} style={{ ...headingFont, ...margin("h4") }}>
         {children}
       </h4>
     ),
     h5: ({ children }) => (
-      <h5
-        className={`
-          ${s.h5} font-montserrat
-          ${isDark ? "text-slate-400" : "text-slate-600"}
-        `}
-      >
+      <h5 className={`${s.h5} text-(--nt-muted)`} style={{ ...headingFont, ...margin("h5") }}>
         {children}
       </h5>
     ),
     h6: ({ children }) => (
-      <h6
-        className={`
-          ${s.h6} font-montserrat
-          ${isDark ? "text-slate-500" : "text-slate-500"}
-        `}
-      >
+      <h6 className={`${s.h6} text-(--nt-muted)`} style={{ ...headingFont, ...margin("h6") }}>
         {children}
       </h6>
     ),
 
     // Paragraph
     p: ({ children }) => (
-      <p
-        className={`
-          ${s.p}
-          ${isDark ? "text-slate-300" : "text-slate-700"}
-        `}
-      >
+      <p className={`${s.p} text-(--nt-body)`} style={margin("p")}>
         {children}
       </p>
     ),
 
     // Lists
     ul: ({ children }) => (
-      <ul
-        className={`
-          ${s.ul}
-          ${isDark ? "text-slate-300" : "text-slate-700"}
-        `}
-      >
+      <ul className={`${s.ul} text-(--nt-body)`} style={margin("ul")}>
         {children}
       </ul>
     ),
     ol: ({ children }) => (
-      <ol
-        className={`
-          ${s.ol}
-          ${isDark ? "text-slate-300" : "text-slate-700"}
-        `}
-      >
+      <ol className={`${s.ol} text-(--nt-body)`} style={margin("ol")}>
         {children}
       </ol>
     ),
@@ -406,6 +227,8 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     // Links
     a: ({ href, children }) => {
       const match = href?.match(/spell:(\d+)\/name:([^|]+)/);
+      const linkClass =
+        "font-medium underline decoration-2 underline-offset-2 transition-colors text-(--nt-link) hover:text-(--nt-link-hover)";
 
       const isRaidStratLink = /\/raidstrats\.gg\//.test(href ?? "");
       if (isRaidStratLink) {
@@ -421,15 +244,7 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
       const isRaidplanLink = /\/raidplan\//.test(href ?? "");
       if (isRaidplanLink) {
         return (
-          <Link
-            to={href ?? ""}
-            className={`
-              inline-flex items-center gap-1
-              font-medium underline decoration-2 underline-offset-2
-              transition-all duration-200
-              ${isDark ? c.link.dark : c.link.light}
-            `}
-          >
+          <Link to={href ?? ""} className={`inline-flex items-center gap-1 ${linkClass}`}>
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
@@ -455,11 +270,7 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
             target="_blank"
             rel="noopener noreferrer"
             data-wh-icon-size="small"
-            className={`
-              font-medium underline decoration-2 underline-offset-2
-              transition-all duration-200 inline-block w-auto
-              ${isDark ? c.link.dark : c.link.light}
-            `}
+            className={`inline-block w-auto ${linkClass}`}
           >
             {spellName ? (
               <img
@@ -474,16 +285,7 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
         );
       }
       return (
-        <a
-          href={href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`
-            font-medium underline decoration-2 underline-offset-2
-            transition-all duration-200
-            ${isDark ? c.link.dark : c.link.light}
-          `}
-        >
+        <a href={href} target="_blank" rel="noopener noreferrer" className={linkClass}>
           {children}
         </a>
       );
@@ -492,157 +294,100 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
     // Blockquote
     blockquote: ({ children }) => (
       <blockquote
-        className={`
-          ${s.blockquote}
-          ${
-            isDark
-              ? `${c.blockquoteBorder.dark} bg-slate-800/50 text-slate-300`
-              : `${c.blockquoteBorder.light} bg-slate-100 text-slate-600`
-          }
-        `}
+        className={`${s.blockquote} border-(--nt-blockquote-border) bg-(--nt-blockquote-bg) text-(--nt-blockquote-text)`}
+        style={margin("blockquote")}
       >
         {children}
       </blockquote>
     ),
 
-    // Code blocks
-    // code: ({ className, children, ...props }) => {
-    //   const match = /language-(\w+)/.exec(className || "");
-    //   const language = match ? match[1] : "";
+    // Code — `pre` is a passthrough so `code` owns the real rendering: as
+    // of react-markdown v9+, `code` no longer receives an `inline` prop,
+    // so language detection has to go by `className` (remark still tags
+    // fenced blocks `language-xxx`). A fenced block without a language tag
+    // falls through to the same styled inline-code chip as real inline
+    // code — same tradeoff this component always made, just re-enabled.
+    pre: ({ children }) => <>{children}</>,
+    code: ({ className: codeClassName, children: codeChildren }) => {
+      const match = /language-(\w+)/.exec(codeClassName ?? "");
+      const language = match?.[1];
+      const codeString = String(codeChildren).replace(/\n$/, "");
 
-    //   return language ? (
-    //     <div className={`${s.codeBlock} rounded-xl overflow-hidden`}>
-    //       <SyntaxHighlighter
-    //         style={isDark ? vscDarkPlus : vs}
-    //         language={language}
-    //         PreTag="div"
-    //         customStyle={{
-    //           margin: 0,
-    //           borderRadius: "0.75rem",
-    //           padding: s.codePadding,
-    //         }}
-    //         {...props}
-    //       >
-    //         {String(children).replace(/\n$/, "")}
-    //       </SyntaxHighlighter>
-    //     </div>
-    //   ) : (
-    //     <code
-    //       className={`
-    //         ${s.inlineCode} font-mono
-    //         ${
-    //           isDark
-    //             ? `bg-slate-800 ${c.inlineCode.dark} border border-slate-700`
-    //             : `bg-slate-200 ${c.inlineCode.light} border border-slate-300`
-    //         }
-    //       `}
-    //       {...props}
-    //     >
-    //       {children}
-    //     </code>
-    //   );
-    // },
+      if (!language) {
+        return (
+          <code
+            className={`${s.inlineCode} font-mono bg-(--nt-blockquote-bg) text-(--nt-link) border border-(--nt-blockquote-border)`}
+          >
+            {codeChildren}
+          </code>
+        );
+      }
+
+      return (
+        <div style={margin("codeBlock")}>
+          <SyntaxHighlighter
+            language={language}
+            style={isDark ? theme.codeTheme.dark : theme.codeTheme.light}
+            customStyle={{
+              margin: 0,
+              borderRadius: "0.75rem",
+              padding: `${codeBlockPadY} ${codeBlockPadX}`,
+              border: "1px solid var(--nt-card-border)",
+            }}
+          >
+            {codeString}
+          </SyntaxHighlighter>
+        </div>
+      );
+    },
 
     // Horizontal rule
-    hr: () => (
-      <hr
-        className={`
-          ${s.hr} border-0 h-px
-          ${isDark ? "bg-slate-700" : "bg-slate-300"}
-        `}
-      />
-    ),
+    hr: () => <hr className="border-0 h-px bg-(--nt-hr)" style={margin("hr")} />,
 
     // Table
     table: ({ children }) => (
-      <div className={`overflow-x-auto ${s.table}`}>
-        <table
-          className={`
-            min-w-full border-collapse
-            ${isDark ? "border-slate-700" : "border-slate-300"}
-          `}
-        >
+      <div className="overflow-x-auto" style={margin("table")}>
+        <table className="min-w-full border-collapse border-(--nt-table-border)">
           {children}
         </table>
       </div>
     ),
     thead: ({ children }) => (
-      <thead
-        className={`
-          ${
-            isDark
-              ? "bg-slate-800 text-slate-200"
-              : "bg-slate-200 text-slate-800"
-          }
-        `}
-      >
+      <thead className="bg-(--nt-table-header-bg) text-(--nt-table-header-text)">
         {children}
       </thead>
     ),
     tbody: ({ children }) => <tbody>{children}</tbody>,
     tr: ({ children }) => (
-      <tr
-        className={`
-          border-b
-          ${isDark ? "border-slate-700" : "border-slate-300"}
-        `}
-      >
-        {children}
-      </tr>
+      <tr className="border-b border-(--nt-table-border)">{children}</tr>
     ),
     th: ({ children }) => (
       <th className={`${s.thTd} text-left font-semibold`}>{children}</th>
     ),
     td: ({ children }) => (
-      <td
-        className={`
-          ${s.thTd}
-          ${isDark ? "text-slate-300" : "text-slate-700"}
-        `}
-      >
-        {children}
-      </td>
+      <td className={`${s.thTd} text-(--nt-body)`}>{children}</td>
     ),
 
     // Strong and emphasis
     strong: ({ children }) => (
-      <strong
-        className={`
-          font-bold ${s.strong}
-          ${isDark ? c.strong.dark : c.strong.light}
-        `}
-      >
+      <strong className={`font-bold ${s.strong} text-(--nt-strong)`}>
         {children}
       </strong>
     ),
     em: ({ children }) => (
-      <em
-        className={`
-          italic ${s.em}
-          ${isDark ? c.em.dark : c.em.light}
-        `}
-      >
-        {children}
-      </em>
+      <em className={`italic ${s.em} text-(--nt-em)`}>{children}</em>
     ),
 
     // Deleted text
     del: ({ children }) => (
-      <del
-        className={`
-          line-through ${s.del}
-          ${isDark ? "text-slate-500" : "text-slate-400"}
-        `}
-      >
-        {children}
-      </del>
+      <del className={`line-through ${s.del} text-(--nt-del)`}>{children}</del>
     ),
 
     // Images
     img: ({ src, alt }) =>
       alt === "!video!" ? (
         <>
-          <video className="aspect-video" controls>
+          <video className="aspect-video" controls style={margin("img")}>
             <source src={src} type="video/mp4" />
           </video>
         </>
@@ -654,15 +399,8 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
             lbResetView();
             setSelectedImage({ src: src || "", alt: alt || "" });
           }}
-          className={`
-          max-w-full h-auto rounded-lg ${s.img} cursor-pointer
-          transition-all duration-200 hover:scale-[1.02]
-          ${
-            isDark
-              ? `border border-slate-700 ${c.imgHoverBorder.dark}`
-              : `border border-slate-300 ${c.imgHoverBorder.light}`
-          }
-        `}
+          style={margin("img")}
+          className="max-w-full h-auto rounded-lg cursor-pointer transition-all duration-200 hover:scale-[1.02] border border-(--nt-card-border) hover:border-(--nt-link)"
           role="button"
           tabIndex={0}
           onKeyDown={(e) => {
@@ -678,7 +416,17 @@ export const MarkdownRenderer: FC<MarkdownRendererProps> = ({
 
   return (
     <>
-      <div className={`prose ${s.prose} max-w-none ${className}`}>
+      <div
+        className={`prose ${s.prose} max-w-none ${className}`}
+        style={
+          {
+            ...themeCssVars(palette),
+            ...bodyFont,
+            lineHeight: theme.typography.lineHeight,
+            letterSpacing: theme.typography.letterSpacing,
+          } as CSSProperties
+        }
+      >
         <Markdown
           components={components}
           urlTransform={(url) =>

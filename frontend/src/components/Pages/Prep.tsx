@@ -7,7 +7,7 @@ import {
 } from "../../hooks";
 import { PrepPreferencesProvider } from "../../context/PrepPreferencesProvider";
 import { PrepToolbar } from "../PrepToolbar";
-import { useEffect, useMemo, useRef, useState, type FC } from "react";
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type FC } from "react";
 import { useSession, Descope } from "@descope/react-sdk";
 import { StaticHeroImage } from "../StaticHeroImage";
 import Button from "../Button";
@@ -48,6 +48,7 @@ import {
   type Section,
 } from "../../api/queryHooks";
 import { MarkdownRenderer } from "../MarkdownRenderer";
+import { noteThemes, themeCssVars } from "../../data/noteThemes";
 import { BossDropdown } from "../BossSelection";
 import PlanViewer from "./PlanViewer";
 import { NoteDiffView } from "../NoteDiffView";
@@ -138,7 +139,10 @@ const BossDisplay: FC<BossProps> = ({
 }) => {
   const { team, boss } = useTeam();
   const { name, splash_img_url } = boss ?? {};
-  const { markdownSize, markdownColor, layoutMode } = usePrepPreferences();
+  const { markdownSize, markdownTheme, layoutMode } = usePrepPreferences();
+  const { colorMode } = useTheme();
+  const noteTheme = noteThemes[markdownTheme];
+  const notePalette = colorMode === "dark" ? noteTheme.dark : noteTheme.light;
   const [isAddingSection, setIsAddingSection] = useState(false);
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [showMarkdownGuide, setShowMarkdownGuide] = useState(false);
@@ -648,7 +652,8 @@ const BossDisplay: FC<BossProps> = ({
                       <div
                         key={note.id}
                         data-note-id={note.id}
-                        className={`bg-slate-100 dark:bg-slate-800/50 backdrop-blur-sm border border-slate-200 dark:border-slate-700/50 rounded-lg p-5 shadow-sm ${
+                        style={themeCssVars(notePalette) as CSSProperties}
+                        className={`bg-(--nt-card-bg) backdrop-blur-sm border border-(--nt-card-border) ${noteTheme.card.radius} p-5 ${noteTheme.card.shadow} ${
                           highlightedNoteId === note.id
                             ? "animate-note-highlight"
                             : ""
@@ -749,13 +754,13 @@ const BossDisplay: FC<BossProps> = ({
                           {note.has_diff && !hiddenDiffIds.has(note.id) ? (
                             <NoteDiffView
                               diffs={note.diffs!}
-                              color={markdownColor}
+                              theme={markdownTheme}
                               size={markdownSize}
                             />
                           ) : (
                             <MarkdownRenderer
                               size={markdownSize}
-                              color={markdownColor}
+                              theme={markdownTheme}
                             >
                               {note.content}
                             </MarkdownRenderer>

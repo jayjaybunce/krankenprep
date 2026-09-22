@@ -9,7 +9,7 @@ import {
   Image as ImageIcon,
   HelpCircle,
 } from "lucide-react";
-import { useTheme } from "../../hooks";
+import { useTheme, usePrepPreferences } from "../../hooks";
 import { Textarea } from "../form";
 import Button from "../Button";
 import { MarkdownRenderer } from "../MarkdownRenderer";
@@ -64,6 +64,7 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
   urlSectionId,
 }) => {
   const { colorMode } = useTheme();
+  const { markdownTheme, markdownSize } = usePrepPreferences();
   const [formState, setFormState] = useState<AddNoteForm>(defaultFormState);
   const [showMarkdownGuide, setShowMarkdownGuide] = useState(false);
 
@@ -380,7 +381,9 @@ export const AddNoteModal: FC<AddSectionModalProps> = ({
                 }
               `}
             >
-              <MarkdownRenderer>{formState.content}</MarkdownRenderer>
+              <MarkdownRenderer theme={markdownTheme} size={markdownSize}>
+                {formState.content}
+              </MarkdownRenderer>
             </div>
           </div>
         </div>

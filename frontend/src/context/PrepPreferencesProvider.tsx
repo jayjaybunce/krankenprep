@@ -1,6 +1,8 @@
 import { useState } from "react";
 import { PrepPreferencesContext } from "./PrepPreferencesContext";
-import type { MarkdownSize, MarkdownColor, LayoutMode } from "./PrepPreferencesContext";
+import type { MarkdownSize, LayoutMode } from "./PrepPreferencesContext";
+import { noteThemes, DEFAULT_THEME_ID, type ThemeId } from "../data/noteThemes";
+import { useGoogleFont } from "../hooks";
 import type { FC, PropsWithChildren } from "react";
 
 const LS_PREFIX = "kp-prep-";
@@ -23,8 +25,10 @@ export const PrepPreferencesProvider: FC<PropsWithChildren> = ({ children }) => 
   const [markdownSize, setMarkdownSizeState] = useState<MarkdownSize>(
     () => readLS<MarkdownSize>("markdownSize", "medium"),
   );
-  const [markdownColor, setMarkdownColorState] = useState<MarkdownColor>(
-    () => readLS<MarkdownColor>("markdownColor", "cyan"),
+  // Note: old "markdownColor" localStorage entries from before the theme
+  // system are simply abandoned — it's a cosmetic pref, not worth migrating.
+  const [markdownTheme, setMarkdownThemeState] = useState<ThemeId>(
+    () => readLS<ThemeId>("markdownTheme", DEFAULT_THEME_ID),
   );
   const [layoutMode, setLayoutModeState] = useState<LayoutMode>(
     () => readLS<LayoutMode>("layoutMode", "split"),
@@ -35,9 +39,9 @@ export const PrepPreferencesProvider: FC<PropsWithChildren> = ({ children }) => 
     writeLS("markdownSize", size);
   };
 
-  const setMarkdownColor = (color: MarkdownColor) => {
-    setMarkdownColorState(color);
-    writeLS("markdownColor", color);
+  const setMarkdownTheme = (theme: ThemeId) => {
+    setMarkdownThemeState(theme);
+    writeLS("markdownTheme", theme);
   };
 
   const setLayoutMode = (mode: LayoutMode) => {
@@ -45,13 +49,18 @@ export const PrepPreferencesProvider: FC<PropsWithChildren> = ({ children }) => 
     writeLS("layoutMode", mode);
   };
 
+  // Single app-wide font load point for the active note theme, rather than
+  // every MarkdownRenderer/NoteDiffView instance independently managing
+  // (redundantly, if harmlessly) the same <link> tag.
+  useGoogleFont(noteThemes[markdownTheme].fonts.googleFonts);
+
   return (
     <PrepPreferencesContext
       value={{
         markdownSize,
         setMarkdownSize,
-        markdownColor,
-        setMarkdownColor,
+        markdownTheme,
+        setMarkdownTheme,
         layoutMode,
         setLayoutMode,
       }}
