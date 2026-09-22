@@ -33,7 +33,7 @@ services:
     volumes:
       - ./backend:/app
       - /app/tmp
-    command: ["go", "run", "github.com/air-verse/air@latest", "-c", ".air.toml"]
+    command: ["go", "run", "github.com/air-verse/air@v1.67.1", "-c", ".air.toml"]
 
   krankenprep-frontend:
     build:

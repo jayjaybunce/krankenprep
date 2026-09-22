@@ -1376,7 +1376,7 @@ export const Loot: FC = () => {
             </div>
 
             {isSimPanelOpen ? (
-              <div className="w-full lg:w-[720px] shrink-0 space-y-3 lg:sticky lg:top-4">
+              <div className="w-full lg:w-[560px] shrink-0 space-y-3 lg:sticky lg:top-4">
                 <div className="flex items-center justify-between gap-2">
                   <h2
                     className={`text-lg font-semibold font-montserrat ${colorMode === "dark" ? "text-slate-200" : "text-slate-800"}`}

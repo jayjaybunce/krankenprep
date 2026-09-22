@@ -124,6 +124,7 @@ var NaServers = []models.Server{
 	{Name: "Connected Burning Blade", Region: "na", Language: "en"},
 	{Name: "Kil'Jaeden", Region: "na", Language: "en"},
 	{Name: "Moon Guard", Region: "na", Language: "en"},
+	{Name: "Cenarion Circle", Region: "na", Language: "en"},
 	{Name: "Quel'Thalas", Region: "na", Language: "es"},
 	{Name: "Connected Khaz'goroth", Region: "na", Language: "en (oc)"},
 	{Name: "Connected Whisperwind", Region: "na", Language: "en"},

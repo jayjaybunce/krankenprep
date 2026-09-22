@@ -90,7 +90,7 @@ question from "which boss am I sending bonus rolls on first."
 
 A team can have either, both, or neither enabled — an admin turns them on
 under **Team → Settings**, and the floating **Droptimizer** button (bottom
-right, once at least one is enabled) uploads a pasted report to whichever
+left, once at least one is enabled) uploads a pasted report to whichever
 service(s) are turned on.
 
 ---

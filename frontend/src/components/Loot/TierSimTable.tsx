@@ -232,7 +232,11 @@ export const TierSimTable: FC<{
           </div>
         )}
         <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex gap-1">
+          {/* flex-wrap here too — the Tier Transition labels ("4pc (old) -
+              2pc + 2pc" etc.) are long enough that a narrower panel can't
+              always fit all 3 on one line; wrapping to a 2nd line beats
+              clipping them. */}
+          <div className="flex flex-wrap gap-1">
             {(Object.keys(activeSetLabels) as ComparisonView[]).map((key) => (
               <button
                 key={key}
