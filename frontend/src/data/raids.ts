@@ -1519,6 +1519,7 @@ export const midnight: RaidData = [
         name: "Ula'tek",
         backgrounds: [
           { name: "Platform", src: "/midnight/thevenemousabyss/ulatek/platform.png" },
+          { name: "Left", src: "/midnight/thevenemousabyss/ulatek/left.png" },
           { name: "Broken", src: "/midnight/thevenemousabyss/ulatek/broken.png" },
         ],
         npcIcons: [
